@@ -1,85 +1,61 @@
 # dsh-tui-skill-mcp-panel
 
-> **状态（2026-11-08）：M0 文档与调研完成；M0 真机探针已完成，仓库已可构建出「包骨架 + `/skill-mcp` 全屏场景 + 诊断场景」并安装到独立探针 profile 运行。技能/MCP 管理功能尚未实现，不可发布。**
+给 [dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI) 的技能（skill）与 MCP 服务器可视化管理面板：在终端里输入 `/skill-mcp` 打开全屏管理场景，不用离开 TUI 就能查看、启用/停用、添加、迁移、分组技能与 MCP 服务器；改动尽量热加载，不要求重启 TUI。
 
-给 [dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI) 的技能（skill）与 MCP 服务器可视化管理插件。参考 web 版 [`dsh-skill-mcp-panel`](https://github.com/Fishquito7/dsh-skill-mcp-panel)，在终端里提供一个全屏管理场景：
+> **开发状态（2026-11-08）**：早期开发中（M1 骨架）。当前可构建、可在真实 TUI 中打开 `/skill-mcp` 诊断场景；**技能 / MCP 管理功能尚未实现，npm 尚未发布**。完整范围与里程碑以 [docs/需求文档.md](docs/需求文档.md) 为准。
 
-- `/skill-mcp` 打开管理界面，页签：**技能 / MCP / 分组 / 诊断**；
-- **技能**：列全局与工作区，查看详情，启用/停用（`*.disabled` 约定），软删除 + 撤销，按本地路径添加（`.md` / 目录束 / 可选 zip），迁移、分组、批量操作；
-- **MCP**：列当前 profile 的 patch 行与 home 全局层，启用/停用（官方 `pluginManager`），新增（写入本插件受管块）、编辑（字节保真）、删除（备份 + 撤销）；
-- **热加载**：技能靠文件 watcher，MCP 靠 HMR 重组合；界面如实显示「已保存，热加载中 / 已生效 / 需重启」；
-- **安全**：写前备份、原子写、与 web 版共用锁文件与磁盘约定；不使用额外权限（`permissions: []`）。
+## 功能（规划中）
 
-## 已知边界（首版）
+| 模块 | 能力 | 状态 |
+| --- | --- | --- |
+| 技能 | 全局 / 工作区列表、详情、启用/停用（`*.disabled` 约定）、软删除 + 撤销、按本地路径添加（`.md` / 目录束）、迁移、分组、批量操作 | 🚧 |
+| MCP | 当前 profile 的 patch 行 + home 全局层（只读）、启用/停用、新增 / 编辑 / 删除（受管块、字节保真、备份 + 撤销） | 🚧 |
+| 分组 | 显示层分组与按组批量操作；技能分组与 web 版共享 `groups.json` | 🚧 |
+| 诊断 | 发现根、frontmatter 合法性、遮蔽/停用状态、锁 / 备份 / 回收站、宿主能力探测 | 🚧 |
+| 入口 | `/skill-mcp` 命令打开全屏场景 | ✅ |
 
-| 边界 | 说明 |
-| --- | --- |
-| **MCP 无工作区级** | DSH 内核只有 profile 级 MCP 配置；插件提供「当前 profile（可写）+ home 全局层（只读）」，工作区维度只在技能上成立 |
-| **技能只发现一层** | 与 DSH 内核一致：`<root>/<name>/SKILL.md` 或 `<root>/<name>.md`，不递归嵌套分类目录 |
-| 不做 | 技能正文编辑、插件安装/更新、MCP OAuth、单工具禁用、伴随 CLI |
-| 目标版本 | dsh-TUI `>=0.19.0 <0.20.0`；DSH `0.2.2-rc.1` 线 |
+热加载：技能靠磁盘 watcher，MCP 靠 HMR 重组合。保存后面板显示「已保存，热加载中…」，生效后改为「已生效」，不承诺瞬时生效。
 
-## 文档导航
+## 安装
 
-| 文档 | 用途 |
-| --- | --- |
-| [`AGENT.md`](AGENT.md) | 仓库工作约定、版本基线、关键事实、架构与发布纪律（接手开发先读） |
-| [`docs/需求文档.md`](docs/需求文档.md) | **需求唯一权威**：目标、FR、NFR、验收标准、里程碑、风险、未决问题 |
-| [`docs/research/README.md`](docs/research/README.md) | 初期调研索引与跨文档结论 |
-| [`docs/research/01`](docs/research/01-dsh-tui-plugin-architecture.md) | dsh-tui 插件体系与可视化接缝 |
-| [`docs/research/02`](docs/research/02-reference-web-plugin-dsh-skill-mcp-panel.md) | web 参考插件拆解与复用清单 |
-| [`docs/research/03`](docs/research/03-dsh-skills-and-mcp-mechanisms.md) | DSH 内核技能/MCP 机制、热加载、作用域 |
-| [`docs/research/04`](docs/research/04-ecosystem-and-prior-art.md) | 生态、同类、命名、发布通道 |
-
-## 目录结构
-
-```text
-dsh-tui-skill-mcp-panel/
-├─ AGENT.md
-├─ README.md
-├─ package.json            # ESM 包；dsh.bundle.patch 指向 cordis.patch.yml
-├─ tsconfig.json
-├─ cordis.patch.yml        # 把本插件作为一行 insert 挂进 profile
-├─ LICENSE
-├─ src/
-│  ├─ index.ts             # Cordis 插件三面：name / Config / apply
-│  ├─ host/                # 场景与命令注册、探针 runtime（临时）
-│  ├─ shared/              # 宿主接缝的结构化类型、报告类型
-│  └─ ui/                  # 全屏诊断场景（工程骨架，M1 起替换为真实管理界面）
-├─ .dsh/skills/            # 探针用项目级技能夹具（git 忽略）
-└─ docs/
-   ├─ 需求文档.md
-   └─ research/
-      ├─ README.md
-      ├─ 01-dsh-tui-plugin-architecture.md
-      ├─ 02-reference-web-plugin-dsh-skill-mcp-panel.md
-      ├─ 03-dsh-skills-and-mcp-mechanisms.md
-      ├─ 04-ecosystem-and-prior-art.md
-      ├─ 05-m0-real-machine-probe.md
-      └─ evidence/            # 真机探针原始 JSON 报告
-```
-
-`lib/` 为 `tsc` 构建产物（git 忽略，npm 发布时通过 `files` 携带）。M1 起新增 `src/domain/`（纯逻辑、可单测）并在 M5 补 `dsh-plugin.json`。
-
-## 本地开发与安装（已验证流程）
+**尚未发布到 npm。** 发布后：
 
 ```sh
-pnpm install
-pnpm build
-# 建议使用独立 profile 做真机验证（不要直接覆盖日常 profile）：
-#   cp -a ~/.dsh/profiles/dsh-tui ~/.dsh/profiles/dsh-tui-probe
-dsh plugin --profile dsh-tui-probe add /home/wqwt/code/dsh-tui-skill-mcp-panel
-dsh --profile dsh-tui-probe      # 在 TUI 内输入 /skill-mcp
+dsh plugin --profile dsh-tui add dsh-tui-skill-mcp-panel
 ```
 
-npm 公开发布尚未进行（`dsh plugin --profile dsh-tui add dsh-tui-skill-mcp-panel` 暂不可用）。
+从源码安装、构建与真机验证流程见 [AGENT.md](AGENT.md) §7。
 
-## 当前能力与限制（摘自真机实测）
+## 使用
 
-- 已有：`/skill-mcp` 命令、全屏场景、宿主接缝能力探测、诊断报告（JSON）。
-- 实测限制：场景内 `tuiDialogs` / `tuiToast` **不可用**（确认/输入必须自绘）；`pluginManager.listPlugins()` 为空、`setPluginEnabled` 对 patch 行返回 `unknown-plugin` → MCP 启停以 patch 文本编辑为主路径；patch 写入→热加载 ≈2.0–2.5s。
-- 详见 [`docs/research/05-m0-real-machine-probe.md`](docs/research/05-m0-real-machine-probe.md)。
+在 dsh-TUI 中输入 `/skill-mcp` 回车打开管理场景，`Esc` / `q` 关闭。当前版本打开的是诊断场景（宿主接缝能力、loader 条目、热加载时间线），用于工程验证；正式管理界面随里程碑落地。
+
+## 已知限制
+
+| 限制 | 说明 |
+| --- | --- |
+| **MCP 没有「工作区级」** | DSH 内核只有 profile 级 MCP 配置。面板提供「当前 profile（可写）+ home 全局层（跨 profile，只读）」；工作区维度只适用于技能。 |
+| 技能只发现一层 | 与 DSH 内核一致：`<root>/<name>/SKILL.md` 或 `<root>/<name>.md`，不递归嵌套分类目录。 |
+| 热加载有延迟 | MCP 配置写入后需要 HMR 重组合（实测约 2–2.5 秒），面板如实显示状态，不假装瞬时。 |
+| 交互为纯键盘自绘 | 场景内不依赖宿主对话框 / toast（实测不可用）；确认与单行输入在场景内完成。 |
+| 首版不做 | 技能正文编辑、插件安装/更新、MCP OAuth、单工具禁用、伴随 CLI。 |
+
+## 兼容性
+
+- 目标宿主：`@deepseek-harness-tui/dsh-tui` `>=0.19.0 <0.20.0`
+- DSH 内核：`0.2.2-rc.1` 线；Node `>=24.9`
+- 与 web 版 [`dsh-skill-mcp-panel`](https://github.com/Fishquito7/dsh-skill-mcp-panel) 共享磁盘约定（`*.disabled`、`groups.json`、补丁锁 `<patch>.panel.lock`，但受管块标记不同名）
+
+## 权限与信任
+
+- 插件 `permissions: []`：不申请额外权限，不安装插件、不执行用户命令、不 `eval` 用户表达式。
+- 插件直接读写 `~/.dsh` 下的技能文件与当前 profile 的 `cordis.patch.yml`（同进程信任模型，安装前需信任）；写前备份、原子写、只改自己的受管块，删除走回收站可撤销。
+- MCP 的 `env` / `headers` 可能含令牌：面板与日志脱敏，不落明文。
+
+## 开发文档
+
+需求与设计在 [`docs/`](docs/)：需求唯一权威 [docs/需求文档.md](docs/需求文档.md)、调研与真机实测 [docs/research/README.md](docs/research/README.md)、关键决策 [docs/decisions/](docs/decisions/)、仓库工作约定与开发流程 [AGENT.md](AGENT.md)。
 
 ## 许可证
 
-MIT（与 dsh-TUI 主包、生态模板、web 参考版一致；编码阶段落地 `LICENSE` 文件）。
+[MIT](LICENSE)。

@@ -2,6 +2,8 @@
 
 本文件是本仓库的工作约定，面向后续接手开发的 agent。**先读本文件，再按「阅读顺序」进入需求与调研。**
 
+> **文档分工**：`README.md` 面向**使用者**（是什么、怎么装、怎么用、有哪些限制）；本文件与 `docs/` 面向**开发者**（约定、需求、调研、决策、验证）。同一事实只在权威位置维护，其他文档引用而不复制：阶段与里程碑 → [`docs/需求文档.md`](docs/需求文档.md)，证据 → `docs/research/`，取舍 → `docs/decisions/`，用户向能力/限制 → `README.md`。
+
 ## 1. 项目一句话
 
 `dsh-tui-skill-mcp-panel`：给 [dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI) 提供一个全屏可视化面板，统一管理「技能（skill）」与「MCP 服务器」，要求：
@@ -15,9 +17,9 @@
 
 ## 2. 当前阶段与边界
 
-- **阶段：M0 完成 + M0 真机探针完成（2026-11-08）**。文档与四份调研之外，已落地：`package.json`/`tsconfig.json`/`cordis.patch.yml`、`src/`（Cordis 插件三面 + `/skill-mcp` 全屏场景 + 诊断场景）、`lib/` 构建产物（git 忽略）。
-- 仓库**可构建、可安装**（已装到独立探针 profile `~/.dsh/profiles/dsh-tui-probe` 真机运行）；但**只有探针/骨架，没有技能与 MCP 管理功能，不可发布**。真机结论见 `docs/research/05-m0-real-machine-probe.md`。
-- 未经用户明确授权：不安装依赖、不初始化 Git 远端、不创建远程仓库、不发布 npm、不修改 `~/.dsh` 下真实配置。
+- **阶段：M0 完成 + M0 真机探针完成（2026-11-08），M1 骨架就绪**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
+- **当前能力边界**：仓库可构建、可安装到 TUI profile，`/skill-mcp` 可打开全屏诊断场景；**技能/MCP 管理功能尚未实现，不可发布**。真机实测结论见 [`docs/research/05`](docs/research/05-m0-real-machine-probe.md)。
+- 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
 
@@ -115,25 +117,31 @@ src/
 - **崩溃隔离**：单条技能/服务器失败不能拖垮整个场景；`apply` 内不 await 长任务；错误走日志与 UI，不抛到宿主。
 - **可测试性**：domain 层优先纯函数；对文件系统用临时目录；真机验收清单见需求文档。
 
-## 7. 开发与验证命令（计划，编码时落地）
+## 7. 开发与验证命令
+
+**当前可用**：
 
 ```sh
-pnpm install --frozen-lockfile
-pnpm build                  # tsc → lib/types/
-pnpm test                   # 域层单测（node --test 或项目选定 runner）
-pnpm check:manifest         # 离线校验 dsh-plugin.json
-pnpm check:tarball          # npm pack --dry-run 断言 dsh-plugin.json/entry 在包内
+pnpm install
+pnpm build                  # tsc → lib/types/（已实测通过）
+pnpm typecheck              # 同上，不产出
 ```
 
-安装到真实 profile 做联调：
+**真机安装（已验证流程）**——用独立探针 profile，避免影响日常 `dsh-tui` profile：
 
 ```sh
 pnpm build
-dsh plugin --profile dsh-tui add /home/wqwt/code/dsh-tui-skill-mcp-panel
-dsh --profile dsh-tui       # 或在 TUI 内 /plugin install <path>
+cp -a ~/.dsh/profiles/dsh-tui ~/.dsh/profiles/dsh-tui-probe
+# 编辑 ~/.dsh/profiles/dsh-tui-probe/package.json：name 改为 dsh-profile-dsh-tui-probe，
+# dsh.profile.bundles 裁为 @deepseek-ai/dsh-base + @deepseek-harness-tui/dsh-tui
+dsh plugin --profile dsh-tui-probe add /home/wqwt/code/dsh-tui-skill-mcp-panel
+env -u DSH_PROFILE -u DSH_PROFILE_DIR -u DSH_SESSION_ID TERM=xterm-256color \
+  dsh --profile dsh-tui-probe        # TUI 内输入 /skill-mcp
 ```
 
-> 仓库当前**没有**这些脚本；编码阶段创建。**不要声称跑过不存在的命令/测试。** 真机行为验证必须实际打开 TUI 场景操作，截图或构建成功不能替代交互验证。
+**计划中（M2+ 落地）**：`pnpm test`（domain 层单测）、`pnpm check:manifest`（离线校验 `dsh-plugin.json`）、`pnpm check:tarball`（`npm pack --dry-run` 断言 manifest/entry 在包内）。
+
+> **不要声称跑过不存在的命令/测试**。真机行为验证必须在真实 TTY 打开 TUI 场景操作，构建成功/截图不能替代交互验证；探针运行限制见 [`docs/research/05`](docs/research/05-m0-real-machine-probe.md) §3.7。
 
 ## 8. 发布约定
 
@@ -157,4 +165,30 @@ dsh --profile dsh-tui       # 或在 TUI 内 /plugin install <path>
 - 同一时间同一文件只有一个 writer；任务开始前在共享任务上声明 write scope。
 - Lead 负责需求澄清、任务依赖、最终整合与验证；teammate 完成后报告：文件路径 + ≤10 行摘要 + 阻塞/未决项。
 - 不越过自己的 write scope；发现他人文档有误，**报告 Lead**，不擅自改。
-- **M0 阶段只写文档，不写产品代码**；进入编码阶段以用户明确指令为准。
+- **M0 已完成；M1 起写代码**，按需求文档里程碑推进（当前进入编码阶段已获用户明确指令）。
+
+## 11. 仓库结构（当前）
+
+```text
+dsh-tui-skill-mcp-panel/
+├─ README.md               # 面向使用者：能力 / 安装 / 使用 / 限制 / 权限 / 许可
+├─ AGENT.md                # 本文件：面向开发者
+├─ package.json            # ESM 包；dsh.bundle.patch → cordis.patch.yml
+├─ tsconfig.json           # jsxImportSource 指向 @deepseek-harness-tui/dsh-tui
+├─ cordis.patch.yml        # 把插件作为一行 insert 挂进 profile
+├─ LICENSE                 # MIT
+├─ src/
+│  ├─ index.ts             # Cordis 插件三面：name / Config / apply
+│  ├─ host/                # 场景与命令注册；probe-runtime（临时探针，M1 起替换）
+│  ├─ shared/              # 宿主接缝的结构化类型、探针报告类型
+│  └─ ui/                  # 全屏诊断场景（M1 起演进为真实管理界面）
+├─ lib/                    # tsc 产物（git 忽略，npm files 携带）
+├─ .dsh/skills/            # 真机探针的项目级技能夹具（git 忽略）
+└─ docs/
+   ├─ 需求文档.md          # 需求唯一权威（含 FR/NFR/AC/里程碑/未决问题/现状）
+   ├─ research/            # 01–05 调研 + 真机实测；README 为索引
+   ├─ decisions/           # ADR（0001 MCP 启停路径）
+   └─ research/evidence/   # 探针原始 JSON 报告
+```
+
+`src/domain/`（纯逻辑、可单测）在 M1 新增；`dsh-plugin.json` 在 M5 补。
