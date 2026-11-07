@@ -1,0 +1,7 @@
+node_modules/
+lib/
+*.tsbuildinfo
+*.log
+
+# Probe-only artifacts (project-scope test skills created by the M0/M1 real-machine probe)
+.dsh/

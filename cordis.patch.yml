@@ -1,0 +1,13 @@
+# Bundle patch for dsh-tui-skill-mcp-panel: mount the plugin as a profile row.
+#
+# `dsh plugin --profile <name> add <this package>` pnpm-installs the package in
+# the profile; the CLI's reconcile step appends it to `dsh.profile.bundles`
+# because package.json declares `dsh.bundle.patch`. At boot, app-boot applies
+# this bundle's patch list, and the insert below is what mounts the row — no
+# manual profile edits are needed.
+#
+# Override rows (no `insert`) replace the target row's WHOLE `config`; this
+# bundle only inserts its own row, never re-mounts host service rows.
+- insert:
+    - id: skill-mcp-panel
+      name: 'dsh-tui-skill-mcp-panel'

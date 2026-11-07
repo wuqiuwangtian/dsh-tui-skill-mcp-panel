@@ -1,0 +1,789 @@
+{
+  "generatedAt": "2026-11-07T16:06:29.768Z",
+  "startedAt": "2026-11-07T16:06:29.046Z",
+  "reason": "capability-change",
+  "pid": 21036,
+  "node": "v26.3.0",
+  "term": "xterm-256color",
+  "cwd": "/home/wqwt/code/dsh-tui-skill-mcp-panel",
+  "dshHome": "/home/wqwt/.dsh",
+  "sceneId": "skill-mcp-panel",
+  "reportPath": "/tmp/dsh-tui-skill-mcp-panel/probe-report.json",
+  "capabilities": [
+    {
+      "name": "tuiScenes",
+      "present": true,
+      "members": [
+        "active",
+        "close()",
+        "ctx",
+        "name",
+        "open()",
+        "register()",
+        "subscribe()"
+      ]
+    },
+    {
+      "name": "tuiDialogs",
+      "present": true,
+      "members": [
+        "callContext()",
+        "confirm()",
+        "ctx",
+        "input()",
+        "name",
+        "select()",
+        "timeoutOf()"
+      ]
+    },
+    {
+      "name": "tuiToast",
+      "present": true,
+      "members": [
+        "ctx",
+        "name",
+        "show()"
+      ]
+    },
+    {
+      "name": "tuiStatus",
+      "present": true,
+      "members": [
+        "ctx",
+        "name",
+        "registerView()",
+        "set()",
+        "setField()",
+        "subscribe()"
+      ]
+    },
+    {
+      "name": "tuiShortcuts",
+      "present": true,
+      "members": [
+        "ctx",
+        "list()",
+        "name",
+        "register()"
+      ]
+    },
+    {
+      "name": "tuiWorkspaces",
+      "present": true,
+      "members": [
+        "commandShell()",
+        "commands()",
+        "ctx",
+        "describe()",
+        "list()",
+        "listRegistry()",
+        "name",
+        "notifyProviderWaiters()",
+        "register()",
+        "remove()",
+        "rename()",
+        "resolve()",
+        "runCommand()"
+      ]
+    },
+    {
+      "name": "tuiCommandTrees",
+      "present": true,
+      "members": [
+        "children()",
+        "ctx",
+        "descriptions()",
+        "name",
+        "register()"
+      ]
+    },
+    {
+      "name": "tuiPanels",
+      "present": true,
+      "members": [
+        "badge()",
+        "close()",
+        "ctx",
+        "list()",
+        "name",
+        "open()",
+        "register()",
+        "subscribe()"
+      ]
+    },
+    {
+      "name": "tuiSettingsSections",
+      "present": true,
+      "members": [
+        "ctx",
+        "list()",
+        "name",
+        "register()",
+        "section()",
+        "subscribe()"
+      ]
+    },
+    {
+      "name": "tuiPluginHost",
+      "present": true,
+      "members": [
+        "admit()",
+        "admitInternal()",
+        "assertEffect()",
+        "build()",
+        "buildUnsafe()",
+        "ctx",
+        "describe()",
+        "generationId",
+        "grants",
+        "hostDescriptor()",
+        "name",
+        "probeBackendAdmission()",
+        "probeDecisionEvents()",
+        "registerCommand()",
+        "selfCheck()",
+        "startKernelRuntime()",
+        "subscribeDecision()"
+      ]
+    },
+    {
+      "name": "tuiPrompt",
+      "present": false
+    },
+    {
+      "name": "tuiExtensions",
+      "present": false
+    },
+    {
+      "name": "tuiRenderers",
+      "present": true,
+      "members": [
+        "ctx",
+        "name",
+        "register()"
+      ]
+    },
+    {
+      "name": "commands",
+      "present": true,
+      "members": [
+        "@deepseek-ai/dsh-typert-protocol/remote-methods",
+        "appendLifecycle()",
+        "commandSeq",
+        "ctx",
+        "execute()",
+        "fileReceipts",
+        "find()",
+        "instanceToken",
+        "layers",
+        "list()",
+        "mintCommandId()",
+        "name",
+        "notifyChange()",
+        "register()",
+        "registerFileReceiptResolver()",
+        "settleThrown()",
+        "typertRemote",
+        "view()"
+      ]
+    },
+    {
+      "name": "pluginManager",
+      "present": true,
+      "members": [
+        "@deepseek-ai/dsh-typert-protocol/remote-methods",
+        "abort",
+        "askRegistries()",
+        "bundleRows()",
+        "cancelInstall()",
+        "change()",
+        "configure()",
+        "configuredRegistries",
+        "ctx",
+        "declaredRows()",
+        "detail",
+        "diskState()",
+        "gitTransportTimeoutMs",
+        "githubConnectionTimeoutMs",
+        "idleTimeoutMs",
+        "inspect()",
+        "inspectTimeoutMs",
+        "installBundle()",
+        "installedFrom",
+        "installs",
+        "listBundles()",
+        "listPlugins()",
+        "listVersionExemptions()",
+        "listVersions()",
+        "listedBundle()",
+        "lockWaitMs",
+        "managementBundles",
+        "name",
+        "operationTarget()",
+        "operationVersion()",
+        "outputBytes",
+        "ownerContext",
+        "ownerEntryId",
+        "packageOperations",
+        "pnpmCommand",
+        "profile",
+        "protectsManager()",
+        "publishAndReload()",
+        "readBundleDetail()",
+        "readBundles()",
+        "readRestoredFiles()",
+        "refreshPackages()",
+        "registries()",
+        "registryFor()",
+        "reload()",
+        "removeBundle()",
+        "reportOperation()",
+        "restoreFiles()",
+        "runPnpm()",
+        "selectBundle()",
+        "serveDetailFile()",
+        "setBundleEnabled()",
+        "setPluginEnabled()",
+        "setVersionExemption()",
+        "typertRemote",
+        "updateBundle()",
+        "versionListLimit",
+        "versionLookupConcurrency",
+        "waitForInstall()"
+      ]
+    },
+    {
+      "name": "configEditor",
+      "present": true,
+      "members": [
+        "configuration()",
+        "ctx",
+        "documentPath",
+        "edit()",
+        "entries()",
+        "inherited()",
+        "name",
+        "ownerContext"
+      ]
+    },
+    {
+      "name": "settings",
+      "present": true,
+      "members": [
+        "closed",
+        "configure()",
+        "ctx",
+        "describe()",
+        "documentPath",
+        "importLegacyDocument()",
+        "invalidate()",
+        "mutate()",
+        "name",
+        "ownerContext",
+        "prepareDocument()",
+        "presentations",
+        "replace()",
+        "revisions",
+        "scheduled",
+        "schema()",
+        "update()",
+        "writable",
+        "write()"
+      ]
+    },
+    {
+      "name": "skills",
+      "present": true,
+      "members": [
+        "collect()",
+        "collectCache",
+        "collectCacheKey()",
+        "collectCacheMaxEntries",
+        "collectFresh()",
+        "collectLayer()",
+        "ctx",
+        "get()",
+        "invalidateCache()",
+        "invalidateEntry()",
+        "layers",
+        "list()",
+        "listLayerCandidates()",
+        "name",
+        "nextProviderOrder",
+        "nextScopeId",
+        "notifyChange()",
+        "register()",
+        "registerProvider()",
+        "revision",
+        "scopeId()",
+        "scopeIds",
+        "snapshot()"
+      ]
+    },
+    {
+      "name": "loader",
+      "present": true,
+      "members": [
+        "await()",
+        "builtins",
+        "commit()",
+        "config",
+        "context",
+        "create()",
+        "ctx",
+        "enableLogs",
+        "ensureId()",
+        "entries()",
+        "envData",
+        "exit()",
+        "getTasks()",
+        "import()",
+        "internal",
+        "locate()",
+        "name",
+        "remove()",
+        "resolve()",
+        "resolveGroup()",
+        "root",
+        "showLog()",
+        "store",
+        "unwrapExports()",
+        "update()"
+      ]
+    },
+    {
+      "name": "tools",
+      "present": true,
+      "members": [
+        "checkGuards()",
+        "ctx",
+        "definitions()",
+        "executable()",
+        "execute()",
+        "get()",
+        "guard()",
+        "guards",
+        "layers",
+        "name",
+        "register()",
+        "resolve()",
+        "restrict()",
+        "root",
+        "schemas()",
+        "scoped",
+        "selectExecutor()",
+        "setExecutor()",
+        "view()"
+      ]
+    }
+  ],
+  "documentPaths": {
+    "settings.documentPath": "/home/wqwt/.dsh/profiles/dsh-tui-probe/cordis.patch.yml",
+    "configEditor.documentPath": "/home/wqwt/.dsh/profiles/dsh-tui-probe/cordis.patch.yml",
+    "homePatch": "/home/wqwt/.dsh/cordis.patch.yml"
+  },
+  "pluginInventory": {
+    "loaderEntries": 120,
+    "pluginManagerEntries": 0,
+    "byModule": {
+      "cordis:include": 1,
+      "@deepseek-ai/dsh-plugin-manager/tools": 1,
+      "@deepseek-ai/dsh-plugin-manager": 1,
+      "@deepseek-ai/cordis-plugin-timer": 1,
+      "@deepseek-ai/dsh-hmr": 1,
+      "@deepseek-ai/dsh-llm": 1,
+      "@deepseek-ai/dsh-deepseek-llm-api-extensions": 1,
+      "@deepseek-ai/dsh-session": 1,
+      "@deepseek-ai/dsh-session-log-deepseek": 1,
+      "@deepseek-ai/dsh-typert-registry": 1,
+      "@deepseek-ai/dsh-typert-loader": 1,
+      "@deepseek-ai/dsh-api-gateway": 1,
+      "@deepseek-ai/dsh-api-remote-access": 1,
+      "@deepseek-ai/dsh-session-title": 1,
+      "@deepseek-ai/dsh-session-title-first-prompt-llm": 1,
+      "@deepseek-ai/dsh-user-questions": 1,
+      "@deepseek-ai/dsh-agent": 1,
+      "@deepseek-ai/dsh-plugin-package-inventory-deepseek": 1,
+      "@deepseek-ai/dsh-agent-default-model": 1,
+      "@deepseek-ai/dsh-jobs-local": 1,
+      "@deepseek-ai/dsh-llm-retry": 1,
+      "@deepseek-ai/dsh-config-editor": 1,
+      "@deepseek-ai/dsh-settings": 1,
+      "@deepseek-ai/dsh-authorization": 1,
+      "@deepseek-ai/dsh-deepseek-account-platform": 1,
+      "@deepseek-ai/dsh-credentials-local": 1,
+      "@deepseek-ai/dsh-llm-pi-ai": 1,
+      "@deepseek-ai/dsh-session-persistence-jsonl": 1,
+      "@deepseek-ai/dsh-attachment-local": 1,
+      "@deepseek-ai/dsh-session-query-sqlite": 1,
+      "@deepseek-ai/dsh-working-directory": 1,
+      "@deepseek-ai/dsh-tool-working-directory": 1,
+      "@deepseek-ai/dsh-session-projection": 1,
+      "@deepseek-ai/dsh-storage": 2,
+      "@deepseek-ai/dsh-storage-json": 2,
+      "@deepseek-ai/dsh-storage-domain": 2,
+      "@deepseek-ai/dsh-session-projection-cache": 1,
+      "@deepseek-ai/dsh-otel": 1,
+      "@deepseek-ai/dsh-session-telemetry-otel": 1,
+      "@deepseek-ai/dsh-subprocess-local": 1,
+      "@deepseek-ai/dsh-sandbox-local": 1,
+      "@deepseek-ai/dsh-sandbox-policy": 1,
+      "@deepseek-ai/dsh-bash-sandbox": 1,
+      "@deepseek-ai/dsh-pwsh-sandbox": 1,
+      "@deepseek-ai/dsh-user-approval": 1,
+      "@deepseek-ai/dsh-permission-presets": 1,
+      "@deepseek-ai/dsh-shell-env": 1,
+      "@deepseek-ai/dsh-tool-bash": 1,
+      "@deepseek-ai/dsh-tool-pwsh": 1,
+      "@deepseek-ai/dsh-tool-jobs": 1,
+      "@deepseek-ai/dsh-fs-observation-policy": 1,
+      "@deepseek-ai/dsh-tool-fs": 1,
+      "@deepseek-ai/dsh-tool-fs-search": 1,
+      "@deepseek-ai/dsh-agent-instructions": 1,
+      "@deepseek-ai/dsh-skill": 1,
+      "@deepseek-ai/dsh-skill-filesystem": 1,
+      "@deepseek-ai/dsh-tool-skill": 1,
+      "@deepseek-ai/dsh-commands": 1,
+      "@deepseek-ai/dsh-command-feedback": 1,
+      "@deepseek-ai/dsh-goal": 1,
+      "@deepseek-ai/dsh-goal-round-driver": 1,
+      "@deepseek-ai/dsh-command-goal": 1,
+      "@deepseek-ai/dsh-plan-mode": 1,
+      "@deepseek-ai/dsh-token-meter": 1,
+      "@deepseek-ai/dsh-compaction-basic": 1,
+      "@deepseek-ai/dsh-command-compact": 1,
+      "@deepseek-ai/dsh-subagent": 1,
+      "@deepseek-ai/dsh-subagent-spawn-in-process": 1,
+      "@deepseek-ai/dsh-subagent-fork-in-process": 1,
+      "@deepseek-ai/dsh-tool-subagent-control": 1,
+      "@deepseek-ai/dsh-tool-subagent": 2,
+      "@deepseek-ai/dsh-ptc-runtime-node": 1,
+      "@deepseek-ai/dsh-workflow-ptc": 1,
+      "@deepseek-ai/dsh-tool-workflow": 1,
+      "@deepseek-ai/dsh-tool-call-timeout-policy": 1,
+      "@deepseek-ai/dsh-spill-local": 1,
+      "@deepseek-ai/dsh-spill-policy": 1,
+      "@deepseek-ai/dsh-session-checkpoint-policy": 1,
+      "@deepseek-ai/dsh-compaction-tool-result-pruner": 1,
+      "@deepseek-ai/dsh-compaction-image-offload": 1,
+      "@deepseek-ai/dsh-tool-todo": 1,
+      "@deepseek-ai/dsh-tool-goal": 1,
+      "@deepseek-ai/dsh-repeat-tool-reminder": 1,
+      "@deepseek-ai/dsh-web": 1,
+      "@deepseek-ai/dsh-web-search-deepseek": 1,
+      "@deepseek-ai/dsh-web-deepseek-api": 1,
+      "@deepseek-ai/dsh-web-fetch-http": 1,
+      "@deepseek-ai/dsh-tool-web": 1,
+      "@deepseek-ai/dsh-mcp-resources": 1,
+      "@deepseek-ai/dsh-tools": 1,
+      "@deepseek-ai/dsh-tool-executor-native": 1,
+      "@deepseek-ai/dsh-tool-executor-ptc": 1,
+      "@deepseek-ai/dsh-system-prompt": 1,
+      "@deepseek-ai/dsh-agent-loop": 1,
+      "@deepseek-ai/dsh-fs-sandbox": 1,
+      "@deepseek-ai/dsh-llm-deepseek-api-key": 1,
+      "@deepseek-ai/dsh-llm-deepseek-account": 1,
+      "@deepseek-ai/dsh-workspace": 1,
+      "@deepseek-ai/dsh-code-runtime-worker-thread": 1,
+      "@deepseek-ai/dsh-tool-subagent/model-selection-settings": 1,
+      "@deepseek-harness-tui/dsh-tui/workspaces": 1,
+      "@deepseek-harness-tui/dsh-tui/command-trees": 1,
+      "@deepseek-harness-tui/dsh-tui/settings-sections": 1,
+      "@deepseek-harness-tui/dsh-tui/scenes": 1,
+      "@deepseek-harness-tui/dsh-tui/panels": 1,
+      "@deepseek-harness-tui/dsh-tui/plugin-host": 1,
+      "@deepseek-harness-tui/dsh-tui/extensions": 1,
+      "@deepseek-ai/dsh-agent-presets": 1,
+      "@deepseek-ai/dsh-agent-preset-registry": 1,
+      "@deepseek-ai/dsh-cordis-host-runner": 1,
+      "@deepseek-ai/dsh-host-webserver": 1,
+      "@deepseek-harness-tui/dsh-tui/oauth": 1,
+      "@deepseek-harness-tui/dsh-tui": 1,
+      "@deepseek-harness-tui/dsh-tui/working-activity": 1,
+      "dsh-tui-skill-mcp-panel": 1,
+      "@deepseek-ai/dsh-mcp-client": 1
+    },
+    "topModules": [
+      [
+        "@deepseek-ai/dsh-storage",
+        2
+      ],
+      [
+        "@deepseek-ai/dsh-storage-json",
+        2
+      ],
+      [
+        "@deepseek-ai/dsh-storage-domain",
+        2
+      ],
+      [
+        "@deepseek-ai/dsh-tool-subagent",
+        2
+      ],
+      [
+        "cordis:include",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-plugin-manager/tools",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-plugin-manager",
+        1
+      ],
+      [
+        "@deepseek-ai/cordis-plugin-timer",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-hmr",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-llm",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-deepseek-llm-api-extensions",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-session",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-session-log-deepseek",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-typert-registry",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-typert-loader",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-api-gateway",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-api-remote-access",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-session-title",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-session-title-first-prompt-llm",
+        1
+      ],
+      [
+        "@deepseek-ai/dsh-user-questions",
+        1
+      ]
+    ]
+  },
+  "loaderSummary": {
+    "count": 120,
+    "mcp": [
+      {
+        "id": "mcp-probe",
+        "name": "@deepseek-ai/dsh-mcp-client",
+        "disabled": false
+      }
+    ],
+    "probeRow": {
+      "id": "skill-mcp-panel",
+      "name": "dsh-tui-skill-mcp-panel",
+      "disabled": false
+    }
+  },
+  "skillsProbe": {
+    "present": true,
+    "members": [
+      "collect()",
+      "collectCache",
+      "collectCacheKey()",
+      "collectCacheMaxEntries",
+      "collectFresh()",
+      "collectLayer()",
+      "ctx",
+      "get()",
+      "invalidateCache()",
+      "invalidateEntry()",
+      "layers",
+      "list()",
+      "listLayerCandidates()",
+      "name",
+      "nextProviderOrder",
+      "nextScopeId",
+      "notifyChange()",
+      "register()",
+      "registerProvider()",
+      "revision",
+      "scopeId()",
+      "scopeIds",
+      "snapshot()"
+    ],
+    "snapshot": {
+      "kind": "object",
+      "keys": [
+        "skills",
+        "complete"
+      ],
+      "count": 2,
+      "skillsCount": 0,
+      "names": []
+    },
+    "list": {
+      "kind": "array",
+      "count": 0,
+      "names": []
+    }
+  },
+  "mcpRows": [
+    {
+      "entryId": "mcp-probe",
+      "moduleName": "@deepseek-ai/dsh-mcp-client",
+      "enabled": true
+    }
+  ],
+  "timeline": [
+    {
+      "at": 1794067589046,
+      "iso": "2026-11-07T16:06:29.046Z",
+      "kind": "capability-change",
+      "detail": {
+        "present": [
+          "commands",
+          "configEditor",
+          "settings",
+          "skills",
+          "loader"
+        ]
+      }
+    },
+    {
+      "at": 1794067589047,
+      "iso": "2026-11-07T16:06:29.047Z",
+      "kind": "activation",
+      "detail": {
+        "sceneId": "skill-mcp-panel",
+        "dshHome": "/home/wqwt/.dsh"
+      }
+    },
+    {
+      "at": 1794067589049,
+      "iso": "2026-11-07T16:06:29.049Z",
+      "kind": "mcp-change",
+      "detail": {
+        "rows": [
+          {
+            "entryId": "mcp-probe",
+            "moduleName": "@deepseek-ai/dsh-mcp-client",
+            "enabled": true
+          }
+        ],
+        "loader": {
+          "count": 120,
+          "mcp": [
+            {
+              "id": "mcp-probe",
+              "name": "@deepseek-ai/dsh-mcp-client",
+              "disabled": false
+            }
+          ],
+          "probeRow": {
+            "id": "skill-mcp-panel",
+            "name": "dsh-tui-skill-mcp-panel",
+            "disabled": false
+          }
+        }
+      }
+    },
+    {
+      "at": 1794067589051,
+      "iso": "2026-11-07T16:06:29.051Z",
+      "kind": "commands-registered",
+      "detail": [
+        "skill-mcp",
+        "skill-mcp-probe-dialog",
+        "skill-mcp-probe-toast"
+      ]
+    },
+    {
+      "at": 1794067589105,
+      "iso": "2026-11-07T16:06:29.105Z",
+      "kind": "scene-registered",
+      "detail": "skill-mcp-panel"
+    },
+    {
+      "at": 1794067589108,
+      "iso": "2026-11-07T16:06:29.108Z",
+      "kind": "skills.snapshot",
+      "detail": {
+        "kind": "object",
+        "keys": [
+          "skills",
+          "complete"
+        ],
+        "count": 2,
+        "skillsCount": 0,
+        "names": []
+      }
+    },
+    {
+      "at": 1794067589208,
+      "iso": "2026-11-07T16:06:29.208Z",
+      "kind": "skills.list",
+      "detail": {
+        "kind": "array",
+        "count": 0,
+        "names": []
+      }
+    },
+    {
+      "at": 1794067589244,
+      "iso": "2026-11-07T16:06:29.244Z",
+      "kind": "dialogs-proxy-ready"
+    },
+    {
+      "at": 1794067589244,
+      "iso": "2026-11-07T16:06:29.244Z",
+      "kind": "toast-proxy-ready"
+    },
+    {
+      "at": 1794067589768,
+      "iso": "2026-11-07T16:06:29.768Z",
+      "kind": "capability-change",
+      "detail": {
+        "present": [
+          "tuiScenes",
+          "tuiDialogs",
+          "tuiToast",
+          "tuiStatus",
+          "tuiShortcuts",
+          "tuiWorkspaces",
+          "tuiCommandTrees",
+          "tuiPanels",
+          "tuiSettingsSections",
+          "tuiPluginHost",
+          "tuiRenderers",
+          "commands",
+          "pluginManager",
+          "configEditor",
+          "settings",
+          "skills",
+          "loader",
+          "tools"
+        ]
+      }
+    }
+  ],
+  "dialogs": [],
+  "toasts": [],
+  "sceneOpens": []
+}
