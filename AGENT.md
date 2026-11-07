@@ -137,6 +137,8 @@ dsh --profile dsh-tui       # 或在 TUI 内 /plugin install <path>
 
 ## 8. 发布约定
 
+- **远端仓库**：`https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel`（2026-11-08 由用户授权创建，当前为公开仓库；本地 `main` 跟踪 `origin/main`）。
+
 - **主渠道**：npm；**备用**：GitHub Release tarball（`dsh plugin add <tarball-url>` 支持性需真机实测，TUI 文档只列了 package/path/git）。
 - **MIT**；`v*` tag 必须严格等于 `package.json.version`；有 provenance 就附上（trusted publishing 优先）。
 - 发布前必须：`check:manifest`、tarball 断言、准入清单逐条自查、真实 TTY 走查受影响流程。

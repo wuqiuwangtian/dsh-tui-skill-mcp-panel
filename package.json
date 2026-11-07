@@ -47,5 +47,13 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "typescript": "^6.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel.git"
+  },
+  "homepage": "https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel#readme",
+  "bugs": {
+    "url": "https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/issues"
   }
 }
