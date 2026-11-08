@@ -17,8 +17,8 @@
 
 ## 2. 当前阶段与边界
 
-- **阶段：M1 技能只读面已落地（2026-11-08）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
-- **当前能力边界**：仓库可构建、可单测、可安装到 TUI profile；`/skill-mcp` 打开技能只读列表/详情 + 诊断页（MCP/分组为占位）。扫盘规则与内核一致已真机验证（[`docs/research/06`](docs/research/06-m1-skill-scan-verification.md)），UI 视觉走查仍待补；**不可发布**。
+- **阶段：M2 P0 已落地（2026-11-08）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
+- **当前能力边界**：`/skill-mcp` 技能列表/详情 + 启停 + 软删除/撤销 + 添加导入 + 分组 + 批量；MCP/组内批量为后续里程碑。扫盘与内核一致已真机验证（[`docs/research/06`](docs/research/06-m1-skill-scan-verification.md)），写操作与分组的域层证据见 [`docs/research/07`](docs/research/07-m2-skill-write-verification.md)；真实 TUI 写操作走查待补；**不可发布**。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -97,6 +97,7 @@
 - **JSX 已验证可行**：`tsconfig` 的 `jsxImportSource: "@deepseek-harness-tui/dsh-tui"` + props 注入 `React`，真实 TUI 渲染无 invalid hook/元素错误。
 - **`link:` 安装时依赖解析**：插件运行时依赖须写在自身 `dependencies`（pnpm link 不解析目标目录依赖）；类型依赖放 `devDependencies`。
 - **扫盘与内核一致性已验证**（M1）：发现根/rank、frontmatter 名称、遮蔽、`.disabled`、非法条目与内核实测目录逐项一致（`docs/research/06`）；**但 `customSkillDirs` 在 host 层不可读**（按未配置处理），runtime 注册的技能不在扫盘内。
+- **写操作不变量**（M2）：启停/删除前重读 frontmatter 校验 name；目标已存在拒绝；bundled 只读；删除进回收站（manifest + 撤销冲突不覆盖）；添加用临时路径 + rename，限制 200 文件/8 MiB/1 MiB；分组写共享 groups.json（损坏备份回退）。细节与测试见 `docs/research/07`。
 - **UI 可验证方式**：真实 TTY 人工走查是最终验收；自动化用 `pnpm test:ui`（headless Ink + host ui kit）证明组件能渲染出列表/详情/页签，避免把「环境截不到图」当成「UI 不可用」。
 
 ## 6. 架构约束（编码阶段必须遵守）
@@ -128,7 +129,7 @@ src/
 pnpm install
 pnpm build                  # tsc → lib/types/
 pnpm typecheck              # 同上，不产出
-pnpm test                   # build + node:test（domain 层，9 个用例）
+pnpm test                   # build + node:test（domain 层，22 个用例）
 pnpm test:ui                # headless Ink 渲染 smoke（160/58 列）
 ```
 
@@ -187,7 +188,10 @@ dsh-tui-skill-mcp-panel/
 ├─ LICENSE                 # MIT
 ├─ src/
 │  ├─ index.ts             # Cordis 插件三面：name / Config / apply
-│  ├─ domain/skills/       # 纯逻辑：发现根/rank/frontmatter/扫盘/遮蔽（可单测，不 import React）
+│  ├─ domain/              # 纯逻辑，可单测、不 import React：
+│  │  ├─ skills/          # 发现根/rank/frontmatter/扫盘/遮蔽 + 写操作（启停/删除/撤销/添加）
+│  │  ├─ groups.ts        # 共享 groups.json v1（损坏回退、原子写、成员）
+│  │  └─ store.ts         # 插件私有路径（trash/backups/config）与配置
 │  ├─ host/                # 场景与命令注册、ManagerRuntime（扫描状态/详情/诊断/dump）
 │  ├─ shared/              # 宿主接缝结构化类型、cell 宽度/消毒等格式工具
 │  └─ ui/                  # ManagerScene：技能列表-详情、搜索、帮助、诊断页
@@ -197,7 +201,7 @@ dsh-tui-skill-mcp-panel/
 ├─ .dsh/skills/            # 真机验证用的项目级技能夹具（git 忽略）
 └─ docs/
    ├─ 需求文档.md          # 需求唯一权威（含 FR/NFR/AC/里程碑/未决问题/现状）
-   ├─ research/            # 01–06 调研 + 真机实测；README 为索引
+   ├─ research/            # 01–07 调研 + 真机实测；README 为索引
    ├─ decisions/           # ADR（0001 MCP 启停路径）
    └─ research/evidence/   # 探针原始 JSON 报告
 ```

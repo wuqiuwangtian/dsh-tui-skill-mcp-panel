@@ -62,9 +62,10 @@
 9. ⬜ **`tuiPluginHost.registerCommand` 是否为准入必选**（01 §9.8）。
 10. ⬜ **0.19 vs 0.17 的运行时行为差异**（01 §2.3）。
 
-## 4.1 M1 已验证（2026-11-08）
+## 4.1 已验证（2026-11-08）
 
-技能扫描（发现根/rank/名称来源/遮蔽/停用/非法/`.system`）**在真机上与内核发现逐项一致**；UI 侧已补 headless Ink 渲染 smoke（160/58 列）与真实 TUI 进程注册证据，人工 TTY 逐屏走查仍缺。详见 [`06-m1-skill-scan-verification.md`](06-m1-skill-scan-verification.md) §2.1/§3。
+- **M1**：技能扫描（发现根/rank/名称来源/遮蔽/停用/非法/`.system`）**在真机上与内核发现逐项一致**；UI 已补 headless Ink 渲染 smoke 与真实 TUI 进程注册证据，人工 TTY 逐屏走查仍缺。详见 [`06-m1-skill-scan-verification.md`](06-m1-skill-scan-verification.md)。
+- **M2 P0**：启停/软删除+撤销/添加导入/分组/批量的域层实现与 **22 个单测**通过；运行时链路集成验证通过；真实 TUI 写操作走查待补。详见 [`07-m2-skill-write-verification.md`](07-m2-skill-write-verification.md)。
 
 ## 5. 证据基线与复核方式
 

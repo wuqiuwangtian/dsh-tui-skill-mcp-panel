@@ -75,8 +75,11 @@ class StubRuntime {
       refreshing: false,
       refreshReason: 'smoke',
       services: [],
-      paths: { homePatch: join(process.env.DSH_HOME ?? '', 'cordis.patch.yml') },
+      paths: { homePatch: join(process.env.DSH_HOME ?? '', 'cordis.patch.yml'), panelHome: '/tmp/skill-mcp-panel' },
       detail: { status: 'idle' },
+      groups: {},
+      config: { version: 1, trashRetentionDays: 7, mcpGroups: {} },
+      busy: false,
     }
   }
 
@@ -111,6 +114,16 @@ class StubRuntime {
   }
 
   async dumpNow() {}
+  async toggleSkills() {}
+  async deleteSkillInstances() {}
+  async undoLastDelete() {}
+  async addSkillFromPath() {}
+  async createGroup() {}
+  async renameGroup() {}
+  async deleteGroupById() {}
+  async setGroupMembershipForInstances() {}
+  groupIdsFor() { return [] }
+  setStatus() {}
 
   writeRenderFrame() {}
 }

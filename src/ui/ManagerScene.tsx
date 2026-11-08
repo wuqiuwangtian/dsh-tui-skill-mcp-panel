@@ -10,7 +10,9 @@
  * Host dialogs/toasts remain unusable from plugin scenes (docs/research/05).
  */
 import type { ComponentType, ReactNode } from 'react'
+import { isAbsolute } from 'node:path'
 import type { TuiSceneProps } from '@deepseek-harness-tui/dsh-tui/scenes'
+import { groupMemberCount } from '../domain/groups.js'
 import { splitFrontmatter } from '../domain/skills/frontmatter.js'
 import type { SkillInstance, SkillScanResult, SkillSource, SkillStatus } from '../domain/skills/types.js'
 import type { ManagerRuntime, ManagerState } from '../host/manager-runtime.js'
@@ -65,27 +67,32 @@ const STATUS_GLYPHS: Record<SkillStatus, string> = {
 
 const HELP_LINES = [
   '快捷键 Keys（键盘足够用，鼠标是额外增强）',
-  '  ↑/↓ 或 j/k        选择列表中的技能',
-  '  ←/→ 或 h/l        切换作用域（全部 / 工作区 / 全局）',
-  '  Tab / Shift+Tab    切换页签；数字 1-4 直达',
-  '  Enter             窄终端打开详情；详情页再按返回列表',
-  '  PgUp/PgDn         宽终端下滚动右侧详情正文',
-  '  /                 搜索（Enter/Esc 退出搜索）',
-  '  r                 重新扫描磁盘',
-  '  w                 导出诊断 JSON（需 SKILL_MCP_PANEL_DUMP）',
-  '  ?                 本帮助',
-  '  Esc / q           返回 / 关闭（搜索、帮助、窄屏详情逐层退出）',
+  '  ↑/↓ / j k          当前区域选择 / 滚动',
+  '  ←/→ / h l          跨区域移动焦点；页签栏上切换页签',
+  '  Tab / Shift+Tab     切换页签；数字 1-4 直达',
+  '  Enter              进入详情；分组页应用分组过滤',
+  '  空格               启用/停用选中技能（有标记时批量）',
+  '  v                  标记/取消标记当前技能（批量操作用）',
+  '  d                  删除选中/标记技能（回收站，可撤销）',
+  '  u                  撤销最近一次删除',
+  '  a                  添加技能（本地路径导入）',
+  '  g                  把选中/标记技能加入或移出分组',
+  '  x                  清除分组过滤 / 清除标记',
+  '  /                  搜索（Enter/Esc 退出搜索）',
+  '  r                  重新扫描磁盘',
+  '  ?                  本帮助',
+  '  Esc / q            返回 / 关闭（搜索、帮助、详情、标记逐层退出）',
   '',
   '鼠标（仅 fullscreen 布局下）',
-  '  点击页签/作用域/技能行即可切换与选择；滚轮滚动列表、详情与诊断页。',
-  '  窄终端下点击技能行会直接打开详情。',
+  '  点击页签/作用域/技能行切换与选择；滚轮滚动列表、详情与诊断页。',
   '',
   '已知限制 Limits',
   '  · MCP 没有工作区级配置：只有当前 profile + home 全局层。',
   '  · 技能只发现一层：<root>/<name>/SKILL.md 或 <root>/<name>.md。',
   '  · 场景内不使用宿主对话框/toast（实测不可用），确认与输入均为自绘。',
-  '  · 写操作尚未实现：M1 为只读（启停/删除/添加在 M2）。',
+  '  · 迁移/复制、zip 导入为 P1，尚未实现；MCP 管理在 M3。',
 ]
+
 
 const MCP_PLACEHOLDER_LINES = [
   '当前版本尚未解析 profile patch 的 MCP 行。',
@@ -267,6 +274,12 @@ type FocusArea = 'tabs' | 'scope' | 'list' | 'detail' | 'body'
 
 const HELP_HINTS = '? 帮助'
 
+type Modal =
+  | { kind: 'confirm'; title: string; message: string[]; danger?: boolean; onConfirm: () => void }
+  | { kind: 'input'; title: string; label: string; value: string; hint?: string; validate?: (value: string) => string | undefined; onSubmit: (value: string) => void }
+  | { kind: 'select'; title: string; options: { id: string; label: string; hint?: string }[]; index: number; onSubmit: (id: string) => void }
+  | { kind: 'info'; title: string; lines: string[] }
+
 export function createManagerScene(runtime: ManagerRuntime, sceneId: string): ComponentType<TuiSceneProps> {
   return function ManagerScene({ React, ui, close }: TuiSceneProps): ReturnType<typeof ui.Box> {
     const sceneUi = ui as unknown as SceneUi
@@ -282,6 +295,10 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const [focus, setFocus] = React.useState<FocusArea>('list')
     const [diagOffset, setDiagOffset] = React.useState(0)
     const [detailOffset, setDetailOffset] = React.useState(0)
+    const [marked, setMarked] = React.useState<Set<string>>(() => new Set())
+    const [groupFilter, setGroupFilter] = React.useState<string | undefined>(undefined)
+    const [groupSelectedId, setGroupSelectedId] = React.useState<string | undefined>(undefined)
+    const [modal, setModal] = React.useState<Modal | undefined>(undefined)
 
     React.useEffect(() => runtime.subscribe(forceRender), [])
     React.useEffect(() => {
@@ -296,11 +313,27 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       workspace: summary.workspace,
       global: summary.global,
     }
-    const filtered = filterInstances(scan, scope, query)
+    const scopeKeyOf = (instance: SkillInstance): string =>
+      instance.scope === 'global' ? 'global' : (scan?.projectRoot ?? 'workspace')
+    const baseFiltered = filterInstances(scan, scope, query)
+    const filtered =
+      groupFilter === undefined
+        ? baseFiltered
+        : baseFiltered.filter((instance) => {
+            const group = state.groups[groupFilter]
+            if (group === undefined) return false
+            return (group.scopes[scopeKeyOf(instance)] ?? []).includes(instance.name)
+          })
     const selected = filtered.find((instance) => instance.id === selectedId) ?? filtered[0]
     const selectedIndex = Math.max(
       0,
       filtered.findIndex((instance) => instance.id === selected?.id),
+    )
+    const groupEntries = Object.entries(state.groups).sort((left, right) => left[1].name.localeCompare(right[1].name))
+    const selectedGroupId = groupEntries.some(([id]) => id === groupSelectedId) ? groupSelectedId : groupEntries[0]?.[0]
+    const selectedGroupIndex = Math.max(
+      0,
+      groupEntries.findIndex(([id]) => id === selectedGroupId),
     )
 
     React.useEffect(() => {
@@ -316,16 +349,23 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       setDetailOffset(0)
     }, [selected?.id])
 
+    React.useEffect(() => {
+      if (groupFilter !== undefined && state.groups[groupFilter] === undefined) setGroupFilter(undefined)
+    }, [groupFilter, state.groups])
+
     // ── layout metrics ──────────────────────────────────────────────────────
     const contentWidth = Math.max(20, columns - 2)
     const wide = columns >= 110
     const twoPane = columns >= 72
     const narrow = !twoPane
-    const statusLine =
-      state.status === 'error'
-        ? `错误：${state.error ?? 'unknown'}`
-        : state.dumpMessage
-    const cardsHeight = Math.max(5, rows - 4 - (tab === 'skills' && !wide ? 1 : 0) - (statusLine === undefined ? 0 : 1))
+    const statusText =
+      state.statusMessage?.text ??
+      (state.status === 'error' ? `错误：${state.error ?? 'unknown'}` : state.dumpMessage)
+    const statusTone = state.statusMessage?.tone ?? (state.status === 'error' ? 'error' : 'info')
+    const cardsHeight = Math.max(
+      5,
+      rows - 4 - (tab === 'skills' && !wide ? 1 : 0) - (statusText === undefined ? 0 : 1),
+    )
     const bodyRows = Math.max(2, cardsHeight - 3)
     const scopeCardWidth = 22
     const gap = 1
@@ -340,7 +380,160 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         ? Math.max(24, contentWidth - gap - listWidth)
         : contentWidth
     const listInner = listWidth - 6
-    const nameWidth = Math.max(8, Math.min(28, listInner - 20))
+    const nameWidth = Math.max(8, Math.min(28, listInner - 22))
+
+    // ── shared actions ──────────────────────────────────────────────────────
+    const targetInstances = (): SkillInstance[] =>
+      marked.size > 0
+        ? filtered.filter((instance) => marked.has(instance.id))
+        : selected === undefined
+          ? []
+          : [selected]
+
+    const clearMarks = (): void => setMarked(new Set())
+
+    const runToggle = (): void => {
+      const targets = targetInstances()
+      if (targets.length === 0) {
+        runtime.setStatus('没有可切换的技能', 'warning')
+        return
+      }
+      void runtime.toggleSkills(targets)
+      clearMarks()
+    }
+
+    const askDelete = (): void => {
+      const targets = targetInstances()
+      if (targets.length === 0) {
+        runtime.setStatus('没有可删除的技能', 'warning')
+        return
+      }
+      setModal({
+        kind: 'confirm',
+        title: '删除技能',
+        danger: true,
+        message: [
+          `将移入回收站（可撤销）：共 ${targets.length} 个`,
+          ...targets.slice(0, 8).map((instance) => `· ${instance.name}  [${SOURCE_LABELS[instance.source]}]`),
+          ...(targets.length > 8 ? [`… 其余 ${targets.length - 8} 个`] : []),
+        ],
+        onConfirm: () => {
+          void runtime.deleteSkillInstances(targets)
+          clearMarks()
+        },
+      })
+    }
+
+    const openAdd = (): void => {
+      setModal({
+        kind: 'input',
+        title: '添加技能',
+        label: '本地绝对路径（.md 文件，或包含 SKILL.md 的目录）',
+        value: '',
+        hint: '导入会把技能复制到所选作用域；不修改源路径。',
+        validate: (value) => (isAbsolute(value.trim()) ? undefined : '请输入绝对路径'),
+        onSubmit: (value) => {
+          const sourcePath = value.trim()
+          setModal({
+            kind: 'select',
+            title: '添加到哪个作用域？',
+            options: [
+              { id: 'workspace', label: '当前工作区', hint: scan?.projectRoot ?? '(pending)' },
+              { id: 'global', label: '全局（~/.dsh/skills）' },
+            ],
+            index: 0,
+            onSubmit: (id) => {
+              void runtime.addSkillFromPath(sourcePath, id === 'global' ? 'global' : 'workspace')
+            },
+          })
+        },
+      })
+    }
+
+    const openGroupPicker = (): void => {
+      const targets = targetInstances()
+      if (targets.length === 0) {
+        runtime.setStatus('先选择一个技能', 'warning')
+        return
+      }
+      const options: { id: string; label: string; hint?: string }[] = groupEntries.map(([id, group]) => {
+        const allIn = targets.every((instance) => runtime.groupIdsFor(instance).includes(id))
+        return {
+          id,
+          label: group.name,
+          hint: `${groupMemberCount(group)} 个成员${allIn ? ' · 已全部在组内（选择移出）' : ''}`,
+        }
+      })
+      options.push({ id: '__new__', label: '＋ 新建分组…' })
+      setModal({
+        kind: 'select',
+        title: `分组（${targets.length} 个技能）`,
+        options,
+        index: 0,
+        onSubmit: (id) => {
+          if (id === '__new__') {
+            setModal({
+              kind: 'input',
+              title: '新建分组',
+              label: '分组名称',
+              value: '',
+              onSubmit: (name) => {
+                void runtime.createGroup(name, targets)
+              },
+            })
+            return
+          }
+          const allIn = targets.every((instance) => runtime.groupIdsFor(instance).includes(id))
+          void runtime.setGroupMembershipForInstances(id, targets, !allIn)
+        },
+      })
+    }
+
+    const openCreateGroup = (): void => {
+      setModal({
+        kind: 'input',
+        title: '新建分组',
+        label: '分组名称',
+        value: '',
+        onSubmit: (name) => {
+          void runtime.createGroup(name)
+        },
+      })
+    }
+
+    const openRenameGroup = (): void => {
+      if (selectedGroupId === undefined) {
+        runtime.setStatus('还没有分组', 'warning')
+        return
+      }
+      const group = state.groups[selectedGroupId]
+      setModal({
+        kind: 'input',
+        title: '重命名分组',
+        label: '新的分组名称',
+        value: group?.name ?? '',
+        onSubmit: (name) => {
+          void runtime.renameGroup(selectedGroupId, name)
+        },
+      })
+    }
+
+    const askDeleteGroup = (): void => {
+      if (selectedGroupId === undefined) {
+        runtime.setStatus('还没有分组', 'warning')
+        return
+      }
+      const group = state.groups[selectedGroupId]
+      setModal({
+        kind: 'confirm',
+        title: '删除分组',
+        message: [`删除分组 "${group?.name ?? selectedGroupId}"？`, '只删除分组元数据，不会删除任何技能。'],
+        onConfirm: () => {
+          void runtime.deleteGroupById(selectedGroupId)
+          if (groupFilter === selectedGroupId) setGroupFilter(undefined)
+        },
+      })
+    }
 
     const moveSelection = (delta: number): void => {
       if (filtered.length === 0) return
@@ -349,13 +542,17 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       setFocus('list')
     }
 
+    const moveGroupSelection = (delta: number): void => {
+      if (groupEntries.length === 0) return
+      const next = Math.max(0, Math.min(groupEntries.length - 1, selectedGroupIndex + delta))
+      const entry = groupEntries[next]
+      if (entry !== undefined) setGroupSelectedId(entry[0])
+    }
+
     const switchTab = (delta: number): void => {
       const index = TABS.indexOf(tab)
       const next = TABS[(index + delta + TABS.length) % TABS.length] ?? 'skills'
-      setTab(next)
-      setFocus(next === 'skills' ? 'list' : 'body')
-      setDiagOffset(0)
-      setDetailOffset(0)
+      goTab(next)
     }
 
     const goTab = (next: Tab): void => {
@@ -379,8 +576,62 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     useInput((input, key) => {
       if (key.ctrl || key.meta) return
       const text = input.replace(/[\r\n]+/gu, '')
+      const char = text.length > 0 ? (text[0]?.toLowerCase() ?? '') : ''
+
+      if (modal !== undefined) {
+        if (modal.kind === 'confirm') {
+          if (char === 'y' || key.return) {
+            const confirm = modal.onConfirm
+            setModal(undefined)
+            confirm()
+          } else if (char === 'n' || key.escape) {
+            setModal(undefined)
+          }
+          return
+        }
+        if (modal.kind === 'input') {
+          if (key.escape) {
+            setModal(undefined)
+          } else if (key.return) {
+            const value = modal.value.trim()
+            const error = modal.validate?.(value)
+            if (error !== undefined) {
+              runtime.setStatus(error, 'error')
+            } else {
+              const submit = modal.onSubmit
+              setModal(undefined)
+              submit(value)
+            }
+          } else if (key.backspace || key.delete) {
+            setModal({ ...modal, value: modal.value.slice(0, -1) })
+          } else if (text.length > 0) {
+            setModal({ ...modal, value: modal.value + text })
+          }
+          return
+        }
+        if (modal.kind === 'select') {
+          if (key.escape) {
+            setModal(undefined)
+          } else if (key.upArrow || char === 'k') {
+            setModal({ ...modal, index: Math.max(0, modal.index - 1) })
+          } else if (key.downArrow || char === 'j') {
+            setModal({ ...modal, index: Math.min(modal.options.length - 1, modal.index + 1) })
+          } else if (key.return || char === ' ') {
+            const option = modal.options[modal.index]
+            if (option !== undefined) {
+              const submit = modal.onSubmit
+              setModal(undefined)
+              submit(option.id)
+            }
+          }
+          return
+        }
+        if (key.escape || key.return || char === 'q') setModal(undefined)
+        return
+      }
+
       if (helpOpen) {
-        if (key.escape || text === '?' || text.toLowerCase() === 'q') setHelpOpen(false)
+        if (key.escape || text === '?' || char === 'q') setHelpOpen(false)
         return
       }
       if (searchMode) {
@@ -396,6 +647,10 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         return
       }
       if (key.escape) {
+        if (marked.size > 0) {
+          clearMarks()
+          return
+        }
         if (focus === 'detail') {
           setFocus('list')
           return
@@ -407,7 +662,6 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         switchTab(key.shift ? -1 : 1)
         return
       }
-      const char = text.length > 0 ? (text[0]?.toLowerCase() ?? '') : ''
       if (char === 'q') {
         close()
         return
@@ -432,6 +686,42 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (char === '2') return goTab('mcp')
       if (char === '3') return goTab('groups')
       if (char === '4') return goTab('diagnostics')
+      if (char === 'u') {
+        void runtime.undoLastDelete()
+        return
+      }
+      if (char === 'x') {
+        if (groupFilter !== undefined) {
+          setGroupFilter(undefined)
+          runtime.setStatus('已清除分组过滤', 'info')
+        } else if (marked.size > 0) {
+          clearMarks()
+        }
+        return
+      }
+
+      if (tab === 'groups') {
+        if (char === 'a') return openCreateGroup()
+        if (char === 'r') return openRenameGroup()
+        if (char === 'd') return askDeleteGroup()
+        if (key.return) {
+          if (selectedGroupId !== undefined) {
+            setGroupFilter(selectedGroupId === groupFilter ? undefined : selectedGroupId)
+            const group = state.groups[selectedGroupId]
+            runtime.setStatus(
+              selectedGroupId === groupFilter ? '已清除分组过滤' : `按分组过滤：${group?.name ?? selectedGroupId}（x 清除）`,
+              'info',
+            )
+            if (selectedGroupId !== groupFilter) goTab('skills')
+          }
+          return
+        }
+        if (key.upArrow || char === 'k') moveGroupSelection(-1)
+        else if (key.downArrow || char === 'j') moveGroupSelection(1)
+        else if (key.pageUp) moveGroupSelection(-bodyRows)
+        else if (key.pageDown) moveGroupSelection(bodyRows)
+        return
+      }
 
       if (tab !== 'skills') {
         if (focus === 'tabs') {
@@ -458,6 +748,21 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         }
         return
       }
+
+      // skills-tab actions (available regardless of focus)
+      if (char === 'a') return openAdd()
+      if (char === 'v') {
+        if (selected !== undefined) {
+          const next = new Set(marked)
+          if (next.has(selected.id)) next.delete(selected.id)
+          else next.add(selected.id)
+          setMarked(next)
+        }
+        return
+      }
+      if (char === 'g') return openGroupPicker()
+      if (char === ' ') return runToggle()
+      if (char === 'd') return askDelete()
 
       if (focus === 'tabs') {
         if (key.leftArrow || char === 'h') switchTab(-1)
@@ -493,7 +798,6 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         return
       }
 
-      // focus === 'list'
       if (key.upArrow || char === 'k') {
         if (selectedIndex <= 0) setFocus(narrow ? 'scope' : 'tabs')
         else moveSelection(-1)
@@ -514,7 +818,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
     })
 
-    // ── card primitives (native-looking: rounded border + accent focus) ─────
+    // ── card primitives ─────────────────────────────────────────────────────
     const card = (options: {
       title: string
       subtitle?: string
@@ -553,7 +857,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const rowNode = (
       key: string,
       content: string,
-      options: { selected: boolean; dim?: boolean; onClick?: () => void; pointer?: string },
+      options: { selected: boolean; dim?: boolean; onClick?: () => void },
     ): ReactNode => (
       <Box
         key={key}
@@ -571,42 +875,156 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       </Box>
     )
 
+    const groupIds = (instance: SkillInstance): string[] => runtime.groupIdsFor(instance)
+    const markedFlag = (instance: SkillInstance): string => (marked.has(instance.id) ? '✓ ' : '')
+
     // Verification-only render snapshot (SKILL_MCP_PANEL_RENDER_DUMP).
     const verificationRows = filtered.map((instance) => {
       const flags = statusFlags(instance)
-      return `${STATUS_GLYPHS[instance.status]} ${instance.name} [${SOURCE_LABELS[instance.source]}${flags.length > 0 ? ` ${flags}` : ''}]`
+      const groups = groupIds(instance)
+        .map((id) => state.groups[id]?.name)
+        .filter((name): name is string => name !== undefined)
+      return `${STATUS_GLYPHS[instance.status]} ${instance.name} [${SOURCE_LABELS[instance.source]}${flags.length > 0 ? ` ${flags}` : ''}${groups.length > 0 ? ` groups=${groups.join(',')}` : ''}${marked.has(instance.id) ? ' marked' : ''}]`
     })
     const verificationFrame = [
-      `tab=${tab} scope=${scope} query=${JSON.stringify(query)} search=${searchMode} help=${helpOpen} focus=${focus} narrow=${narrow}`,
+      `tab=${tab} scope=${scope} query=${JSON.stringify(query)} search=${searchMode} help=${helpOpen} focus=${focus} modal=${modal?.kind ?? '-'} groupFilter=${groupFilter ?? '-'} marked=${marked.size}`,
       `screen=${columns}x${rows} listWidth=${listWidth} detailWidth=${detailWidth}`,
       `summary total=${summary.total} enabled=${summary.enabled} disabled=${summary.disabled} invalid=${summary.invalid} shadowed=${summary.shadowed} workspace=${summary.workspace} global=${summary.global}`,
       `list(${filtered.length}):`,
       ...verificationRows,
       `selected=${selected?.name ?? '(none)'} status=${selected?.status ?? '-'} path=${selected?.path ?? '-'}`,
+      `groups(${groupEntries.length}): ${groupEntries.map(([id, group]) => `${id}:${group.name}:${groupMemberCount(group)}`).join(' ')}`,
+      `trash=${state.latestTrash?.batchId ?? '-'} status=${state.statusMessage?.text ?? '-'}`,
       `detail=${state.detail.status}${state.detail.error === undefined ? '' : ` error=${state.detail.error}`}`,
       ...(tab === 'mcp'
         ? ['MCP（M3 计划）', ...MCP_PLACEHOLDER_LINES]
-        : tab === 'groups'
-          ? ['分组（M2 计划）', ...GROUPS_PLACEHOLDER_LINES]
-          : tab === 'diagnostics'
-            ? diagnosticLines(state, contentWidth)
-            : []),
+        : tab === 'diagnostics'
+          ? diagnosticLines(state, contentWidth)
+          : []),
       ...(helpOpen ? HELP_LINES : []),
     ].join('\n')
     React.useEffect(() => {
-      runtime.writeRenderFrame(`tab=${tab} scope=${scope} focus=${focus}${helpOpen ? ' help' : ''}`, verificationFrame)
-    }, [tab, scope, focus, selected?.id, state.scan?.scannedAt, helpOpen, searchMode, query, state.detail.status, state.dumpMessage])
+      runtime.writeRenderFrame(
+        `tab=${tab} scope=${scope} focus=${focus}${helpOpen ? ' help' : ''}${modal === undefined ? '' : ` modal=${modal.kind}`}`,
+        verificationFrame,
+      )
+    }, [tab, scope, focus, selected?.id, state.scan?.scannedAt, helpOpen, searchMode, query, state.detail.status, state.statusMessage?.at, modal?.kind, marked, groupFilter])
+
+    // ── modal screen ────────────────────────────────────────────────────────
+    if (modal !== undefined) {
+      const modalDanger = modal.kind === 'confirm' && modal.danger === true
+      const modalWidth = Math.max(30, Math.min(contentWidth, 100))
+      const modalBody = ((): ReactNode => {
+        if (modal.kind === 'confirm') {
+          return (
+            <>
+              {modal.message.map((line, index) => (
+                <Text key={`modal-${index}`} wrap="truncate" dimColor={index > 0}>
+                  {index === 0 ? line : line}
+                </Text>
+              ))}
+              <Text dimColor>y = 确认 · n/Esc = 取消</Text>
+            </>
+          )
+        }
+        if (modal.kind === 'input') {
+          return (
+            <>
+              <Text dimColor wrap="truncate">
+                {`${modal.label}：`}
+              </Text>
+              <Box flexDirection="row" height={1}>
+                <Text color="accent">❯ </Text>
+                <Text wrap="truncate">{modal.value}</Text>
+                <Text color="accent">▌</Text>
+              </Box>
+              {modal.hint === undefined ? null : (
+                <Text dimColor wrap="truncate">
+                  {modal.hint}
+                </Text>
+              )}
+              <Text dimColor>Enter 提交 · Esc 取消</Text>
+            </>
+          )
+        }
+        if (modal.kind === 'select') {
+          return (
+            <>
+              {modal.options.map((option, index) => {
+                const active = index === modal.index
+                return (
+                  <Box
+                    key={option.id}
+                    flexDirection="row"
+                    height={1}
+                    backgroundColor={active ? 'selectionBg' : undefined}
+                    onClick={() => {
+                      setModal(undefined)
+                      modal.onSubmit(option.id)
+                    }}
+                  >
+                    <Text color={active ? 'accent' : undefined}>{active ? '❯ ' : '  '}</Text>
+                    <Text bold={active} wrap="truncate">
+                      {option.label}
+                    </Text>
+                    {option.hint === undefined ? null : (
+                      <Text dimColor wrap="truncate">
+                        {`  ${option.hint}`}
+                      </Text>
+                    )}
+                  </Box>
+                )
+              })}
+              <Text dimColor>↑/↓ 选择 · Enter 确认 · Esc 取消</Text>
+            </>
+          )
+        }
+        return (
+          <>
+            {modal.lines.map((line, index) => (
+              <Text key={`modal-info-${index}`} wrap="truncate">
+                {line}
+              </Text>
+            ))}
+            <Text dimColor>Enter/Esc 关闭</Text>
+          </>
+        )
+      })()
+      return (
+        <Box flexDirection="column" flexGrow={1} paddingX={1}>
+          <Box flexDirection="row" height={1}>
+            <Text bold color="accent">
+              Skill / MCP manager
+            </Text>
+            <Box flexGrow={1} />
+            <Text dimColor>{sceneId}</Text>
+          </Box>
+          <Box flexDirection="column" flexGrow={1} marginTop={1}>
+            <Box
+              flexDirection="column"
+              width={modalWidth}
+              borderStyle="round"
+              borderColor={modalDanger ? 'error' : 'accent'}
+              paddingX={1}
+            >
+              <Text bold color={modalDanger ? 'error' : 'accent'} wrap="truncate">
+                {modal.title}
+              </Text>
+              {modalBody}
+            </Box>
+          </Box>
+          <Text dimColor wrap="truncate">
+            {state.statusMessage?.text ?? ''}
+          </Text>
+        </Box>
+      )
+    }
 
     const tabBar = (
       <Box flexDirection="row" height={1}>
         <Text color="accent">{focus === 'tabs' ? '❯' : ' '}</Text>
         {TABS.map((candidate) => (
-          <Box
-            key={candidate}
-            onClick={() => {
-              goTab(candidate)
-            }}
-          >
+          <Box key={candidate} onClick={() => goTab(candidate)}>
             <Text
               bold={candidate === tab}
               color={candidate === tab ? 'accent' : undefined}
@@ -619,33 +1037,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         ))}
         <Box flexGrow={1} />
         <Text dimColor wrap="truncate">
-          {searchMode ? `搜索: ${query}▌  (Enter/Esc)` : tab === 'skills' ? `${SCOPE_LABELS[scope]} · ${filtered.length} 项` : ''}
+          {searchMode ? `搜索: ${query}▌  (Enter/Esc)` : tab === 'skills' ? `${SCOPE_LABELS[scope]} · ${filtered.length} 项${groupFilter === undefined ? '' : ` · 分组:${state.groups[groupFilter]?.name ?? groupFilter}`}` : ''}
         </Text>
-      </Box>
-    )
-
-    const scopeChips = (
-      <Box flexDirection="row" height={1}>
-        <Text color="accent">{focus === 'scope' ? '❯' : ' '}</Text>
-        <Text dimColor>作用域 </Text>
-        {SCOPE_FILTERS.map((candidate) => (
-          <Box
-            key={candidate}
-            onClick={() => {
-              setScope(candidate)
-              setFocus('scope')
-            }}
-          >
-            <Text
-              bold={candidate === scope}
-              color={candidate === scope ? 'accent' : undefined}
-              backgroundColor={candidate === scope ? 'selectionBg' : undefined}
-              dimColor={candidate !== scope}
-            >
-              {` ${SCOPE_LABELS[candidate]}(${scopeCounts[candidate]}) `}
-            </Text>
-          </Box>
-        ))}
       </Box>
     )
 
@@ -672,49 +1065,81 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       )
     }
 
-    // ── skills tab panes ────────────────────────────────────────────────────
+    // ── scope chips (two-pane/narrow) ───────────────────────────────────────
+    const scopeChips = (
+      <Box flexDirection="row" height={1}>
+        <Text color="accent">{focus === 'scope' ? '❯' : ' '}</Text>
+        <Text dimColor>作用域 </Text>
+        {SCOPE_FILTERS.map((candidate) => (
+          <Box
+            key={candidate}
+            onClick={() => {
+              setScope(candidate)
+              setFocus('scope')
+            }}
+          >
+            <Text
+              bold={candidate === scope}
+              color={candidate === scope ? 'accent' : undefined}
+              backgroundColor={candidate === scope ? 'selectionBg' : undefined}
+              dimColor={candidate !== scope}
+            >
+              {` ${SCOPE_LABELS[candidate]}(${scopeCounts[candidate]}) `}
+            </Text>
+          </Box>
+        ))}
+      </Box>
+    )
+
+    // ── skills panes ────────────────────────────────────────────────────────
     const listWindowStart = Math.max(
       0,
       Math.min(selectedIndex - Math.floor(bodyRows / 2), Math.max(0, filtered.length - bodyRows)),
     )
-    const listRows = filtered.length === 0
-      ? [
-          <Text key="empty" dimColor wrap="wrap">
-            {scan === undefined
-              ? '扫描中…'
-              : query.length > 0
-                ? '没有匹配的技能（/ 修改搜索）。'
-                : scope !== 'all' && summary.total > 0
-                  ? `当前筛选「${SCOPE_LABELS[scope]}」下没有技能（←/→ 切换作用域）。`
-                  : '没有任何技能。\n把技能放到 <project>/.dsh/skills/<name>/SKILL.md\n或 ~/.dsh/skills/<name>/SKILL.md'}
-          </Text>,
-        ]
-      : filtered.slice(listWindowStart, listWindowStart + bodyRows).map((instance) => {
-          const isSelected = instance.id === selected?.id
-          const dim = !instance.effective
-          const flags = statusFlags(instance)
-          const content = truncateToWidth(
-            `${padToWidth(instance.name, nameWidth)}  ${SOURCE_LABELS[instance.source]}${flags.length > 0 ? `  ${flags}` : ''}`,
-            listInner,
-          )
-          return rowNode(instance.id, content, {
-            selected: isSelected,
-            dim,
-            onClick: () => {
-              setSelectedId(instance.id)
-              setFocus(narrow ? 'detail' : 'list')
-            },
+    const listRows =
+      filtered.length === 0
+        ? [
+            <Text key="empty" dimColor wrap="wrap">
+              {scan === undefined
+                ? '扫描中…'
+                : query.length > 0
+                  ? '没有匹配的技能（/ 修改搜索）。'
+                  : groupFilter !== undefined
+                    ? `分组「${state.groups[groupFilter]?.name ?? groupFilter}」在当前作用域没有技能（x 清除过滤）。`
+                    : scope !== 'all' && summary.total > 0
+                      ? `当前筛选「${SCOPE_LABELS[scope]}」下没有技能（←/→ 切换作用域）。`
+                      : '没有任何技能。按 a 添加，或把技能放到发现根。'}
+            </Text>,
+          ]
+        : filtered.slice(listWindowStart, listWindowStart + bodyRows).map((instance) => {
+            const isSelected = instance.id === selected?.id
+            const flags = statusFlags(instance)
+            const groupNames = groupIds(instance)
+              .map((id) => state.groups[id]?.name)
+              .filter((name): name is string => name !== undefined)
+            const content = truncateToWidth(
+              `${markedFlag(instance)}${padToWidth(instance.name, nameWidth)}  ${SOURCE_LABELS[instance.source]}${flags.length > 0 ? `  ${flags}` : ''}${groupNames.length > 0 ? `  ◆${groupNames.join('/')}` : ''}`,
+              listInner,
+            )
+            return rowNode(instance.id, content, {
+              selected: isSelected,
+              dim: !instance.effective,
+              onClick: () => {
+                setSelectedId(instance.id)
+                setFocus(narrow ? 'detail' : 'list')
+              },
+            })
           })
-        })
 
     const listCard = card({
       title: '技能列表',
-      subtitle: `${SCOPE_LABELS[scope]} · ${filtered.length}项${query.length > 0 ? ` · "${query}"` : ''}`,
+      subtitle: `${SCOPE_LABELS[scope]} · ${filtered.length}项${query.length > 0 ? ` · "${query}"` : ''}${marked.size > 0 ? ` · 已标记 ${marked.size}` : ''}`,
       focused: tab === 'skills' && focus === 'list',
       width: listWidth,
       onClick: () => setFocus('list'),
       onWheel: (event: { deltaY: number }) => {
         if (event.deltaY === 0) return
+        setFocus('list')
         moveSelection(event.deltaY > 0 ? 1 : -1)
       },
       children: [
@@ -790,17 +1215,46 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       listCard
     )
 
+    // ── groups tab ──────────────────────────────────────────────────────────
+    const groupRows = groupEntries.length === 0
+      ? [
+          <Text key="groups-empty" dimColor wrap="wrap">
+            还没有分组。按 a 新建分组，或在技能页按 g 把技能加入分组。
+          </Text>,
+        ]
+      : groupEntries.slice(0, bodyRows).map(([id, group]) => {
+          const here = (group.scopes[scan?.projectRoot ?? 'workspace'] ?? []).length
+          const globalCount = (group.scopes.global ?? []).length
+          const isSelected = id === selectedGroupId
+          const filteredFlag = groupFilter === id ? ' · 过滤中' : ''
+          return rowNode(id, truncateToWidth(`${padToWidth(group.name, Math.max(8, contentWidth - 40))}  ${groupMemberCount(group)} 个成员（当前作用域 ${here} / 全局 ${globalCount}）${filteredFlag}`, contentWidth - 6), {
+            selected: isSelected,
+            dim: groupMemberCount(group) === 0,
+            onClick: () => setGroupSelectedId(id),
+          })
+        })
+
+    const groupsCard = card({
+      title: '分组 Groups',
+      subtitle: `${groupEntries.length} 组${groupFilter === undefined ? '' : ` · 过滤: ${state.groups[groupFilter]?.name ?? groupFilter}（x 清除）`}`,
+      focused: tab === 'groups' && focus === 'body',
+      width: contentWidth,
+      onClick: () => setFocus('body'),
+      children: groupRows,
+    })
+
+    // ── mcp / diagnostics tab ───────────────────────────────────────────────
     const bodyLines =
       tab === 'mcp'
         ? ['MCP（M3 计划）', ...MCP_PLACEHOLDER_LINES]
         : tab === 'groups'
-          ? ['分组（M2 计划）', ...GROUPS_PLACEHOLDER_LINES]
+          ? []
           : diagnosticLines(state, contentWidth - 4)
     const bodyWindow = bodyLines.slice(diagOffset, diagOffset + bodyRows)
     const bodyCard = card({
-      title: tab === 'mcp' ? 'MCP' : tab === 'groups' ? '分组 Groups' : '诊断 Diagnostics',
+      title: tab === 'mcp' ? 'MCP' : '诊断 Diagnostics',
       subtitle: tab === 'diagnostics' ? `扫描 ${scan?.scannedAt ?? '(pending)'}` : undefined,
-      focused: tab !== 'skills' && focus === 'body',
+      focused: tab !== 'skills' && tab !== 'groups' && focus === 'body',
       width: contentWidth,
       onClick: () => setFocus('body'),
       onWheel: (event: { deltaY: number }) => {
@@ -815,10 +1269,19 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       )),
     })
 
-    const footerHints = narrow
-      ? '↑↓ 选择/滚动 · ←→ 移动 · Tab 页签 · Enter 详情 · / 搜索 · ? 帮助 · q 关闭'
-      : '↑↓ 选择 · ←→ 移动/切换 · Tab 页签 · Enter 进入详情 · / 搜索 · r 刷新 · ? 帮助 · q 关闭'
-    const footerStats = `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}`
+    const footerHints =
+      tab === 'skills'
+        ? narrow
+          ? '空格 启停 · d 删除 · u 撤销 · a 添加 · v 标记 · g 分组 · / 搜索 · ? 帮助 · q 关闭'
+          : '空格 启停 · d 删除 · u 撤销 · a 添加 · v 标记 · g 分组 · ↑↓←→ 移动 · / 搜索 · ? 帮助 · q 关闭'
+        : tab === 'groups'
+          ? '↑↓ 选择 · Enter 过滤 · a 新建 · r 重命名 · d 删除 · x 清除过滤 · Tab 页签 · ? 帮助 · q 关闭'
+          : '↑↓ 滚动 · Tab 页签 · / 搜索 · ? 帮助 · q 关闭'
+    const footerStats = state.busy
+      ? '处理中…'
+      : `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}`
+    const statusColor =
+      statusTone === 'success' ? 'success' : statusTone === 'warning' ? 'warning' : statusTone === 'error' ? 'error' : 'accent'
 
     return (
       <Box flexDirection="column" flexGrow={1} paddingX={1}>
@@ -833,7 +1296,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         </Box>
         {tabBar}
         {tab === 'skills' && !wide ? scopeChips : null}
-        {tab === 'skills' ? skillsBody : bodyCard}
+        {tab === 'skills' ? skillsBody : tab === 'groups' ? groupsCard : bodyCard}
         <Box flexDirection="row" height={1}>
           <Text dimColor wrap="truncate">
             {footerHints}
@@ -843,9 +1306,9 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
             {footerStats}
           </Text>
         </Box>
-        {statusLine === undefined ? null : (
-          <Text wrap="truncate" dimColor>
-            {statusLine}
+        {statusText === undefined ? null : (
+          <Text color={statusColor} wrap="truncate">
+            {statusText}
           </Text>
         )}
       </Box>

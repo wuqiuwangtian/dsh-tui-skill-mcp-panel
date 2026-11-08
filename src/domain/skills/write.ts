@@ -1,0 +1,484 @@
+/**
+ * Domain write operations for skills: enable/disable (`.disabled` rename),
+ * soft delete to a trash directory (manifest + undo), and add/import from a
+ * local path. Pure filesystem work (no Cordis, no React); every mutation
+ * re-validates the target immediately before touching disk and returns
+ * per-item results so batch callers can report partial success.
+ */
+import { copyFile, lstat, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
+import { parseSkillDocument } from './frontmatter.js'
+import type { SkillInstance, SkillStatus } from './types.js'
+import { trashRoot } from '../store.js'
+
+export interface SkillWriteResult {
+  ok: boolean
+  error?: string
+  from?: string
+  to?: string
+  newStatus?: SkillStatus
+}
+
+export interface TrashEntry {
+  entryId: string
+  name: string
+  source: string
+  scope: string
+  scopeKey: string
+  form: 'directory' | 'file'
+  rootPath: string
+  /** Absolute path the skill occupied (for flat files) or its SKILL.md (for bundles). */
+  originalPath: string
+  /** Original bundle directory (directory form) or the original file (flat form). */
+  entityPath: string
+  /** Where the entity lives inside the trash batch. */
+  trashPath: string
+}
+
+export interface TrashBatch {
+  batchId: string
+  createdAt: string
+  entries: TrashEntry[]
+}
+
+export interface DeleteResult {
+  batchId?: string
+  deleted: string[]
+  failed: { id: string; error: string }[]
+  batch?: TrashBatch
+}
+
+export interface UndoResult {
+  batchId?: string
+  restored: string[]
+  conflicts: string[]
+  failed: { id: string; error: string }[]
+}
+
+export interface AddSkillResult {
+  ok: boolean
+  name?: string
+  form?: 'directory' | 'file'
+  destPath?: string
+  error?: string
+  warnings?: string[]
+}
+
+const MAX_FILES = 200
+const MAX_TOTAL_BYTES = 8 * 1024 * 1024
+const MAX_SKILL_MD_BYTES = 1024 * 1024
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await stat(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function sanitizeSegment(value: string): string {
+  const cleaned = value.replace(/[^A-Za-z0-9._-]+/gu, '_').replace(/^[.]+$/u, '_')
+  return cleaned.length === 0 ? '_' : cleaned.slice(0, 64)
+}
+
+function randomSuffix(): string {
+  return Math.random().toString(36).slice(2, 8)
+}
+
+function compactTimestamp(now: Date): string {
+  return now.toISOString().replace(/[-:]/gu, '').replace(/\.\d{3}Z$/u, 'Z')
+}
+
+/** Target path for an enable/disable toggle, mirroring the web panel convention. */
+export function toggleTargetPath(instance: SkillInstance): { from: string; to: string; newStatus: SkillStatus } | { error: string } {
+  if (instance.source === 'bundled') return { error: 'bundled（随包）技能只读，不能启停' }
+  if (instance.status === 'invalid') return { error: '技能文件无效，无法启停' }
+  const from = instance.skillFile
+  if (instance.status === 'enabled') {
+    return { from, to: `${from}.disabled`, newStatus: 'disabled' }
+  }
+  if (!from.endsWith('.disabled')) return { error: '无法识别的停用文件名' }
+  return { from, to: from.slice(0, -'.disabled'.length), newStatus: 'enabled' }
+}
+
+/** Enable/disable one skill instance (`SKILL.md` ↔ `SKILL.md.disabled`, `<name>.md` ↔ `.md.disabled`). */
+export async function toggleSkill(instance: SkillInstance): Promise<SkillWriteResult> {
+  const target = toggleTargetPath(instance)
+  if ('error' in target) return { ok: false, error: target.error }
+  try {
+    const raw = await readFile(target.from, 'utf8')
+    const parsed = parseSkillDocument(raw)
+    if (!parsed.ok) return { ok: false, error: `技能文件无效：${parsed.reason}` }
+    if (parsed.frontmatter.name !== instance.name) {
+      return { ok: false, error: `技能文件已变化（当前 name=${parsed.frontmatter.name}），请刷新后重试` }
+    }
+    if (await pathExists(target.to)) return { ok: false, error: `目标文件已存在：${target.to}` }
+    await rename(target.from, target.to)
+    return { ok: true, from: target.from, to: target.to, newStatus: target.newStatus }
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) }
+  }
+}
+
+/** Move one skill entity into `trash/<batchId>/<scopeKey>/<name>[-n]/`. */
+async function moveToTrash(
+  instance: SkillInstance,
+  batchDir: string,
+  entryIndex: number,
+  now: Date,
+): Promise<TrashEntry> {
+  const scopeKey = instance.scope === 'global' ? 'global' : 'workspace'
+  const baseName = sanitizeSegment(instance.name)
+  const entityName = entryIndex === 0 ? baseName : `${baseName}-${entryIndex + 1}`
+  const entityDir = join(batchDir, scopeKey, entityName)
+  await mkdir(entityDir, { recursive: true })
+  let trashPath: string
+  if (instance.form === 'directory') {
+    const entityPath = instance.locatorDir
+    trashPath = entityDir
+    await rename(entityPath, trashPath)
+  } else {
+    const fileName = basename(instance.skillFile)
+    trashPath = join(entityDir, fileName)
+    await rename(instance.skillFile, trashPath)
+  }
+  return {
+    entryId: `${now.getTime()}-${entryIndex}`,
+    name: instance.name,
+    source: instance.source,
+    scope: instance.scope,
+    scopeKey,
+    form: instance.form,
+    rootPath: instance.rootPath,
+    originalPath: instance.skillFile,
+    entityPath: instance.form === 'directory' ? instance.locatorDir : instance.skillFile,
+    trashPath,
+  }
+}
+
+/** Soft-delete skills into a timestamped trash batch with a manifest. */
+export async function deleteSkills(
+  instances: SkillInstance[],
+  options: { panelHome: string; now?: () => Date },
+): Promise<DeleteResult> {
+  const now = options.now?.() ?? new Date()
+  const batchId = `${compactTimestamp(now)}-${randomSuffix()}`
+  const batchDir = join(trashRoot(options.panelHome), batchId)
+  const deleted: string[] = []
+  const failed: { id: string; error: string }[] = []
+  const entries: TrashEntry[] = []
+  let index = 0
+  for (const instance of instances) {
+    if (instance.source === 'bundled') {
+      failed.push({ id: instance.id, error: 'bundled（随包）技能只读，不能删除' })
+      continue
+    }
+    if (instance.status === 'invalid' && !(await pathExists(instance.skillFile))) {
+      failed.push({ id: instance.id, error: '技能文件不存在，可能已被外部修改' })
+      continue
+    }
+    try {
+      const entry = await moveToTrash(instance, batchDir, index, now)
+      index += 1
+      entries.push(entry)
+      deleted.push(instance.id)
+    } catch (error) {
+      failed.push({ id: instance.id, error: errorMessage(error) })
+    }
+  }
+  if (entries.length === 0) {
+    await rm(batchDir, { recursive: true, force: true }).catch(() => undefined)
+    return { deleted, failed }
+  }
+  const batch: TrashBatch = { batchId, createdAt: now.toISOString(), entries }
+  try {
+    await writeFile(join(batchDir, 'manifest.json'), `${JSON.stringify({ version: 1, ...batch }, undefined, 2)}\n`, 'utf8')
+  } catch (error) {
+    failed.push({ id: batchId, error: `写入回收站清单失败：${errorMessage(error)}` })
+  }
+  return { batchId, deleted, failed, batch }
+}
+
+/** Read every trash batch, newest first. Corrupt manifests are skipped. */
+export async function listTrash(panelHome: string): Promise<TrashBatch[]> {
+  const root = trashRoot(panelHome)
+  let names: string[]
+  try {
+    names = await readdir(root)
+  } catch {
+    return []
+  }
+  const batches: TrashBatch[] = []
+  for (const name of names.sort((left, right) => right.localeCompare(left))) {
+    try {
+      const parsed = JSON.parse(await readFile(join(root, name, 'manifest.json'), 'utf8')) as unknown
+      if (parsed === null || typeof parsed !== 'object') continue
+      const record = parsed as Record<string, unknown>
+      if (!Array.isArray(record.entries)) continue
+      const entries: TrashEntry[] = []
+      for (const raw of record.entries) {
+        if (raw === null || typeof raw !== 'object') continue
+        const entry = raw as Record<string, unknown>
+        if (
+          typeof entry.entryId !== 'string' ||
+          typeof entry.name !== 'string' ||
+          typeof entry.form !== 'string' ||
+          typeof entry.originalPath !== 'string' ||
+          typeof entry.entityPath !== 'string' ||
+          typeof entry.trashPath !== 'string'
+        ) {
+          continue
+        }
+        entries.push({
+          entryId: entry.entryId,
+          name: entry.name,
+          source: typeof entry.source === 'string' ? entry.source : 'unknown',
+          scope: typeof entry.scope === 'string' ? entry.scope : 'unknown',
+          scopeKey: typeof entry.scopeKey === 'string' ? entry.scopeKey : 'unknown',
+          form: entry.form === 'directory' ? 'directory' : 'file',
+          rootPath: typeof entry.rootPath === 'string' ? entry.rootPath : '',
+          originalPath: entry.originalPath,
+          entityPath: entry.entityPath,
+          trashPath: entry.trashPath,
+        })
+      }
+      if (entries.length === 0) continue
+      batches.push({
+        batchId: typeof record.batchId === 'string' ? record.batchId : name,
+        createdAt: typeof record.createdAt === 'string' ? record.createdAt : '',
+        entries,
+      })
+    } catch {
+      // corrupt manifest → skip batch (files stay untouched)
+    }
+  }
+  return batches
+}
+
+/** Restore a trash batch (latest when `batchId` is omitted). Conflicts are skipped, not overwritten. */
+export async function undoTrash(panelHome: string, batchId?: string): Promise<UndoResult> {
+  const batches = await listTrash(panelHome)
+  const target = batchId === undefined ? batches[0] : batches.find((batch) => batch.batchId === batchId)
+  const result: UndoResult = { restored: [], conflicts: [], failed: [] }
+  if (target === undefined) return result
+  result.batchId = target.batchId
+  const remaining: TrashEntry[] = []
+  for (const entry of target.entries) {
+    const destination = entry.form === 'directory' ? entry.entityPath : entry.originalPath
+    try {
+      if (await pathExists(destination)) {
+        result.conflicts.push(`${entry.name}（${destination} 已存在）`)
+        remaining.push(entry)
+        continue
+      }
+      await mkdir(dirname(destination), { recursive: true })
+      if (entry.form === 'directory') {
+        await rename(entry.trashPath, destination)
+      } else {
+        await rename(entry.trashPath, destination)
+      }
+      result.restored.push(entry.name)
+    } catch (error) {
+      result.failed.push({ id: entry.entryId, error: errorMessage(error) })
+      remaining.push(entry)
+    }
+  }
+  const batchDir = join(trashRoot(panelHome), target.batchId)
+  try {
+    if (remaining.length === 0) {
+      await rm(batchDir, { recursive: true, force: true })
+    } else {
+      await writeFile(
+        join(batchDir, 'manifest.json'),
+        `${JSON.stringify({ version: 1, batchId: target.batchId, createdAt: target.createdAt, entries: remaining }, undefined, 2)}\n`,
+        'utf8',
+      )
+      for (const entry of target.entries) {
+        if (!remaining.includes(entry)) await rm(dirname(entry.trashPath), { recursive: true, force: true }).catch(() => undefined)
+      }
+    }
+  } catch {
+    // manifest cleanup is best-effort; restored files are already back
+  }
+  return result
+}
+
+/** Remove old/excess trash batches. Default policy: 7 days or 100 batches (whichever first). */
+export async function cleanupTrash(
+  panelHome: string,
+  options: { retentionDays?: number; maxBatches?: number; now?: () => Date } = {},
+): Promise<number> {
+  const root = trashRoot(panelHome)
+  let names: string[]
+  try {
+    names = (await readdir(root)).sort((left, right) => right.localeCompare(left))
+  } catch {
+    return 0
+  }
+  const retentionDays = options.retentionDays ?? 7
+  const maxBatches = options.maxBatches ?? 100
+  const now = (options.now?.() ?? new Date()).getTime()
+  let removed = 0
+  for (const [index, name] of names.entries()) {
+    let remove = index >= maxBatches
+    if (!remove) {
+      try {
+        const stats = await stat(join(root, name))
+        remove = now - stats.mtimeMs > retentionDays * 24 * 60 * 60 * 1000
+      } catch {
+        remove = false
+      }
+    }
+    if (remove) {
+      await rm(join(root, name), { recursive: true, force: true }).catch(() => undefined)
+      removed += 1
+    }
+  }
+  return removed
+}
+
+async function existingNamesInRoot(rootPath: string): Promise<Set<string>> {
+  const names = new Set<string>()
+  let entries
+  try {
+    entries = await readdir(rootPath, { withFileTypes: true })
+  } catch {
+    return names
+  }
+  for (const entry of entries) {
+    if (entry.name === '.system') continue
+    const full = join(rootPath, entry.name)
+    let file: string | undefined
+    if (entry.isDirectory()) {
+      const enabled = join(full, 'SKILL.md')
+      const disabled = join(full, 'SKILL.md.disabled')
+      file = (await pathExists(enabled)) ? enabled : (await pathExists(disabled)) ? disabled : undefined
+    } else if (entry.isFile() && (entry.name.endsWith('.md') || entry.name.endsWith('.md.disabled'))) {
+      file = full
+    }
+    if (file === undefined) continue
+    try {
+      const parsed = parseSkillDocument(await readFile(file, 'utf8'))
+      if (parsed.ok) names.add(parsed.frontmatter.name)
+    } catch {
+      // ignore unreadable entries
+    }
+  }
+  return names
+}
+
+async function directoryStats(path: string): Promise<{ files: number; bytes: number; skillMdBytes: number }> {
+  const result = { files: 0, bytes: 0, skillMdBytes: 0 }
+  const stack: string[] = [path]
+  while (stack.length > 0) {
+    const current = stack.pop() as string
+    const entries = await readdir(current, { withFileTypes: true })
+    for (const entry of entries) {
+      const full = join(current, entry.name)
+      const info = await lstat(full)
+      if (info.isSymbolicLink()) throw new Error('技能目录包含符号链接，已拒绝导入（避免路径逃逸）')
+      if (info.isDirectory()) {
+        stack.push(full)
+        continue
+      }
+      if (!info.isFile()) throw new Error(`技能目录包含不支持的文件类型：${full}`)
+      result.files += 1
+      result.bytes += info.size
+      if (entry.name === 'SKILL.md') result.skillMdBytes = info.size
+      if (result.files > MAX_FILES) throw new Error(`技能文件数超过上限（${MAX_FILES}）`)
+      if (result.bytes > MAX_TOTAL_BYTES) throw new Error('技能总大小超过上限（8 MiB）')
+      if (result.skillMdBytes > MAX_SKILL_MD_BYTES) throw new Error('SKILL.md 超过 1 MiB 上限')
+    }
+  }
+  return result
+}
+
+async function copyDirectory(source: string, destination: string): Promise<void> {
+  await mkdir(destination, { recursive: true })
+  const entries = await readdir(source, { withFileTypes: true })
+  for (const entry of entries) {
+    const from = join(source, entry.name)
+    const to = join(destination, entry.name)
+    const info = await lstat(from)
+    if (info.isSymbolicLink()) throw new Error('技能目录包含符号链接，已拒绝导入')
+    if (info.isDirectory()) await copyDirectory(from, to)
+    else if (info.isFile()) await copyFile(from, to)
+    else throw new Error(`不支持的文件类型：${from}`)
+  }
+}
+
+/** Validate and copy a local skill (`.md` file or directory bundle) into a discovery root. */
+export async function addSkill(options: {
+  sourcePath: string
+  targetRoot: string
+  now?: () => Date
+}): Promise<AddSkillResult> {
+  const warnings: string[] = []
+  try {
+    if (!isAbsolute(options.sourcePath)) return { ok: false, error: '源路径必须是绝对路径' }
+    const source = resolve(options.sourcePath)
+    let info
+    try {
+      info = await lstat(source)
+    } catch {
+      return { ok: false, error: `源路径不存在：${source}` }
+    }
+    if (info.isSymbolicLink()) return { ok: false, error: '源路径是符号链接，已拒绝' }
+
+    const root = resolve(options.targetRoot)
+    await mkdir(root, { recursive: true })
+
+    let form: 'directory' | 'file'
+    let skillMd: string
+    let skillSourceDir: string | undefined
+    if (info.isDirectory()) {
+      form = 'directory'
+      skillSourceDir = source
+      skillMd = join(source, 'SKILL.md')
+      if (!(await pathExists(skillMd))) {
+        return { ok: false, error: '目录束缺少顶层 SKILL.md（停用状态的 .disabled 源请先启用）' }
+      }
+    } else if (info.isFile() && source.endsWith('.md')) {
+      form = 'file'
+      skillMd = source
+    } else {
+      return { ok: false, error: '只支持 .md 文件或包含顶层 SKILL.md 的技能目录' }
+    }
+
+    const skillInfo = await stat(skillMd)
+    if (skillInfo.size > MAX_SKILL_MD_BYTES) return { ok: false, error: 'SKILL.md 超过 1 MiB 上限' }
+    const parsed = parseSkillDocument(await readFile(skillMd, 'utf8'))
+    if (!parsed.ok) return { ok: false, error: `frontmatter 校验失败：${parsed.reason}` }
+    const name = parsed.frontmatter.name
+    if (form === 'directory') {
+      await directoryStats(source)
+      if (basename(source) !== name) {
+        warnings.push(`源目录名 "${basename(source)}" 与技能名 "${name}" 不同，导入后目录名将使用技能名`)
+      }
+    }
+
+    const existing = await existingNamesInRoot(root)
+    if (existing.has(name)) return { ok: false, error: `目标作用域已存在同名技能：${name}` }
+
+    const destination = form === 'directory' ? join(root, name) : join(root, `${name}.md`)
+    if (await pathExists(destination)) return { ok: false, error: `目标路径已存在：${destination}` }
+
+    const temp = join(root, `.${sanitizeSegment(name)}.tmp-${randomSuffix()}`)
+    try {
+      if (form === 'directory') await copyDirectory(source, temp)
+      else await copyFile(source, temp)
+      await rename(temp, destination)
+    } catch (error) {
+      await rm(temp, { recursive: true, force: true }).catch(() => undefined)
+      return { ok: false, error: errorMessage(error) }
+    }
+    return { ok: true, name, form, destPath: destination, ...(warnings.length > 0 ? { warnings } : {}) }
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) }
+  }
+}
