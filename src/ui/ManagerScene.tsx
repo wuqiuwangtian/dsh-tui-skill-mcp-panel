@@ -69,6 +69,7 @@ const HELP_LINES = [
   '快捷键 Keys（键盘足够用，鼠标是额外增强）',
   '  ↑/↓ / j k          当前区域选择 / 滚动',
   '  ←/→ / h l          跨区域移动焦点；页签栏上切换页签',
+  '                      （内容区没有左右相邻区域时——分组/MCP/诊断——直接切页签）',
   '  Tab / Shift+Tab     切换页签；数字 1-4 直达',
   '  Enter              进入详情；分组页应用分组过滤',
   '  空格               启用/停用选中技能（有标记时批量）',
@@ -756,6 +757,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           if (selectedGroupIndex <= 0) setFocus('tabs')
           else moveGroupSelection(-1)
         } else if (key.downArrow || char === 'j') moveGroupSelection(1)
+        else if (key.leftArrow || char === 'h') switchTab(-1)
+        else if (key.rightArrow || char === 'l') switchTab(1)
         else if (key.pageUp) moveGroupSelection(-bodyRows)
         else if (key.pageDown) moveGroupSelection(bodyRows)
         return

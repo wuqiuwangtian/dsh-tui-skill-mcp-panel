@@ -184,6 +184,14 @@ try {
   await sleep(250)
   screen = await screenText()
   check('groups tab renders', screen.includes('分组 Groups'), screen.slice(0, 300))
+  // direct horizontal arrow from group content switches tab (same as mcp/diagnostics)
+  await press('\x1b[D') // left from body -> previous tab (mcp)
+  await sleep(200)
+  screen = await screenText()
+  check('left from group body switches tab', screen.includes('MCP') && !screen.includes('分组 Groups'), screen.slice(0, 300))
+  await press('\t') // back to groups
+  await sleep(200)
+
   // focus traversal: up from first group reaches the tab bar, then left switches tab
   await press('\x1b[B') // down arrow: ensure list focus (if already body, stays)
   await press('\x1b[A') // up arrow at top group -> tabs
