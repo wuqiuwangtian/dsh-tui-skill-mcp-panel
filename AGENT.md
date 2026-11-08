@@ -17,8 +17,8 @@
 
 ## 2. 当前阶段与边界
 
-- **阶段：M0 完成 + M0 真机探针完成（2026-11-08），M1 骨架就绪**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
-- **当前能力边界**：仓库可构建、可安装到 TUI profile，`/skill-mcp` 可打开全屏诊断场景；**技能/MCP 管理功能尚未实现，不可发布**。真机实测结论见 [`docs/research/05`](docs/research/05-m0-real-machine-probe.md)。
+- **阶段：M1 技能只读面已落地（2026-11-08）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
+- **当前能力边界**：仓库可构建、可单测、可安装到 TUI profile；`/skill-mcp` 打开技能只读列表/详情 + 诊断页（MCP/分组为占位）。扫盘规则与内核一致已真机验证（[`docs/research/06`](docs/research/06-m1-skill-scan-verification.md)），UI 视觉走查仍待补；**不可发布**。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -95,6 +95,7 @@
 - **多字符输入块**：`useInput` 可能一次收到 `"d\r"` 或整段 paste → 快捷键匹配不能假设 `input.length === 1`。
 - **JSX 已验证可行**：`tsconfig` 的 `jsxImportSource: "@deepseek-harness-tui/dsh-tui"` + props 注入 `React`，真实 TUI 渲染无 invalid hook/元素错误。
 - **`link:` 安装时依赖解析**：插件运行时依赖须写在自身 `dependencies`（pnpm link 不解析目标目录依赖）；类型依赖放 `devDependencies`。
+- **扫盘与内核一致性已验证**（M1）：发现根/rank、frontmatter 名称、遮蔽、`.disabled`、非法条目与内核实测目录逐项一致（`docs/research/06`）；**但 `customSkillDirs` 在 host 层不可读**（按未配置处理），runtime 注册的技能不在扫盘内。
 
 ## 6. 架构约束（编码阶段必须遵守）
 
@@ -123,8 +124,9 @@ src/
 
 ```sh
 pnpm install
-pnpm build                  # tsc → lib/types/（已实测通过）
+pnpm build                  # tsc → lib/types/
 pnpm typecheck              # 同上，不产出
+pnpm test                   # build + node:test（domain 层，9 个用例）
 ```
 
 **真机安装（已验证流程）**——用独立探针 profile，避免影响日常 `dsh-tui` profile：
@@ -136,10 +138,13 @@ cp -a ~/.dsh/profiles/dsh-tui ~/.dsh/profiles/dsh-tui-probe
 # dsh.profile.bundles 裁为 @deepseek-ai/dsh-base + @deepseek-harness-tui/dsh-tui
 dsh plugin --profile dsh-tui-probe add /home/wqwt/code/dsh-tui-skill-mcp-panel
 env -u DSH_PROFILE -u DSH_PROFILE_DIR -u DSH_SESSION_ID TERM=xterm-256color \
+  SKILL_MCP_PANEL_DUMP=/tmp/skill-mcp-panel/dump.json \
   dsh --profile dsh-tui-probe        # TUI 内输入 /skill-mcp
 ```
 
-**计划中（M2+ 落地）**：`pnpm test`（domain 层单测）、`pnpm check:manifest`（离线校验 `dsh-plugin.json`）、`pnpm check:tarball`（`npm pack --dry-run` 断言 manifest/entry 在包内）。
+`SKILL_MCP_PANEL_DUMP` 是验证用开关：设置后插件每次扫描写 JSON（扫描结果 + 宿主能力），未设置时不写任何临时文件。
+
+**计划中（M2/M5 落地）**：`pnpm check:manifest`（离线校验 `dsh-plugin.json`，M5）、`pnpm check:tarball`（`npm pack --dry-run` 断言 manifest/entry 在包内，M5）。
 
 > **不要声称跑过不存在的命令/测试**。真机行为验证必须在真实 TTY 打开 TUI 场景操作，构建成功/截图不能替代交互验证；探针运行限制见 [`docs/research/05`](docs/research/05-m0-real-machine-probe.md) §3.7。
 
@@ -179,14 +184,16 @@ dsh-tui-skill-mcp-panel/
 ├─ LICENSE                 # MIT
 ├─ src/
 │  ├─ index.ts             # Cordis 插件三面：name / Config / apply
-│  ├─ host/                # 场景与命令注册；probe-runtime（临时探针，M1 起替换）
-│  ├─ shared/              # 宿主接缝的结构化类型、探针报告类型
-│  └─ ui/                  # 全屏诊断场景（M1 起演进为真实管理界面）
+│  ├─ domain/skills/       # 纯逻辑：发现根/rank/frontmatter/扫盘/遮蔽（可单测，不 import React）
+│  ├─ host/                # 场景与命令注册、ManagerRuntime（扫描状态/详情/诊断/dump）
+│  ├─ shared/              # 宿主接缝结构化类型、cell 宽度/消毒等格式工具
+│  └─ ui/                  # ManagerScene：技能列表-详情、搜索、帮助、诊断页
 ├─ lib/                    # tsc 产物（git 忽略，npm files 携带）
-├─ .dsh/skills/            # 真机探针的项目级技能夹具（git 忽略）
+├─ test/domain/            # node:test 单测（frontmatter + 扫盘）
+├─ .dsh/skills/            # 真机验证用的项目级技能夹具（git 忽略）
 └─ docs/
    ├─ 需求文档.md          # 需求唯一权威（含 FR/NFR/AC/里程碑/未决问题/现状）
-   ├─ research/            # 01–05 调研 + 真机实测；README 为索引
+   ├─ research/            # 01–06 调研 + 真机实测；README 为索引
    ├─ decisions/           # ADR（0001 MCP 启停路径）
    └─ research/evidence/   # 探针原始 JSON 报告
 ```

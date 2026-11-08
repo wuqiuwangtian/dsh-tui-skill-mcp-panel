@@ -53,7 +53,7 @@
 
 1. ✅ **场景内 `tuiDialogs` / `tuiToast`**（已实测）：**都不可用**——dialog 0ms 静默 false、toast `delivered=false`；确认/输入必须场景内自绘。
 2. ✅ **`pluginManager.setPluginEnabled`**（已实测）：可调用但 `listPlugins()` 为 0、对 patch 插入行返回 `failed/unknown-plugin`（~33s）；MCP 启停改以 patch 文本编辑为主路径。
-3. ⚠️ **`SKILL.md.disabled`**（部分实测）：内核 provider 侧已确认生效（改名后技能目录即时变化）；**TUI `/skills` picker 与模型侧同步仍待补**。
+3. ⚠️ **`SKILL.md.disabled`**（部分实测）：内核 provider 侧已确认生效（改名后技能目录即时变化），M1 扫盘也按约定显示「停用」；**TUI `/skills` picker 与模型侧同步仍待补**。
 4. ✅ **TUI 中 HMR 延迟**（已实测）：patch 写入 → loader 行可见 **≈2.0–2.5s**。
 5. ⬜ **与 web 面板并发写 profile patch / groups.json 的锁互操作**（01 §9.6、04 §3.5）。
 6. ⬜ **场景能否收到鼠标事件**（首版设计为纯键盘，不依赖）（01 §9.3）。
@@ -61,6 +61,10 @@
 8. ⬜ **MCP 测试连接的内核能力与 SDK 版本策略**（03 §2.7、02 §6.2）。
 9. ⬜ **`tuiPluginHost.registerCommand` 是否为准入必选**（01 §9.8）。
 10. ⬜ **0.19 vs 0.17 的运行时行为差异**（01 §2.3）。
+
+## 4.1 M1 已验证（2026-11-08）
+
+技能扫描（发现根/rank/名称来源/遮蔽/停用/非法/`.system`）**在真机上与内核发现逐项一致**，详见 [`06-m1-skill-scan-verification.md`](06-m1-skill-scan-verification.md)。UI 视觉走查仍缺。
 
 ## 5. 证据基线与复核方式
 

@@ -5,3 +5,6 @@ lib/
 
 # Probe-only artifacts (project-scope test skills created by the M0/M1 real-machine probe)
 .dsh/
+
+# Probe fixtures for skills (M0/M1 verification)
+.agents/

@@ -65,61 +65,6 @@ export interface TuiSceneServiceLike {
   close(): void
 }
 
-export interface TuiDialogRequestLike {
-  title: string
-  message?: string
-  placeholder?: string
-  initial?: string
-  options?: { id: string; label: string; description?: string }[]
-  signal?: AbortSignal
-  timeoutMs?: number
-}
-
-export interface TuiDialogServiceLike {
-  select(request: TuiDialogRequestLike): Promise<string | undefined>
-  confirm(request: TuiDialogRequestLike): Promise<boolean>
-  input(request: TuiDialogRequestLike): Promise<string | undefined>
-}
-
-export interface TuiToastServiceLike {
-  show(
-    text: string | number | boolean,
-    options?: { color?: 'success' | 'warning' | 'error'; timeoutMs?: number },
-  ): boolean
-}
-
-export interface PluginInfoLike {
-  entryId?: string
-  patchId?: string
-  moduleName?: string
-  enabled?: boolean
-  fiberPhase?: string
-  diagnostic?: unknown
-}
-
-export interface PluginManagerLike {
-  listPlugins(): PluginInfoLike[]
-  setPluginEnabled(entryId: string, enabled: boolean): unknown
-}
-
-export interface SkillRegistryLike {
-  snapshot?: (...args: unknown[]) => unknown
-  list?: (...args: unknown[]) => unknown
-  get?: (name: string) => unknown
-}
-
-export interface LoaderEntryLike {
-  options?: { id?: string; name?: string; disabled?: unknown }
-  disabled?: unknown
-}
-
-export interface LoaderLike {
-  entries(): Iterable<LoaderEntryLike>
-}
-
 export interface DocumentPathLike {
   readonly documentPath?: string
 }
-
-export type ConfigEditorLike = DocumentPathLike
-export type SettingsLike = DocumentPathLike

@@ -16,7 +16,7 @@
 | 启动 | `DSH_HOME=~/.dsh`（默认），`cwd=/home/wqwt/code/dsh-tui-skill-mcp-panel`，profile patch 覆盖 `fullscreen: true`、`lang: zh` |
 | 驱动 | 真实 pty（终端会话内 `script -q -e -f <log> -c "dsh --profile dsh-tui-probe"`），键盘注入 + scene 内状态；插件把结果写 JSON 报告 |
 
-探针插件本体已落在本仓库：`src/index.ts`（`name`/`Config`/`apply`）、`src/host/register.ts`（场景 + `/skill-mcp*` 命令）、`src/ui/ProbeScene.tsx`（全屏诊断场景）、`src/host/probe-runtime.ts`（能力探测 / 报告 / HMR 采样）。**探针代码是临时的**，M1 起被技能/MCP 管理实现替换。
+探针插件本体当时落在仓库（提交 `3d2ddfa`）：`src/index.ts`（`name`/`Config`/`apply`）、`src/host/register.ts`（场景 + `/skill-mcp*` 命令）、`src/ui/ProbeScene.tsx`（全屏诊断场景）、`src/host/probe-runtime.ts`（能力探测 / 报告 / HMR 采样）。**M1（2026-11-08）起已被 `src/domain/skills` + `src/ui/ManagerScene.tsx` 替换**；需要复跑 Q8 探针时从该提交取回代码。
 
 复现要点：
 
