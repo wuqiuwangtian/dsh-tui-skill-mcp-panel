@@ -17,6 +17,7 @@ import { createManagerScene } from '../lib/types/ui/ManagerScene.js'
 import { scanSkills } from '../lib/types/domain/skills/index.js'
 
 const require = createRequire(import.meta.url)
+const { Terminal: XtermTerminal } = require('@xterm/headless')
 const dshTuiManifest = require.resolve('@deepseek-harness-tui/dsh-tui/package.json')
 const dshTuiDir = dirname(dshTuiManifest)
 const uiFile = join(dshTuiDir, 'lib', 'types', 'ui.js')
@@ -120,6 +121,18 @@ const stripAnsi = (text) =>
     .replace(/\x1b\][^\x07]*\x07/gu, '')
     .replace(/\r/gu, '')
 
+async function terminalScreen(raw, columns, rows) {
+  const term = new XtermTerminal({ cols: columns, rows, allowProposedApi: true, scrollback: 0 })
+  await new Promise((resolve) => term.write(raw, resolve))
+  const buffer = term.buffer.active
+  const lines = []
+  for (let y = 0; y < rows; y += 1) {
+    lines.push((buffer.getLine(y)?.translateToString(true) ?? '').replace(/\s+$/u, ''))
+  }
+  term.dispose()
+  return lines.join('\n').replace(/\n+$/u, '')
+}
+
 async function renderAt(columns) {
   const stdout = new FakeStdout(columns, 40)
   const stdin = new FakeStdin()
@@ -143,7 +156,8 @@ async function renderAt(columns) {
   await new Promise((resolve) => setTimeout(resolve, 250))
   instance.unmount()
   await new Promise((resolve) => setTimeout(resolve, 50))
-  return stripAnsi(stdout.chunks.join(''))
+  const raw = stdout.chunks.join('')
+  return terminalScreen(raw, columns, 40)
 }
 
 const failures = []
@@ -170,6 +184,14 @@ assertContains('wide', frameWide, [
 ])
 
 const frameNarrow = await renderAt(58)
+
+const dumpDir = process.env.RENDER_SMOKE_DUMP
+if (dumpDir) {
+  const { mkdirSync, writeFileSync } = await import('node:fs')
+  mkdirSync(dumpDir, { recursive: true })
+  writeFileSync(join(dumpDir, 'wide.txt'), frameWide, 'utf8')
+  writeFileSync(join(dumpDir, 'narrow.txt'), frameNarrow, 'utf8')
+}
 assertContains('narrow', frameNarrow, ['Skill / MCP manager', '技能', '诊断', 'alpha', '技能列表'])
 
 if (failures.length > 0) {

@@ -1,7 +1,13 @@
 /**
  * Full-screen manager scene (M1): skills read-only list + detail, host
- * diagnostics, and placeholders for the M2/M3 tabs. Keyboard-only by design
- * (host dialogs/toasts are unusable from plugin scenes — see docs/research/05).
+ * diagnostics, and placeholders for the M2/M3 tabs.
+ *
+ * Interaction model:
+ * - keyboard is primary and sufficient: ↑/↓ select, ←/→ switch scope,
+ *   Tab switches pages, Enter opens detail on narrow terminals;
+ * - mouse is additive where the host routes events (fullscreen): click tabs /
+ *   scope / rows, wheel scrolls the list, detail or diagnostics pane.
+ * Host dialogs/toasts remain unusable from plugin scenes (docs/research/05).
  */
 import type { ComponentType } from 'react'
 import type { TuiSceneProps } from '@deepseek-harness-tui/dsh-tui/scenes'
@@ -58,24 +64,27 @@ const STATUS_GLYPHS: Record<SkillStatus, string> = {
 }
 
 const HELP_LINES = [
-  '快捷键 Keys',
-  '  ↑/↓, j/k           移动选择',
-  '  PgUp/PgDn, Home/End 翻页 / 首尾',
-  '  Tab / Shift+Tab     切换页签',
-  '  Enter              窄终端下打开/返回详情',
-  '  /                   搜索（Esc 退出）',
-  '  f                   切换作用域（全部/工作区/全局）',
-  '  1/2/3               直接选作用域',
-  '  r                   重新扫描磁盘',
-  '  w                   导出诊断 JSON（需 SKILL_MCP_PANEL_DUMP）',
-  '  ?                   本帮助',
-  '  Esc/q               返回 / 关闭',
+  '快捷键 Keys（键盘足够用，鼠标是额外增强）',
+  '  ↑/↓ 或 j/k        选择列表中的技能',
+  '  ←/→ 或 h/l        切换作用域（全部 / 工作区 / 全局）',
+  '  Tab / Shift+Tab    切换页签；数字 1-4 直达',
+  '  Enter             窄终端打开详情；详情页再按返回列表',
+  '  PgUp/PgDn         宽终端下滚动右侧详情正文',
+  '  /                 搜索（Enter/Esc 退出搜索）',
+  '  r                 重新扫描磁盘',
+  '  w                 导出诊断 JSON（需 SKILL_MCP_PANEL_DUMP）',
+  '  ?                 本帮助',
+  '  Esc / q           返回 / 关闭（搜索、帮助、窄屏详情逐层退出）',
+  '',
+  '鼠标（仅 fullscreen 布局下）',
+  '  点击页签/作用域/技能行即可切换与选择；滚轮滚动列表、详情与诊断页。',
+  '  窄终端下点击技能行会直接打开详情。',
   '',
   '已知限制 Limits',
   '  · MCP 没有工作区级配置：只有当前 profile + home 全局层。',
   '  · 技能只发现一层：<root>/<name>/SKILL.md 或 <root>/<name>.md。',
   '  · 场景内不使用宿主对话框/toast（实测不可用），确认与输入均为自绘。',
-  '  · 保存类操作尚未实现：M1 为只读（启停/删除/添加在 M2）。',
+  '  · 写操作尚未实现：M1 为只读（启停/删除/添加在 M2）。',
 ]
 
 const MCP_PLACEHOLDER_LINES = [
@@ -97,6 +106,10 @@ interface SceneUi {
   Text: TuiSceneProps['ui']['Text']
   useInput: TuiSceneProps['ui']['useInput']
   useTerminalSize: TuiSceneProps['ui']['useTerminalSize']
+}
+
+interface WheelLike {
+  deltaY: number
 }
 
 function statusFlags(instance: SkillInstance): string {
@@ -204,7 +217,6 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   push('  · 技能发现规则与 DSH 内核一致；本页结果由插件自行扫盘，非 ctx.skills。')
   push('  · customSkillDirs 无法从宿主层读取，当前按未配置处理（未列出的自定义根会被漏掉）。')
   push('  · 只覆盖文件来源；运行期注册（runtime/agent scope）的技能不在扫盘结果内。')
-  push('  · 面板 M1 只读；启停/删除/添加/分组在后续里程碑。')
   return lines
 }
 
@@ -216,12 +228,11 @@ function skillDetailLines(instance: SkillInstance | undefined, state: ManagerSta
   const push = (line: string): void => {
     lines.push(truncateToWidth(line, width, '…'))
   }
-  push(`${instance.name}`)
   push(
     `状态 ${STATUS_LABELS[instance.status]} · 来源 ${SOURCE_LABELS[instance.source]} · rank ${instance.rank} · ${instance.scope === 'workspace' ? '工作区' : '全局'}`,
   )
   if (instance.shadowedBy !== undefined) push(`被遮蔽 by ${instance.shadowedBy}`)
-  push(`形态 ${instance.form === 'directory' ? '目录束' : '平铺 .md'}`)
+  push(`形态 ${instance.form === 'directory' ? '目录束' : '平铺 .md'} · ${instance.effective ? '内核可见' : '内核不可见'}`)
   push(`文件 ${instance.path}`)
   push(`根 ${instance.rootPath}`)
   if (instance.modelInvocable === false) push('模型不可调用（disable-model-invocation）')
@@ -234,7 +245,7 @@ function skillDetailLines(instance: SkillInstance | undefined, state: ManagerSta
   const metadataKeys = instance.metadata === undefined ? [] : Object.keys(instance.metadata)
   if (metadataKeys.length > 0) push(`metadata keys ${metadataKeys.join(', ')}`)
   push('')
-  push('正文 Body（只读，前 40 行）')
+  push('正文 Body（只读）')
   const content = state.detail.id === instance.id ? state.detail.content : undefined
   if (state.detail.id === instance.id && state.detail.status === 'loading' && content === undefined) {
     push('  (读取中…)')
@@ -247,8 +258,7 @@ function skillDetailLines(instance: SkillInstance | undefined, state: ManagerSta
   const raw = content ?? instance.bodyPreview ?? ''
   const split = splitFrontmatter(raw)
   const body = split?.body ?? raw
-  const bodyLines = firstLines(body, 40)
-  for (const line of bodyLines) push(`  ${line}`)
+  for (const line of firstLines(body, 400)) push(`  ${line}`)
   return lines
 }
 
@@ -266,6 +276,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const [helpOpen, setHelpOpen] = React.useState(false)
     const [narrowDetail, setNarrowDetail] = React.useState(false)
     const [diagOffset, setDiagOffset] = React.useState(0)
+    const [detailOffset, setDetailOffset] = React.useState(0)
 
     React.useEffect(() => runtime.subscribe(forceRender), [])
     React.useEffect(() => {
@@ -275,6 +286,11 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const state = runtime.snapshot()
     const scan = state.scan
     const summary = counts(scan)
+    const scopeCounts: Record<ScopeFilter, number> = {
+      all: summary.total,
+      workspace: summary.workspace,
+      global: summary.global,
+    }
     const filtered = filterInstances(scan, scope, query)
     const selected = filtered.find((instance) => instance.id === selectedId) ?? filtered[0]
     const selectedIndex = Math.max(
@@ -291,19 +307,25 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       void runtime.loadDetail(selected)
     }, [selected?.id])
 
+    React.useEffect(() => {
+      setDetailOffset(0)
+    }, [selected?.id])
+
     const contentWidth = Math.max(20, columns - 2)
     const wide = columns >= 90
     const twoPane = columns >= 64
     const narrow = !twoPane
-    const scopeWidth = wide ? Math.min(20, Math.max(16, Math.floor(contentWidth * 0.16))) : 0
+    const scopeWidth = wide ? 22 : 0
     const paneWidth = wide
-      ? Math.floor((contentWidth - scopeWidth - 2) / 2)
+      ? Math.max(16, Math.floor((contentWidth - scopeWidth - 2) / 2))
       : twoPane
-        ? Math.floor(contentWidth / 2) - 1
+        ? Math.max(16, Math.floor(contentWidth / 2) - 1)
         : contentWidth
-    const listWidth = Math.max(16, paneWidth)
-    const detailWidth = wide ? Math.max(16, contentWidth - scopeWidth - 2 - listWidth) : Math.max(16, contentWidth - listWidth - 1)
-    const visibleRows = Math.max(4, rows - 12)
+    const listWidth = paneWidth
+    const detailWidth = wide
+      ? Math.max(16, contentWidth - scopeWidth - 2 - listWidth)
+      : Math.max(16, contentWidth - listWidth - 1)
+    const bodyRows = Math.max(4, rows - 9)
 
     const moveSelection = (delta: number): void => {
       if (filtered.length === 0) return
@@ -318,11 +340,17 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       setTab(TABS[next] ?? 'skills')
       setNarrowDetail(false)
       setDiagOffset(0)
+      setDetailOffset(0)
     }
 
-    const cycleScope = (): void => {
+    const cycleScope = (delta: number): void => {
       const index = SCOPE_FILTERS.indexOf(scope)
-      setScope(SCOPE_FILTERS[(index + 1) % SCOPE_FILTERS.length] ?? 'all')
+      setScope(SCOPE_FILTERS[(index + delta + SCOPE_FILTERS.length) % SCOPE_FILTERS.length] ?? 'all')
+    }
+
+    const wheelBy = (event: WheelLike, handler: (delta: number) => void): void => {
+      if (event.deltaY === 0) return
+      handler(event.deltaY > 0 ? 1 : -1)
     }
 
     useInput((input, key) => {
@@ -358,8 +386,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
       const char = text.length > 0 ? (text[0]?.toLowerCase() ?? '') : ''
       if (char === 'q') {
-        if (narrow && narrowDetail) setNarrowDetail(false)
-        else close()
+        close()
         return
       }
       if (char === '?') {
@@ -378,62 +405,91 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         void runtime.dumpNow()
         return
       }
-      if (char === 'f') {
-        cycleScope()
+      if (char === '1') setTab('skills')
+      else if (char === '2') setTab('mcp')
+      else if (char === '3') setTab('groups')
+      else if (char === '4') setTab('diagnostics')
+
+      if (tab === 'skills') {
+        if (narrow && narrowDetail) {
+          if (key.upArrow || char === 'k') setDetailOffset((value) => Math.max(0, value - 1))
+          else if (key.downArrow || char === 'j') setDetailOffset((value) => value + 1)
+          else if (key.pageUp) setDetailOffset((value) => Math.max(0, value - bodyRows))
+          else if (key.pageDown) setDetailOffset((value) => value + bodyRows)
+          else if (key.home) setDetailOffset(0)
+          else if (key.return || key.leftArrow || char === 'h') setNarrowDetail(false)
+          return
+        }
+        if (key.upArrow || char === 'k') moveSelection(-1)
+        else if (key.downArrow || char === 'j') moveSelection(1)
+        else if (key.leftArrow || char === 'h') cycleScope(-1)
+        else if (key.rightArrow || char === 'l') cycleScope(1)
+        else if (key.pageUp) setDetailOffset((value) => Math.max(0, value - bodyRows))
+        else if (key.pageDown) setDetailOffset((value) => value + bodyRows)
+        else if (key.home) moveSelection(-filtered.length)
+        else if (key.end) moveSelection(filtered.length)
+        else if (key.return && narrow) setNarrowDetail(true)
         return
       }
-      if (char === '1') setScope('all')
-      else if (char === '2') setScope('workspace')
-      else if (char === '3') setScope('global')
+
       if (tab === 'diagnostics') {
         if (key.upArrow || char === 'k') setDiagOffset((value) => Math.max(0, value - 1))
         else if (key.downArrow || char === 'j') setDiagOffset((value) => value + 1)
-        else if (key.pageUp) setDiagOffset((value) => Math.max(0, value - visibleRows))
-        else if (key.pageDown) setDiagOffset((value) => value + visibleRows)
+        else if (key.pageUp) setDiagOffset((value) => Math.max(0, value - bodyRows))
+        else if (key.pageDown) setDiagOffset((value) => value + bodyRows)
         else if (key.home) setDiagOffset(0)
         return
       }
-      if (key.upArrow || char === 'k') moveSelection(-1)
-      else if (key.downArrow || char === 'j') moveSelection(1)
-      else if (key.pageUp) moveSelection(-visibleRows)
-      else if (key.pageDown) moveSelection(visibleRows)
-      else if (key.home) moveSelection(-filtered.length)
-      else if (key.end) moveSelection(filtered.length)
-      else if (key.return && narrow) setNarrowDetail((value) => !value)
+      if (key.upArrow || char === 'k') setDetailOffset((value) => Math.max(0, value - 1))
+      else if (key.downArrow || char === 'j') setDetailOffset((value) => value + 1)
     })
 
+    // ── shared pieces ────────────────────────────────────────────────────────
     const tabBar = (
       <Box flexDirection="row">
         {TABS.map((candidate) => (
-          <Text key={candidate} bold={candidate === tab} inverse={candidate === tab} dimColor={candidate !== tab}>
-            {` ${twoPane ? TAB_LABELS[candidate] : TAB_LABELS_NARROW[candidate]} `}
-          </Text>
+          <Box
+            key={candidate}
+            onClick={() => {
+              setTab(candidate)
+              setNarrowDetail(false)
+            }}
+          >
+            <Text bold={candidate === tab} inverse={candidate === tab} dimColor={candidate !== tab}>
+              {` ${twoPane ? TAB_LABELS[candidate] : TAB_LABELS_NARROW[candidate]} `}
+            </Text>
+          </Box>
         ))}
       </Box>
     )
 
-    const scopeBar = (
-      <Box flexDirection="row">
-        {SCOPE_FILTERS.map((candidate) => {
-          const count = candidate === 'all' ? summary.total : candidate === 'workspace' ? summary.workspace : summary.global
-          return (
-            <Text key={candidate} inverse={candidate === scope} dimColor={candidate !== scope}>
-              {` ${SCOPE_LABELS[candidate]}(${count}) `}
-            </Text>
-          )
-        })}
-      </Box>
-    )
+    const scopeItems = SCOPE_FILTERS.map((candidate) => {
+      const marker = candidate === scope ? '▸ ' : '  '
+      return (
+        <Box
+          key={candidate}
+          onClick={() => {
+            setScope(candidate)
+            setNarrowDetail(false)
+          }}
+        >
+          <Text inverse={candidate === scope} dimColor={candidate !== scope}>
+            {truncateToWidth(
+              `${marker}${SCOPE_LABELS[candidate]} (${scopeCounts[candidate]})`,
+              wide ? scopeWidth : contentWidth,
+              '…',
+            )}
+          </Text>
+        </Box>
+      )
+    })
 
-    const topLines = [
-      `Skill / MCP manager · ${columns}x${rows} · scene=${sceneId}`,
-      searchMode
-        ? `搜索: ${query}▌  (Enter/Esc 退出)`
-        : `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}${query.length > 0 ? ` · 过滤 "${query}"` : ''}`,
-    ]
+    const topLine = `Skill / MCP manager · ${columns}x${rows} · ${sceneId}`
+    const summaryLine = searchMode
+      ? `搜索: ${query}▌  (Enter/Esc 退出)`
+      : `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}${query.length > 0 ? ` · 过滤 "${query}"` : ''}`
 
-    // Verification-only render snapshot (SKILL_MCP_PANEL_RENDER_DUMP): proves the
-    // scene mounted under the real TUI reconciler and records what it computed.
+    // Verification-only render snapshot (SKILL_MCP_PANEL_RENDER_DUMP).
     const verificationRows = filtered.map((instance) => {
       const flags = statusFlags(instance)
       return `${STATUS_GLYPHS[instance.status]} ${instance.name} [${SOURCE_LABELS[instance.source]}${flags.length > 0 ? ` ${flags}` : ''}]`
@@ -462,11 +518,11 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     if (helpOpen) {
       return (
         <Box flexDirection="column" flexGrow={1} paddingX={1}>
-          <Text bold>{topLines[0]}</Text>
+          <Text bold>{topLine}</Text>
           {tabBar}
           <Box flexDirection="column" flexGrow={1} marginTop={1}>
             {HELP_LINES.map((line, index) => (
-              <Text key={`help-${index}`} wrap="truncate">
+              <Text key={`help-${index}`} wrap="truncate" dimColor={index > 0 && line.startsWith('  ')}>
                 {line}
               </Text>
             ))}
@@ -477,12 +533,21 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     }
 
     const listHeader = `技能列表 · ${SCOPE_LABELS[scope]}${query.length > 0 ? ` · "${query}"` : ''}`
-    const listWindowStart = Math.max(0, Math.min(selectedIndex - Math.floor(visibleRows / 2), Math.max(0, filtered.length - visibleRows)))
-    const listWindow = filtered.slice(listWindowStart, listWindowStart + visibleRows)
+    const listWindowStart = Math.max(
+      0,
+      Math.min(selectedIndex - Math.floor(bodyRows / 2), Math.max(0, filtered.length - bodyRows)),
+    )
+    const listWindow = filtered.slice(listWindowStart, listWindowStart + bodyRows)
+    const nameWidth = Math.max(10, Math.min(26, listWidth - 30))
+
     const listPane = (
-      <Box flexDirection="column" width={narrow ? contentWidth : listWidth}>
+      <Box
+        flexDirection="column"
+        width={narrow ? contentWidth : listWidth}
+        onWheel={(event: WheelLike) => wheelBy(event, moveSelection)}
+      >
         <Text bold dimColor>
-          {truncateToWidth(listHeader, listWidth, '…')}
+          {truncateToWidth(listHeader, narrow ? contentWidth : listWidth, '…')}
         </Text>
         {filtered.length === 0 ? (
           <Text dimColor wrap="wrap">
@@ -491,38 +556,58 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
               : query.length > 0
                 ? '没有匹配的技能（/ 修改搜索，Esc 退出搜索）。'
                 : scope !== 'all' && summary.total > 0
-                  ? `当前筛选「${SCOPE_LABELS[scope]}」下没有技能（f 切换作用域）。`
+                  ? `当前筛选「${SCOPE_LABELS[scope]}」下没有技能（←/→ 切换作用域）。`
                   : '没有任何技能。把技能放到发现根即可：\n  <project>/.dsh/skills/<name>/SKILL.md\n  或 ~/.dsh/skills/<name>/SKILL.md'}
           </Text>
         ) : (
           listWindow.map((instance) => {
             const isSelected = instance.id === selected?.id
-            const glyph = STATUS_GLYPHS[instance.status]
-            const line = `${glyph} ${instance.name}  ${SOURCE_LABELS[instance.source]}  ${statusFlags(instance)}`
+            const dim = !isSelected && !instance.effective
+            const flags = statusFlags(instance)
+            const line = `${STATUS_GLYPHS[instance.status]} ${padToWidth(instance.name, nameWidth)} ${SOURCE_LABELS[instance.source]}${flags.length > 0 ? `  ${flags}` : ''}`
             return (
-              <Text key={instance.id} inverse={isSelected} bold={isSelected} wrap="truncate">
-                {padToWidth(line, listWidth)}
-              </Text>
+              <Box
+                key={instance.id}
+                onClick={() => {
+                  setSelectedId(instance.id)
+                  if (narrow) setNarrowDetail(true)
+                }}
+              >
+                <Text inverse={isSelected} bold={isSelected} dimColor={dim} wrap="truncate">
+                  {padToWidth(line, narrow ? contentWidth : listWidth)}
+                </Text>
+              </Box>
             )
           })
         )}
-        {filtered.length > visibleRows ? (
+        {filtered.length > bodyRows ? (
           <Text dimColor>
-            {`${listWindowStart + 1}-${Math.min(listWindowStart + visibleRows, filtered.length)} / ${filtered.length}`}
+            {`${listWindowStart + 1}-${Math.min(listWindowStart + bodyRows, filtered.length)} / ${filtered.length}`}
           </Text>
         ) : null}
       </Box>
     )
 
     const detailLines = skillDetailLines(selected, state, narrow ? contentWidth : detailWidth)
+    const detailWindow = detailLines.slice(detailOffset, detailOffset + bodyRows)
     const detailPane = (
-      <Box flexDirection="column" width={narrow ? contentWidth : detailWidth}>
+      <Box
+        flexDirection="column"
+        width={narrow ? contentWidth : detailWidth}
+        onWheel={(event: WheelLike) =>
+          wheelBy(event, (delta) =>
+            setDetailOffset((value) => Math.max(0, Math.min(Math.max(0, detailLines.length - bodyRows), value + delta))),
+          )
+        }
+      >
         <Text bold dimColor>
-          {selected === undefined ? '详情' : `详情 · ${truncateToWidth(selected.name, Math.max(8, detailWidth - 8))}`}
+          {selected === undefined
+            ? '详情'
+            : `详情 · ${truncateToWidth(selected.name, Math.max(8, (narrow ? contentWidth : detailWidth) - 8))}`}
         </Text>
         <Box flexDirection="column" flexGrow={1}>
-          {detailLines.slice(0, Math.max(6, rows - 12)).map((line, index) => (
-            <Text key={`detail-${index}`} wrap="truncate" dimColor={index > 0 && line.startsWith('   ')}>
+          {detailWindow.map((line, index) => (
+            <Text key={`detail-${detailOffset + index}`} wrap="truncate" dimColor={line.startsWith('  ')}>
               {line}
             </Text>
           ))}
@@ -530,18 +615,28 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       </Box>
     )
 
+    const scopePane = (
+      <Box flexDirection="column" width={scopeWidth}>
+        <Text bold dimColor>
+          作用域
+        </Text>
+        {scopeItems}
+        <Box flexGrow={1} />
+      </Box>
+    )
+
     const skillsContent = narrow ? (
-      narrowDetail && selected !== undefined ? detailPane : listPane
+      narrowDetail ? (
+        detailPane
+      ) : (
+        <Box flexDirection="column" flexGrow={1}>
+          <Box flexDirection="row">{scopeItems.slice(0, 3)}</Box>
+          {listPane}
+        </Box>
+      )
     ) : (
       <Box flexDirection="row" flexGrow={1}>
-        {wide ? (
-          <Box flexDirection="column" width={scopeWidth}>
-            <Text bold dimColor>
-              作用域
-            </Text>
-            {scopeBar}
-          </Box>
-        ) : null}
+        {wide ? scopePane : null}
         {listPane}
         <Box width={1} />
         {detailPane}
@@ -560,7 +655,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     )
 
     const diagnosticsAll = diagnosticLines(state, contentWidth)
-    const diagnosticsWindow = diagnosticsAll.slice(diagOffset, diagOffset + Math.max(6, rows - 8))
+    const diagnosticsWindow = diagnosticsAll.slice(diagOffset, diagOffset + bodyRows)
 
     const body =
       tab === 'skills' ? (
@@ -570,7 +665,12 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       ) : tab === 'groups' ? (
         placeholder('分组（M2 计划）', GROUPS_PLACEHOLDER_LINES)
       ) : (
-        <Box flexDirection="column" flexGrow={1} marginTop={1}>
+        <Box
+          flexDirection="column"
+          flexGrow={1}
+          marginTop={1}
+          onWheel={(event: WheelLike) => wheelBy(event, (delta) => setDiagOffset((value) => Math.max(0, value + delta)))}
+        >
           {diagnosticsWindow.map((line, index) => (
             <Text key={`diag-${diagOffset + index}`} wrap="truncate" dimColor={line.startsWith('  ')}>
               {line}
@@ -578,7 +678,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           ))}
           {diagnosticsAll.length > diagnosticsWindow.length ? (
             <Text dimColor>
-              {`${diagOffset + 1}-${diagOffset + diagnosticsWindow.length} / ${diagnosticsAll.length}（↑/↓ 滚动）`}
+              {`${diagOffset + 1}-${diagOffset + diagnosticsWindow.length} / ${diagnosticsAll.length}（↑/↓ 或滚轮滚动）`}
             </Text>
           ) : null}
         </Box>
@@ -586,18 +686,18 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
     return (
       <Box flexDirection="column" flexGrow={1} paddingX={1}>
-        <Text bold>{topLines[0]}</Text>
+        <Text bold>{topLine}</Text>
         <Box flexDirection="row">
           {tabBar}
-          {tab === 'skills' && !wide ? <Box width={1} /> : null}
-          {tab === 'skills' && !wide ? scopeBar : null}
+          {tab === 'skills' && !wide && twoPane ? <Box width={2} /> : null}
+          {tab === 'skills' && !wide && twoPane ? <Box flexDirection="row">{scopeItems.slice(0, 3)}</Box> : null}
         </Box>
         <Text dimColor wrap="truncate">
-          {topLines[1]}
+          {summaryLine}
         </Text>
         {body}
         <Text bold dimColor wrap="truncate">
-          {`↑↓ 移动 · Tab 页签 · / 搜索 · f 作用域 · r 刷新 · ${narrow ? 'Enter 详情 · ' : ''}? 帮助 · q 关闭`}
+          {`↑↓ 选择 · ←→ 作用域 · Tab 页签 · ${narrow ? 'Enter 详情 · ' : ''}/ 搜索 · r 刷新 · ? 帮助 · q 关闭 · 支持鼠标`}
         </Text>
         {state.status === 'error' ? (
           <Text wrap="truncate">{`错误：${state.error ?? 'unknown'}`}</Text>
