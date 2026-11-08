@@ -237,6 +237,14 @@ try {
   await sleep(300)
   const groups2 = JSON.parse(await readFile(groupsPath, 'utf8'))
   check('second group created', Object.values(groups2.groups).some((group) => group.name === '第二组'), JSON.stringify(groups2))
+
+  // MCP tab renders (this runtime has no profile patch → empty state)
+  await press('\t') // groups -> diagnostics
+  await press('\t') // diagnostics -> skills
+  await press('\t') // skills -> mcp
+  await sleep(250)
+  screen = await screenText()
+  check('mcp tab renders', screen.includes('MCP servers') && screen.includes('没有 MCP 行'), screen.slice(0, 400))
 } finally {
   try { instance.unmount() } catch {}
   try { runtime.dispose() } catch {}

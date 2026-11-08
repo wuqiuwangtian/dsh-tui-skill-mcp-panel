@@ -29,7 +29,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm build && node --test test/domain/*.test.js",
     "test:ui": "pnpm build && node scripts/ui-render-smoke.mjs",
-    "test:ui:interaction": "pnpm build && node scripts/ui-interaction-smoke.mjs"
+    "test:ui:interaction": "pnpm build && node scripts/ui-interaction-smoke.mjs",
+    "test:mcp": "pnpm build && node scripts/mcp-smoke.mjs"
   },
   "license": "MIT",
   "dsh": {

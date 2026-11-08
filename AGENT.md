@@ -17,8 +17,8 @@
 
 ## 2. 当前阶段与边界
 
-- **阶段：M2 P0 已落地（2026-11-08）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
-- **当前能力边界**：`/skill-mcp` 技能列表/详情 + 启停 + 软删除/撤销 + 添加导入 + 分组 + 批量；MCP/组内批量为后续里程碑。扫盘与内核一致已真机验证（[`docs/research/06`](docs/research/06-m1-skill-scan-verification.md)），写操作与分组的域层证据见 [`docs/research/07`](docs/research/07-m2-skill-write-verification.md)；真实 TUI 写操作走查待补；**不可发布**。
+- **阶段：M3 P0 已落地（2026-11-08）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
+- **当前能力边界**：`/skill-mcp` 技能列表/详情 + 启停 + 软删除/撤销 + 添加导入 + 分组 + 批量；MCP 只读列表 + 启停（profile 层受管块）。扫盘与内核一致已真机验证（[`docs/research/06`](docs/research/06-m1-skill-scan-verification.md)），M2/M3 证据见 [`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)；MCP 写操作与真实 TUI 走查待补；**不可发布**。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -97,6 +97,7 @@
 - **裸 ESC 是 escape+meta**：宿主输入解析给 `useInput` 的裸 Esc 同时带 `escape: true` 与 `meta: true`（Ink 50ms flush）→ 快捷键守卫必须写成 `if ((key.ctrl || key.meta) && !key.escape) return`，否则模态框无法用 Esc 取消（M2 实际踩过）。
 - **`r` 键按页签分派**：分组页 `r` = 重命名，技能/诊断页 `r` = 刷新；全局刷新用 `R`。
 - **←/→ 统一语义**：先移动空间焦点（技能页：作用域 ⇄ 列表 ⇄ 详情）；内容区没有左右相邻区域时（分组/MCP/诊断）切换页签；页签栏上始终切换页签。
+- **MCP 启停不靠 pluginManager**：`listPlugins()` 实测为空；启停写 profile patch 的**受管块**（marker `dsh-tui-skill-mcp-panel:mcp-toggle`，与 web 版不同名），块外字节零改动；写前备份、写后 YAML 校验、原子写，然后轮询 loader 最多 10s。`!!js` 值只用 custom tag 解析、不 eval、不执行；home 层/表达式控制行只读。
 - **JSX 已验证可行**：`tsconfig` 的 `jsxImportSource: "@deepseek-harness-tui/dsh-tui"` + props 注入 `React`，真实 TUI 渲染无 invalid hook/元素错误。
 - **`link:` 安装时依赖解析**：插件运行时依赖须写在自身 `dependencies`（pnpm link 不解析目标目录依赖）；类型依赖放 `devDependencies`。
 - **扫盘与内核一致性已验证**（M1）：发现根/rank、frontmatter 名称、遮蔽、`.disabled`、非法条目与内核实测目录逐项一致（`docs/research/06`）；**但 `customSkillDirs` 在 host 层不可读**（按未配置处理），runtime 注册的技能不在扫盘内。
@@ -136,6 +137,7 @@ pnpm test                   # build + node:test（domain 层，22 个用例）
 pnpm test:ui                # headless Ink 渲染 smoke（160/58 列）
 pnpm test:ui:interaction    # headless 交互 smoke：真实 ManagerRuntime + 临时技能树，
                             # 驱动 空格/v/d+u/a/g/Tab，断言文件与 groups.json 变化
+pnpm test:mcp               # headless MCP smoke：patch/loader 合成、受管块启停、HMR 轮询、home 只读
 ```
 
 **真机安装（已验证流程）**——用独立探针 profile，避免影响日常 `dsh-tui` profile：
@@ -195,6 +197,7 @@ dsh-tui-skill-mcp-panel/
 │  ├─ index.ts             # Cordis 插件三面：name / Config / apply
 │  ├─ domain/              # 纯逻辑，可单测、不 import React：
 │  │  ├─ skills/          # 发现根/rank/frontmatter/扫盘/遮蔽 + 写操作（启停/删除/撤销/添加）
+│  │  ├─ mcp/patch.ts     # MCP patch 解析（!!js）、受管块启停、层级/脱敏、原子写/备份
 │  │  ├─ groups.ts        # 共享 groups.json v1（损坏回退、原子写、成员）
 │  │  └─ store.ts         # 插件私有路径（trash/backups/config）与配置
 │  ├─ host/                # 场景与命令注册、ManagerRuntime（扫描状态/详情/诊断/dump）
@@ -206,7 +209,7 @@ dsh-tui-skill-mcp-panel/
 ├─ .dsh/skills/            # 真机验证用的项目级技能夹具（git 忽略）
 └─ docs/
    ├─ 需求文档.md          # 需求唯一权威（含 FR/NFR/AC/里程碑/未决问题/现状）
-   ├─ research/            # 01–07 调研 + 真机实测；README 为索引
+   ├─ research/            # 01–08 调研 + 真机实测；README 为索引
    ├─ decisions/           # ADR（0001 MCP 启停路径）
    └─ research/evidence/   # 探针原始 JSON 报告
 ```

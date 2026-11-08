@@ -68,3 +68,18 @@ export interface TuiSceneServiceLike {
 export interface DocumentPathLike {
   readonly documentPath?: string
 }
+
+export interface LoaderEntryLike {
+  options?: {
+    id?: string
+    name?: string
+    config?: unknown
+    disabled?: unknown
+  }
+  disabled?: boolean
+  fiber?: { state?: number }
+}
+
+export interface LoaderLike {
+  entries(): Iterable<LoaderEntryLike>
+}

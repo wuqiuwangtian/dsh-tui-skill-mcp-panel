@@ -13,6 +13,7 @@ import type { ComponentType, ReactNode } from 'react'
 import { isAbsolute } from 'node:path'
 import type { TuiSceneProps } from '@deepseek-harness-tui/dsh-tui/scenes'
 import { groupMemberCount } from '../domain/groups.js'
+import { describeMcpConfig, type McpRowView } from '../domain/mcp/patch.js'
 import { splitFrontmatter } from '../domain/skills/frontmatter.js'
 import type { SkillInstance, SkillScanResult, SkillSource, SkillStatus } from '../domain/skills/types.js'
 import type { ManagerRuntime, ManagerState } from '../host/manager-runtime.js'
@@ -79,6 +80,8 @@ const HELP_LINES = [
   '  a                  添加技能（本地路径导入）',
   '  g                  把选中/标记技能加入或移出分组',
   '  x                  清除分组过滤 / 清除标记',
+  '  MCP 页              ↑/↓ 选择 · 空格 启停（写 profile patch 受管块）· r 重新读取',
+  '                     详情含脱敏配置；home 层与 !!js 表达式控制的行只读',
   '  /                  搜索（Enter/Esc 退出搜索）',
   '  r                  重新扫描磁盘',
   '  ?                  本帮助',
@@ -203,6 +206,19 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   if (state.sceneError !== undefined) push(`  scene error: ${state.sceneError}`)
   if (state.dumpMessage !== undefined) push(`  dump message: ${state.dumpMessage}`)
   push('')
+  push('MCP（当前 profile patch + home 层 + loader）')
+  push(`  profile patch: ${state.mcp.profilePatchPath ?? '(unknown)'}`)
+  push(`  home patch: ${state.mcp.homePatchPath ?? '(unknown)'}`)
+  push(`  rows: ${state.mcp.rows.length} · 读取于 ${state.mcp.loadedAt ?? '(pending)'}`)
+  for (const error of state.mcp.errors) push(`  错误：${error}`)
+  for (const warning of state.mcp.warnings) push(`  警告：${warning}`)
+  if (state.mcp.lastAction !== undefined) {
+    const action = state.mcp.lastAction
+    push(
+      `  最近 MCP 操作：${action.outcome} ${action.serverName ?? action.id}${action.detail === undefined ? '' : `（${action.detail}）`}`,
+    )
+  }
+  push('')
   push('发现根 Discovery roots（rank 小者优先）')
   for (const root of scan?.roots ?? []) {
     push(`  [${root.rank}] ${root.source} ${root.scope} ${root.exists ? '存在' : '缺失'} ${root.path}`)
@@ -283,6 +299,28 @@ type Modal =
   | { kind: 'select'; title: string; options: { id: string; label: string; hint?: string }[]; index: number; onSubmit: (id: string) => void }
   | { kind: 'info'; title: string; lines: string[] }
 
+function mcpDetailLines(row: McpRowView | undefined, width: number): string[] {
+  if (row === undefined) {
+    return ['（未选择 MCP 行）', '', '当前 profile / home 层没有 MCP 行；MCP 新增/编辑/删除在 M4（受管块）。']
+  }
+  const lines: string[] = []
+  const push = (line: string): void => {
+    lines.push(truncateToWidth(line, width, '…'))
+  }
+  push(`id ${row.id} · entryId ${row.entryId} · 层 ${row.layer}`)
+  push(
+    `serverName ${row.serverName} · transport ${row.transport} · ${row.enabled ? '启用' : '停用'}${row.phase === undefined ? '' : ` · ${row.phase}`}`,
+  )
+  if (row.overriddenByHome) push('home 层覆盖同名 profile 行（只读）')
+  if (row.disabledExpression !== undefined) push(`disabled 表达式 !!js ${row.disabledExpression}`)
+  if (row.readOnlyReason !== undefined) push(`只读：${row.readOnlyReason}`)
+  for (const note of row.notes) push(`· ${note}`)
+  push('')
+  push('配置（敏感值已脱敏）')
+  for (const line of describeMcpConfig(row.config)) push(`  ${line}`)
+  return lines
+}
+
 export function createManagerScene(runtime: ManagerRuntime, sceneId: string): ComponentType<TuiSceneProps> {
   return function ManagerScene({ React, ui, close }: TuiSceneProps): ReturnType<typeof ui.Box> {
     const sceneUi = ui as unknown as SceneUi
@@ -302,6 +340,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const [groupFilter, setGroupFilter] = React.useState<string | undefined>(undefined)
     const [groupSelectedId, setGroupSelectedId] = React.useState<string | undefined>(undefined)
     const [modal, setModal] = React.useState<Modal | undefined>(undefined)
+    const [mcpSelectedId, setMcpSelectedId] = React.useState<string | undefined>(undefined)
 
     React.useEffect(() => runtime.subscribe(forceRender), [])
     React.useEffect(() => {
@@ -337,6 +376,12 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const selectedGroupIndex = Math.max(
       0,
       groupEntries.findIndex(([id]) => id === selectedGroupId),
+    )
+    const mcpRows = state.mcp.rows
+    const selectedMcp = mcpRows.find((row) => row.id === mcpSelectedId) ?? mcpRows[0]
+    const selectedMcpIndex = Math.max(
+      0,
+      mcpRows.findIndex((row) => row.id === selectedMcp?.id),
     )
 
     React.useEffect(() => {
@@ -575,6 +620,12 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (entry !== undefined) setGroupSelectedId(entry[0])
     }
 
+    const moveMcpSelection = (delta: number): void => {
+      if (mcpRows.length === 0) return
+      const next = Math.max(0, Math.min(mcpRows.length - 1, selectedMcpIndex + delta))
+      setMcpSelectedId(mcpRows[next]?.id)
+    }
+
     const switchTab = (delta: number): void => {
       const index = TABS.indexOf(tab)
       const next = TABS[(index + delta + TABS.length) % TABS.length] ?? 'skills'
@@ -764,6 +815,31 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         return
       }
 
+      if (tab === 'mcp' && char === ' ') {
+        if (selectedMcp !== undefined) void runtime.toggleMcp(selectedMcp.id)
+        return
+      }
+
+      if (tab === 'mcp') {
+        if (focus === 'tabs') {
+          if (key.leftArrow || char === 'h') switchTab(-1)
+          else if (key.rightArrow || char === 'l') switchTab(1)
+          else if (key.downArrow || char === 'j' || key.return) setFocus('body')
+          return
+        }
+        if (key.upArrow || char === 'k') {
+          if (selectedMcpIndex <= 0) setFocus('tabs')
+          else moveMcpSelection(-1)
+        } else if (key.downArrow || char === 'j') moveMcpSelection(1)
+        else if (key.leftArrow || char === 'h') switchTab(-1)
+        else if (key.rightArrow || char === 'l') switchTab(1)
+        else if (key.pageUp) moveMcpSelection(-bodyRows)
+        else if (key.pageDown) moveMcpSelection(bodyRows)
+        else if (key.home) setMcpSelectedId(mcpRows[0]?.id)
+        else if (key.end) setMcpSelectedId(mcpRows[mcpRows.length - 1]?.id)
+        return
+      }
+
       if (tab !== 'skills') {
         if (char === 'r') {
           void runtime.refresh('manual')
@@ -943,6 +1019,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       ...verificationRows,
       `selected=${selected?.name ?? '(none)'} status=${selected?.status ?? '-'} path=${selected?.path ?? '-'}`,
       `groups(${groupEntries.length}): ${groupEntries.map(([id, group]) => `${id}:${group.name}:${groupMemberCount(group)}`).join(' ')}`,
+      `mcp(${mcpRows.length}): ${mcpRows.map((row) => `${row.id}:${row.enabled ? 'on' : 'off'}:${row.layer}${row.targetable ? '' : ':ro'}`).join(' ')}`,
       `trash=${state.latestTrash?.batchId ?? '-'} status=${state.statusMessage?.text ?? '-'}`,
       `detail=${state.detail.status}${state.detail.error === undefined ? '' : ` error=${state.detail.error}`}`,
       ...(tab === 'mcp'
@@ -1280,6 +1357,74 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       listCard
     )
 
+    // ── MCP tab ─────────────────────────────────────────────────────────────
+    const mcpListRows = Math.max(3, Math.min(bodyRows - 5, 8))
+    const mcpDetailRows = Math.max(1, bodyRows - mcpListRows - 2)
+    const mcpWindowStart = Math.max(
+      0,
+      Math.min(selectedMcpIndex - Math.floor(mcpListRows / 2), Math.max(0, mcpRows.length - mcpListRows)),
+    )
+    const mcpListNodes = mcpRows.length === 0
+      ? [
+          <Text key="mcp-empty" dimColor wrap="wrap">
+            当前 profile / home 层没有 MCP 行。MCP 新增、编辑、删除在 M4（受管块）；诊断页可见 patch 路径与解析错误。
+          </Text>,
+        ]
+      : mcpRows.slice(mcpWindowStart, mcpWindowStart + mcpListRows).map((row) => {
+          const isSelected = row.id === selectedMcp?.id
+          const flags = [
+            row.enabled ? '启用' : '停用',
+            row.layer,
+            ...(row.phase === undefined ? [] : [row.phase]),
+            ...(row.targetable ? [] : ['只读']),
+          ].join(' · ')
+          return rowNode(
+            row.id,
+            truncateToWidth(`${padToWidth(row.serverName, Math.max(8, Math.min(24, contentWidth - 42)))}  ${row.transport}  ${flags}`, contentWidth - 6),
+            {
+              selected: isSelected,
+              dim: !row.enabled,
+              onClick: () => setMcpSelectedId(row.id),
+            },
+          )
+        })
+    const mcpDetail = mcpDetailLines(selectedMcp, contentWidth - 6).slice(0, mcpDetailRows)
+    const mcpCard = card({
+      title: 'MCP servers',
+      subtitle: `${mcpRows.length} 行 · 启用 ${mcpRows.filter((row) => row.enabled).length} · 停用 ${mcpRows.filter((row) => !row.enabled).length}${state.mcp.togglingId === undefined ? '' : ' · 热加载中…'}`,
+      focused: tab === 'mcp' && focus === 'body',
+      width: contentWidth,
+      onClick: () => setFocus('body'),
+      onWheel: (event: { deltaY: number }) => {
+        if (event.deltaY === 0) return
+        setFocus('body')
+        moveMcpSelection(event.deltaY > 0 ? 1 : -1)
+      },
+      children: [
+        ...state.mcp.errors.slice(0, 2).map((error, index) => (
+          <Text key={`mcp-error-${index}`} color="error" wrap="truncate">
+            {`错误：${error}`}
+          </Text>
+        )),
+        ...mcpListNodes,
+        ...(mcpRows.length > mcpListRows
+          ? [
+              <Text key="mcp-window" dimColor>
+                {`${mcpWindowStart + 1}-${Math.min(mcpWindowStart + mcpListRows, mcpRows.length)} / ${mcpRows.length}`}
+              </Text>,
+            ]
+          : []),
+        <Text key="mcp-divider" dimColor>
+          {'─'.repeat(Math.max(4, contentWidth - 6))}
+        </Text>,
+        ...mcpDetail.map((line, index) => (
+          <Text key={`mcp-detail-${index}`} wrap="truncate" dimColor={line.startsWith('  ')}>
+            {line}
+          </Text>
+        )),
+      ],
+    })
+
     // ── groups tab ──────────────────────────────────────────────────────────
     const groupRows = groupEntries.length === 0
       ? [
@@ -1336,7 +1481,9 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
     const footerStats = state.busy
       ? '处理中…'
-      : `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}`
+      : tab === 'mcp'
+        ? `MCP ${mcpRows.length} · 启用 ${mcpRows.filter((row) => row.enabled).length} · 停用 ${mcpRows.filter((row) => !row.enabled).length}${state.mcp.togglingId === undefined ? '' : ' · 热加载中…'}`
+        : `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}`
     const statusColor =
       statusTone === 'success' ? 'success' : statusTone === 'warning' ? 'warning' : statusTone === 'error' ? 'error' : 'accent'
 
@@ -1387,10 +1534,32 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                 { label: '↵过滤', onClick: toggleGroupFilter },
                 { label: '?', onClick: () => setHelpOpen(true) },
               ]
-          : [
-              { label: 'r 刷新', onClick: () => void runtime.refresh('manual') },
-              { label: '? 帮助', onClick: () => setHelpOpen(true) },
-            ]
+          : tab === 'mcp'
+            ? fullActions
+              ? [
+                  {
+                    label: '空格 启停',
+                    onClick: () => {
+                      if (selectedMcp !== undefined) void runtime.toggleMcp(selectedMcp.id)
+                    },
+                  },
+                  { label: 'r 刷新', onClick: () => void runtime.refreshMcp() },
+                  { label: '? 帮助', onClick: () => setHelpOpen(true) },
+                ]
+              : [
+                  {
+                    label: '␣启停',
+                    onClick: () => {
+                      if (selectedMcp !== undefined) void runtime.toggleMcp(selectedMcp.id)
+                    },
+                  },
+                  { label: 'r刷新', onClick: () => void runtime.refreshMcp() },
+                  { label: '?', onClick: () => setHelpOpen(true) },
+                ]
+            : [
+                { label: 'r 刷新', onClick: () => void runtime.refresh('manual') },
+                { label: '? 帮助', onClick: () => setHelpOpen(true) },
+              ]
 
     return (
       <Box flexDirection="column" flexGrow={1} paddingX={1}>
@@ -1405,7 +1574,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         </Box>
         {tabBar}
         {tab === 'skills' && !wide ? scopeChips : null}
-        {tab === 'skills' ? skillsBody : tab === 'groups' ? groupsCard : bodyCard}
+        {tab === 'skills' ? skillsBody : tab === 'groups' ? groupsCard : tab === 'mcp' ? mcpCard : bodyCard}
         <Box flexDirection="row" height={1}>
           {actionItems.map((item) => actionButton(item.label, item.onClick))}
           <Box flexGrow={1} />

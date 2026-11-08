@@ -32,15 +32,30 @@ import {
   type SkillGroups,
 } from '../domain/groups.js'
 import {
+  backupsRoot,
   groupsFile,
   loadPanelConfig,
   panelHome,
   type PanelConfig,
 } from '../domain/store.js'
 import {
+  MCP_MODULE,
+  backupPatchFile,
+  buildMcpRows,
+  parsePatchText,
+  upsertManagedToggle,
+  writePatchFileAtomic,
+  type LoaderMcpRow,
+  type McpRowView,
+  type PatchRow,
+} from '../domain/mcp/patch.js'
+import {
   describeService,
   getService,
   type CommandResultLike,
+  type DocumentPathLike,
+  type LoaderEntryLike,
+  type LoaderLike,
   type TuiSceneServiceLike,
 } from '../shared/seams.js'
 
@@ -75,6 +90,40 @@ export interface ManagerPaths {
 
 export type ManagerStatusTone = 'info' | 'success' | 'warning' | 'error'
 
+function isRecordValue(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+const FIBER_PHASE: Record<number, string> = {
+  0: 'pending',
+  1: 'loading',
+  2: 'active',
+  3: 'failed',
+  4: 'disposed',
+  5: 'unloading',
+}
+
+export interface McpToggleOutcome {
+  outcome: 'saved' | 'applied' | 'timeout' | 'error'
+  id: string
+  serverName?: string
+  savedAt: number
+  appliedAt?: number
+  detail?: string
+  backupPath?: string
+}
+
+export interface McpPanelState {
+  loadedAt?: string
+  profilePatchPath?: string
+  homePatchPath?: string
+  rows: McpRowView[]
+  errors: string[]
+  warnings: string[]
+  togglingId?: string
+  lastAction?: McpToggleOutcome
+}
+
 export interface ManagerStatusMessage {
   text: string
   tone: ManagerStatusTone
@@ -97,6 +146,7 @@ export interface ManagerState {
   services: ManagerServiceInfo[]
   paths: ManagerPaths
   detail: ManagerDetailState
+  mcp: McpPanelState
   groups: SkillGroups
   groupsWarning?: string
   latestTrash?: TrashBatch
@@ -139,6 +189,7 @@ export class ManagerRuntime {
       },
       detail: { status: 'idle' },
       groups: {},
+      mcp: { rows: [], errors: [], warnings: [] },
       config: { version: 1, trashRetentionDays: 7, mcpGroups: {} },
       busy: false,
       ...(this.dumpPath === undefined ? {} : { dumpPath: this.dumpPath }),
@@ -245,6 +296,7 @@ export class ManagerRuntime {
       this.captureCapabilities()
       this.patchState({ status: 'ready', scan, error: undefined, refreshing: false })
       await this.loadMetadata(scan.dshHome)
+      await this.loadMcp()
       await this.writeDump(`refresh:${reason}`)
     } catch (error) {
       if (this.disposed) return
@@ -384,6 +436,190 @@ export class ManagerRuntime {
       }
       const warnings = result.warnings !== undefined && result.warnings.length > 0 ? `（${result.warnings.join('；')}）` : ''
       this.setStatus(`已添加技能 ${result.name} → ${result.destPath}${warnings}`, warnings.length > 0 ? 'warning' : 'success')
+    })
+  }
+
+  // ── MCP (profile patch + home layer + loader runtime state) ──────────────
+  private dshHomePath(): string {
+    return this.state.scan?.dshHome ?? process.env.DSH_HOME ?? join(homedir(), '.dsh')
+  }
+
+  private mcpProfilePatchPath(): string | undefined {
+    for (const name of ['configEditor', 'settings']) {
+      const service = getService<DocumentPathLike>(this.ctx, name)
+      if (service === undefined) continue
+      try {
+        const path = service.documentPath
+        if (typeof path === 'string' && path.length > 0) return path
+      } catch {
+        // fall through
+      }
+    }
+    return undefined
+  }
+
+  private readLoaderMcpRows(warnings: string[]): LoaderMcpRow[] {
+    const loader = getService<LoaderLike>(this.ctx, 'loader')
+    if (loader === undefined) {
+      warnings.push('loader 服务不可用，无法读取 MCP 运行时状态')
+      return []
+    }
+    const rows: LoaderMcpRow[] = []
+    try {
+      for (const entry of loader.entries()) {
+        const options = (entry as LoaderEntryLike).options
+        if (options?.name !== MCP_MODULE || typeof options.id !== 'string') continue
+        let disabled = false
+        try {
+          disabled = (entry as LoaderEntryLike).disabled === true
+        } catch {
+          warnings.push(`无法求值 ${options.id} 的 disabled 表达式`)
+        }
+        const config = isRecordValue(options.config) ? options.config : undefined
+        const state = (entry as LoaderEntryLike).fiber?.state
+        rows.push({
+          id: options.id,
+          ...(config === undefined ? {} : { config }),
+          disabled,
+          ...(typeof state === 'number' && FIBER_PHASE[state] !== undefined ? { phase: FIBER_PHASE[state] } : {}),
+        })
+      }
+    } catch (error) {
+      warnings.push(`读取 loader 条目失败：${error instanceof Error ? error.message : String(error)}`)
+    }
+    return rows
+  }
+
+  /** Re-read both patch layers + loader runtime rows into `state.mcp`. */
+  async refreshMcp(): Promise<void> {
+    await this.loadMcp()
+  }
+
+  private async loadMcp(): Promise<void> {
+    const errors: string[] = []
+    const warnings: string[] = []
+    const profilePatchPath = this.mcpProfilePatchPath()
+    const homePatchPath = join(this.dshHomePath(), 'cordis.patch.yml')
+    let profileRows: PatchRow[] = []
+    let homeRows: PatchRow[] = []
+    const readLayer = async (path: string, label: string): Promise<PatchRow[]> => {
+      let text: string
+      try {
+        text = await readFile(path, 'utf8')
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') errors.push(`${label}读取失败：${error instanceof Error ? error.message : String(error)}`)
+        return []
+      }
+      const parsed = parsePatchText(text)
+      if (!parsed.ok) {
+        errors.push(`${label}解析失败：${parsed.error ?? 'unknown'}`)
+        return []
+      }
+      return parsed.rows
+    }
+    if (profilePatchPath === undefined) {
+      errors.push('无法确定当前 profile 的 patch 路径（configEditor/settings 不可用）')
+    } else {
+      profileRows = await readLayer(profilePatchPath, 'profile patch ')
+    }
+    homeRows = await readLayer(homePatchPath, 'home patch ')
+    const loaderRows = this.readLoaderMcpRows(warnings)
+    const rows = buildMcpRows({ loaderRows, profileRows, homeRows })
+    if (rows.length === 0 && errors.length === 0) warnings.push('当前 profile 与 home 层没有 MCP 行')
+    this.patchState({
+      mcp: {
+        loadedAt: new Date().toISOString(),
+        ...(profilePatchPath === undefined ? {} : { profilePatchPath }),
+        homePatchPath,
+        rows,
+        errors,
+        warnings,
+        ...(this.state.mcp.lastAction === undefined ? {} : { lastAction: this.state.mcp.lastAction }),
+      },
+    })
+  }
+
+  /** Toggle one MCP row by writing/removing our disabled override in the profile patch. */
+  async toggleMcp(id: string): Promise<void> {
+    const row = this.state.mcp.rows.find((entry) => entry.id === id)
+    if (row === undefined) {
+      this.setStatus('MCP 行不存在，请按 r 刷新', 'error')
+      return
+    }
+    if (!row.targetable) {
+      this.setStatus(row.readOnlyReason ?? '该 MCP 行不可直接启停', 'warning')
+      return
+    }
+    const profilePatchPath = this.mcpProfilePatchPath()
+    if (profilePatchPath === undefined) {
+      this.setStatus('无法确定当前 profile 的 patch 路径', 'error')
+      return
+    }
+    await this.withBusy(async () => {
+      const desiredEnabled = !row.enabled
+      try {
+        let text = ''
+        try {
+          text = await readFile(profilePatchPath, 'utf8')
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+        }
+        const next = upsertManagedToggle(text, row.id, !desiredEnabled)
+        if (!next.ok) {
+          this.setStatus(`MCP 启停写入失败：${next.error}`, 'error')
+          return
+        }
+        const savedAt = Date.now()
+        let backupPath: string | undefined
+        if (next.changed) {
+          const stamp = new Date(savedAt).toISOString().replace(/[:.]/gu, '')
+          backupPath = await backupPatchFile(profilePatchPath, join(backupsRoot(this.panelHomePath), stamp))
+          await writePatchFileAtomic(profilePatchPath, next.text)
+        }
+        this.patchState({
+          mcp: {
+            ...this.state.mcp,
+            togglingId: id,
+            lastAction: { outcome: 'saved', id, serverName: row.serverName, savedAt, ...(backupPath === undefined ? {} : { backupPath }) },
+          },
+        })
+        this.setStatus(`已保存，热加载中…（${row.serverName} → ${desiredEnabled ? '启用' : '停用'}）`, 'info')
+
+        const deadline = Date.now() + 10_000
+        while (Date.now() < deadline && !this.disposed) {
+          await new Promise((resolve) => setTimeout(resolve, 400))
+          await this.loadMcp()
+          const current = this.state.mcp.rows.find((entry) => entry.id === id)
+          if (current !== undefined && current.enabled === desiredEnabled) {
+            this.patchState({
+              mcp: {
+                ...this.state.mcp,
+                togglingId: undefined,
+                lastAction: { outcome: 'applied', id, serverName: row.serverName, savedAt, appliedAt: Date.now(), ...(backupPath === undefined ? {} : { backupPath }) },
+              },
+            })
+            this.setStatus(`已生效：${row.serverName} 已${desiredEnabled ? '启用' : '停用'}`, 'success')
+            return
+          }
+        }
+        this.patchState({
+          mcp: {
+            ...this.state.mcp,
+            togglingId: undefined,
+            lastAction: { outcome: 'timeout', id, serverName: row.serverName, savedAt, detail: '10s 内未观察到 loader 状态变化' },
+          },
+        })
+        this.setStatus('已保存，但 10s 内未观察到生效；请检查诊断页/日志，可能被更高层覆盖或需要重启', 'warning')
+      } catch (error) {
+        this.patchState({
+          mcp: {
+            ...this.state.mcp,
+            togglingId: undefined,
+            lastAction: { outcome: 'error', id, serverName: row.serverName, savedAt: Date.now(), detail: error instanceof Error ? error.message : String(error) },
+          },
+        })
+        this.setStatus(`MCP 启停失败：${error instanceof Error ? error.message : String(error)}`, 'error')
+      }
     })
   }
 
@@ -541,6 +777,7 @@ export class ManagerRuntime {
         paths: this.state.paths,
         sceneError: this.state.sceneError ?? null,
         scan: this.state.scan,
+        mcp: this.state.mcp,
       }
       await mkdir(dirname(this.dumpPath), { recursive: true })
       await writeFile(this.dumpPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')

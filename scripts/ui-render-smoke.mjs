@@ -78,6 +78,7 @@ class StubRuntime {
       paths: { homePatch: join(process.env.DSH_HOME ?? '', 'cordis.patch.yml'), panelHome: '/tmp/skill-mcp-panel' },
       detail: { status: 'idle' },
       groups: {},
+      mcp: { rows: [], errors: [], warnings: [] },
       config: { version: 1, trashRetentionDays: 7, mcpGroups: {} },
       busy: false,
     }
@@ -123,6 +124,8 @@ class StubRuntime {
   async deleteGroupById() {}
   async setGroupMembershipForInstances() {}
   groupIdsFor() { return [] }
+  async refreshMcp() {}
+  async toggleMcp() {}
   setStatus() {}
 
   writeRenderFrame() {}
