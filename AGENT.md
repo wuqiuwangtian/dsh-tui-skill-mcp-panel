@@ -96,6 +96,7 @@
 - **JSX 已验证可行**：`tsconfig` 的 `jsxImportSource: "@deepseek-harness-tui/dsh-tui"` + props 注入 `React`，真实 TUI 渲染无 invalid hook/元素错误。
 - **`link:` 安装时依赖解析**：插件运行时依赖须写在自身 `dependencies`（pnpm link 不解析目标目录依赖）；类型依赖放 `devDependencies`。
 - **扫盘与内核一致性已验证**（M1）：发现根/rank、frontmatter 名称、遮蔽、`.disabled`、非法条目与内核实测目录逐项一致（`docs/research/06`）；**但 `customSkillDirs` 在 host 层不可读**（按未配置处理），runtime 注册的技能不在扫盘内。
+- **UI 可验证方式**：真实 TTY 人工走查是最终验收；自动化用 `pnpm test:ui`（headless Ink + host ui kit）证明组件能渲染出列表/详情/页签，避免把「环境截不到图」当成「UI 不可用」。
 
 ## 6. 架构约束（编码阶段必须遵守）
 
@@ -127,6 +128,7 @@ pnpm install
 pnpm build                  # tsc → lib/types/
 pnpm typecheck              # 同上，不产出
 pnpm test                   # build + node:test（domain 层，9 个用例）
+pnpm test:ui                # headless Ink 渲染 smoke（160/58 列）
 ```
 
 **真机安装（已验证流程）**——用独立探针 profile，避免影响日常 `dsh-tui` profile：
@@ -189,6 +191,7 @@ dsh-tui-skill-mcp-panel/
 │  ├─ shared/              # 宿主接缝结构化类型、cell 宽度/消毒等格式工具
 │  └─ ui/                  # ManagerScene：技能列表-详情、搜索、帮助、诊断页
 ├─ lib/                    # tsc 产物（git 忽略，npm files 携带）
+├─ scripts/                # ui-render-smoke.mjs：host ui kit 的 headless 渲染 smoke
 ├─ test/domain/            # node:test 单测（frontmatter + 扫盘）
 ├─ .dsh/skills/            # 真机验证用的项目级技能夹具（git 忽略）
 └─ docs/

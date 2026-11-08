@@ -5,7 +5,7 @@
  *
  * No React here; the scene subscribes to `snapshot()`.
  */
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
@@ -72,6 +72,8 @@ export class ManagerRuntime {
   private readonly ctx: Context
   private readonly listeners = new Set<() => void>()
   private readonly dumpPath: string | undefined
+  private readonly renderDumpPath: string | undefined
+  private renderFrames = 0
   private readonly detailCache = new Map<string, string>()
   private sceneService: TuiSceneServiceLike | undefined
   private state: ManagerState
@@ -82,6 +84,7 @@ export class ManagerRuntime {
   constructor(ctx: Context) {
     this.ctx = ctx
     this.dumpPath = process.env.SKILL_MCP_PANEL_DUMP ?? undefined
+    this.renderDumpPath = process.env.SKILL_MCP_PANEL_RENDER_DUMP ?? undefined
     this.state = {
       status: 'loading',
       refreshing: true,
@@ -258,6 +261,7 @@ export class ManagerRuntime {
           members: service.members,
         })),
         paths: this.state.paths,
+        sceneError: this.state.sceneError ?? null,
         scan: this.state.scan,
       }
       await mkdir(dirname(this.dumpPath), { recursive: true })
@@ -268,6 +272,17 @@ export class ManagerRuntime {
         dumpMessage: `写入失败：${error instanceof Error ? error.message : String(error)}`,
       })
     }
+  }
+
+  /**
+   * Login-free UI evidence: append what the scene actually rendered to
+   * `SKILL_MCP_PANEL_RENDER_DUMP` (verification/debug only; no env, no I/O).
+   */
+  writeRenderFrame(reason: string, text: string): void {
+    if (this.renderDumpPath === undefined) return
+    this.renderFrames += 1
+    const header = `\n=== frame ${this.renderFrames} @ ${new Date().toISOString()} ${reason} ===\n`
+    void appendFile(this.renderDumpPath, `${header}${text}\n`, 'utf8').catch(() => undefined)
   }
 
   async dumpNow(): Promise<void> {

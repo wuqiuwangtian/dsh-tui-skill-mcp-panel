@@ -20,6 +20,13 @@ const TAB_LABELS: Record<Tab, string> = {
   diagnostics: 'Diagnostics 诊断',
 }
 
+const TAB_LABELS_NARROW: Record<Tab, string> = {
+  skills: '技能',
+  mcp: 'MCP',
+  groups: '分组',
+  diagnostics: '诊断',
+}
+
 const SCOPE_FILTERS = ['all', 'workspace', 'global'] as const
 type ScopeFilter = (typeof SCOPE_FILTERS)[number]
 
@@ -69,6 +76,20 @@ const HELP_LINES = [
   '  · 技能只发现一层：<root>/<name>/SKILL.md 或 <root>/<name>.md。',
   '  · 场景内不使用宿主对话框/toast（实测不可用），确认与输入均为自绘。',
   '  · 保存类操作尚未实现：M1 为只读（启停/删除/添加在 M2）。',
+]
+
+const MCP_PLACEHOLDER_LINES = [
+  '当前版本尚未解析 profile patch 的 MCP 行。',
+  '已确认的宿主限制：MCP 没有工作区级配置；',
+  '只有当前 profile（可写）+ home 全局层（只读）。',
+  '启停以 patch 文本编辑为主路径（ADR-0001）。',
+  'pluginManager 能力探测见「诊断」页。',
+]
+
+const GROUPS_PLACEHOLDER_LINES = [
+  '分组是显示层元数据，不写技能目录。',
+  '技能分组与 web 版共享 groups.json（v1），MCP 分组存本插件配置。',
+  'M1 先落地技能只读列表/详情。',
 ]
 
 interface SceneUi {
@@ -385,7 +406,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       <Box flexDirection="row">
         {TABS.map((candidate) => (
           <Text key={candidate} bold={candidate === tab} inverse={candidate === tab} dimColor={candidate !== tab}>
-            {` ${TAB_LABELS[candidate]} `}
+            {` ${twoPane ? TAB_LABELS[candidate] : TAB_LABELS_NARROW[candidate]} `}
           </Text>
         ))}
       </Box>
@@ -410,6 +431,33 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         ? `搜索: ${query}▌  (Enter/Esc 退出)`
         : `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}${query.length > 0 ? ` · 过滤 "${query}"` : ''}`,
     ]
+
+    // Verification-only render snapshot (SKILL_MCP_PANEL_RENDER_DUMP): proves the
+    // scene mounted under the real TUI reconciler and records what it computed.
+    const verificationRows = filtered.map((instance) => {
+      const flags = statusFlags(instance)
+      return `${STATUS_GLYPHS[instance.status]} ${instance.name} [${SOURCE_LABELS[instance.source]}${flags.length > 0 ? ` ${flags}` : ''}]`
+    })
+    const verificationFrame = [
+      `tab=${tab} scope=${scope} query=${JSON.stringify(query)} search=${searchMode} help=${helpOpen} narrow=${narrow} narrowDetail=${narrowDetail}`,
+      `screen=${columns}x${rows} listWidth=${listWidth} detailWidth=${detailWidth}`,
+      `summary total=${summary.total} enabled=${summary.enabled} disabled=${summary.disabled} invalid=${summary.invalid} shadowed=${summary.shadowed} workspace=${summary.workspace} global=${summary.global}`,
+      `list(${filtered.length}):`,
+      ...verificationRows,
+      `selected=${selected?.name ?? '(none)'} status=${selected?.status ?? '-'} path=${selected?.path ?? '-'}`,
+      `detail=${state.detail.status}${state.detail.error === undefined ? '' : ` error=${state.detail.error}`}`,
+      ...(tab === 'mcp'
+        ? ['MCP（M3 计划）', ...MCP_PLACEHOLDER_LINES]
+        : tab === 'groups'
+          ? ['分组（M2 计划）', ...GROUPS_PLACEHOLDER_LINES]
+          : tab === 'diagnostics'
+            ? diagnosticLines(state, contentWidth)
+            : []),
+      ...(helpOpen ? HELP_LINES : []),
+    ].join('\n')
+    React.useEffect(() => {
+      runtime.writeRenderFrame(`tab=${tab} scope=${scope}${helpOpen ? ' help' : ''}${narrowDetail ? ' detail' : ''}`, verificationFrame)
+    }, [tab, scope, selected?.id, state.scan?.scannedAt, helpOpen, narrowDetail, searchMode, query, state.detail.status, state.dumpMessage])
 
     if (helpOpen) {
       return (
@@ -518,19 +566,9 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       tab === 'skills' ? (
         skillsContent
       ) : tab === 'mcp' ? (
-        placeholder('MCP（M3 计划）', [
-          '当前版本尚未解析 profile patch 的 MCP 行。',
-          '已确认的宿主限制：MCP 没有工作区级配置；',
-          '只有当前 profile（可写）+ home 全局层（只读）。',
-          '启停以 patch 文本编辑为主路径（ADR-0001）。',
-          'pluginManager 能力探测见「诊断」页。',
-        ])
+        placeholder('MCP（M3 计划）', MCP_PLACEHOLDER_LINES)
       ) : tab === 'groups' ? (
-        placeholder('分组（M2 计划）', [
-          '分组是显示层元数据，不写技能目录。',
-          '技能分组与 web 版共享 groups.json（v1），MCP 分组存本插件配置。',
-          'M1 先落地技能只读列表/详情。',
-        ])
+        placeholder('分组（M2 计划）', GROUPS_PLACEHOLDER_LINES)
       ) : (
         <Box flexDirection="column" flexGrow={1} marginTop={1}>
           {diagnosticsWindow.map((line, index) => (

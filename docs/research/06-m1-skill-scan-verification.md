@@ -51,9 +51,14 @@
 
 **单测**：`pnpm test` → 9 pass / 0 fail（frontmatter 6 + 扫盘 3）。
 
+### 2.1 UI 渲染证据（组件 + 真机进程）
+
+- **headless Ink 渲染**：`pnpm test:ui`（`scripts/ui-render-smoke.mjs`）用宿主自己的 `@deepseek-harness-tui/dsh-tui` ui kit + React 19 `renderSync` 挂载编译后的 `ManagerScene`（stub runtime + 真实扫描结果），断言 160 列与 58 列两种宽度都渲染出：标题、页签（窄屏为紧凑标签）、作用域/统计、技能列表行（含 `alpha/beta/software-delivery-workflow` 等）、详情/正文、键位提示。**结果：OK（wide=685 chars, narrow=415 chars）**；期间发现并修复了窄屏（<64 列）页签溢出换行的问题（窄屏改用「技能/MCP/分组/诊断」紧凑标签）。
+- **真机进程**：独立探针 profile 真实启动（`SKILL_MCP_PANEL_DUMP`），插件 activation 后 dump 显示：`sceneError: null`（场景注册 + `/skill-mcp` 命令注册均未报错）、13 个 TUI 接缝服务全部可用、扫描结果与上表一致。说明插件在真实 TUI 进程里完成了注册与扫描；**尚未采集到该进程的逐屏画面**（见 §3.1）。
+
 ## 3. 已知缺口（未验证，不要写成已验收）
 
-1. **UI 视觉验收未完成**：本环境的终端工具在脚本化 pty 里对长驻 TUI 的输出捕获不稳定（`script` 类型记录只在进程退出时落盘，且部分运行会话拿不到完整帧），因此 `/skill-mcp` 场景的逐屏人工走查（列表/详情/诊断、宽窄屏、键盘）**仍需真实终端手工执行**（对应 AC-9 的 UI 部分、AC-14）。场景注册/打开路径与 React 契约已在 M0 探针中实测可用（`docs/research/05` §3）。
+1. **人工 TTY 走查未完成（唯一缺口）**：本环境终端工具对长驻 TUI 的屏幕捕获不稳定，拿不到 `/skill-mcp` 的逐屏画面；因此**视觉与键位的人工走查**（列表/详情/诊断切换、滚动、搜索、宽窄屏观感、MCP/分组占位页）仍需真实终端手工执行（对应 AC-9 UI 部分、AC-14 的观感项）。可自动化的部分已补：headless 渲染 smoke 证明组件能在宿主 React/ui kit 下渲染出预期内容（§2.1）；M0 已证明场景注册/打开路径真实可用（`docs/research/05` §3）。
 2. **bundled 根**：本次启动环境未设置 `DSH_BUNDLED_SKILL_DIR`，`bundled` 根不存在；TUI 正常启动时由启动器提供该变量，需在真实 TUI 里再核对一次「随包技能」行。
 3. **customSkillDirs**：host 插件读不到 provider 配置，当前按未配置处理 → 自定义技能根会被漏掉（诊断页已注明）。若必须支持，需要从 profile patch/设置读取 provider 配置（后续里程碑）。
 4. **运行期注册技能**：扫盘只覆盖文件来源；`ctx.skills.register` 的 runtime/agent-scope 技能不在列表中（M0 已确认 host 层 `ctx.skills` 为空，无法互补）。

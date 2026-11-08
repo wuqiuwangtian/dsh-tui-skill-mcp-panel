@@ -64,7 +64,7 @@
 
 ## 4.1 M1 已验证（2026-11-08）
 
-技能扫描（发现根/rank/名称来源/遮蔽/停用/非法/`.system`）**在真机上与内核发现逐项一致**，详见 [`06-m1-skill-scan-verification.md`](06-m1-skill-scan-verification.md)。UI 视觉走查仍缺。
+技能扫描（发现根/rank/名称来源/遮蔽/停用/非法/`.system`）**在真机上与内核发现逐项一致**；UI 侧已补 headless Ink 渲染 smoke（160/58 列）与真实 TUI 进程注册证据，人工 TTY 逐屏走查仍缺。详见 [`06-m1-skill-scan-verification.md`](06-m1-skill-scan-verification.md) §2.1/§3。
 
 ## 5. 证据基线与复核方式
 
