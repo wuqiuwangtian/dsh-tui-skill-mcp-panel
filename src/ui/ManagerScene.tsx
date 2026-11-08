@@ -9,7 +9,7 @@
  *   scope / rows, wheel scrolls the list, detail or diagnostics pane.
  * Host dialogs/toasts remain unusable from plugin scenes (docs/research/05).
  */
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import type { TuiSceneProps } from '@deepseek-harness-tui/dsh-tui/scenes'
 import { splitFrontmatter } from '../domain/skills/frontmatter.js'
 import type { SkillInstance, SkillScanResult, SkillSource, SkillStatus } from '../domain/skills/types.js'
@@ -262,6 +262,11 @@ function skillDetailLines(instance: SkillInstance | undefined, state: ManagerSta
   return lines
 }
 
+
+type FocusArea = 'tabs' | 'scope' | 'list' | 'detail' | 'body'
+
+const HELP_HINTS = '? 帮助'
+
 export function createManagerScene(runtime: ManagerRuntime, sceneId: string): ComponentType<TuiSceneProps> {
   return function ManagerScene({ React, ui, close }: TuiSceneProps): ReturnType<typeof ui.Box> {
     const sceneUi = ui as unknown as SceneUi
@@ -274,7 +279,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const [searchMode, setSearchMode] = React.useState(false)
     const [selectedId, setSelectedId] = React.useState<string | undefined>(undefined)
     const [helpOpen, setHelpOpen] = React.useState(false)
-    const [narrowDetail, setNarrowDetail] = React.useState(false)
+    const [focus, setFocus] = React.useState<FocusArea>('list')
     const [diagOffset, setDiagOffset] = React.useState(0)
     const [detailOffset, setDetailOffset] = React.useState(0)
 
@@ -311,34 +316,51 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       setDetailOffset(0)
     }, [selected?.id])
 
+    // ── layout metrics ──────────────────────────────────────────────────────
     const contentWidth = Math.max(20, columns - 2)
-    const wide = columns >= 90
-    const twoPane = columns >= 64
+    const wide = columns >= 110
+    const twoPane = columns >= 72
     const narrow = !twoPane
-    const scopeWidth = wide ? 22 : 0
-    const paneWidth = wide
-      ? Math.max(16, Math.floor((contentWidth - scopeWidth - 2) / 2))
+    const statusLine =
+      state.status === 'error'
+        ? `错误：${state.error ?? 'unknown'}`
+        : state.dumpMessage
+    const cardsHeight = Math.max(5, rows - 4 - (tab === 'skills' && !wide ? 1 : 0) - (statusLine === undefined ? 0 : 1))
+    const bodyRows = Math.max(2, cardsHeight - 3)
+    const scopeCardWidth = 22
+    const gap = 1
+    const listWidth = wide
+      ? Math.max(24, Math.floor((contentWidth - scopeCardWidth - gap * 2) * 0.5))
       : twoPane
-        ? Math.max(16, Math.floor(contentWidth / 2) - 1)
+        ? Math.max(24, Math.floor((contentWidth - gap) / 2))
         : contentWidth
-    const listWidth = paneWidth
     const detailWidth = wide
-      ? Math.max(16, contentWidth - scopeWidth - 2 - listWidth)
-      : Math.max(16, contentWidth - listWidth - 1)
-    const bodyRows = Math.max(4, rows - 9)
+      ? Math.max(24, contentWidth - scopeCardWidth - gap * 2 - listWidth)
+      : twoPane
+        ? Math.max(24, contentWidth - gap - listWidth)
+        : contentWidth
+    const listInner = listWidth - 6
+    const nameWidth = Math.max(8, Math.min(28, listInner - 20))
 
     const moveSelection = (delta: number): void => {
       if (filtered.length === 0) return
       const next = Math.max(0, Math.min(filtered.length - 1, selectedIndex + delta))
       setSelectedId(filtered[next]?.id)
-      setNarrowDetail(false)
+      setFocus('list')
     }
 
     const switchTab = (delta: number): void => {
       const index = TABS.indexOf(tab)
-      const next = (index + delta + TABS.length) % TABS.length
-      setTab(TABS[next] ?? 'skills')
-      setNarrowDetail(false)
+      const next = TABS[(index + delta + TABS.length) % TABS.length] ?? 'skills'
+      setTab(next)
+      setFocus(next === 'skills' ? 'list' : 'body')
+      setDiagOffset(0)
+      setDetailOffset(0)
+    }
+
+    const goTab = (next: Tab): void => {
+      setTab(next)
+      setFocus(next === 'skills' ? 'list' : 'body')
       setDiagOffset(0)
       setDetailOffset(0)
     }
@@ -346,11 +368,12 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const cycleScope = (delta: number): void => {
       const index = SCOPE_FILTERS.indexOf(scope)
       setScope(SCOPE_FILTERS[(index + delta + SCOPE_FILTERS.length) % SCOPE_FILTERS.length] ?? 'all')
+      setFocus('scope')
     }
 
-    const wheelBy = (event: WheelLike, handler: (delta: number) => void): void => {
-      if (event.deltaY === 0) return
-      handler(event.deltaY > 0 ? 1 : -1)
+    const scrollDetail = (delta: number): void => {
+      const max = Math.max(0, detailLines.length - bodyRows)
+      setDetailOffset((value) => Math.max(0, Math.min(max, value + delta)))
     }
 
     useInput((input, key) => {
@@ -373,8 +396,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         return
       }
       if (key.escape) {
-        if (narrow && narrowDetail) {
-          setNarrowDetail(false)
+        if (focus === 'detail') {
+          setFocus('list')
           return
         }
         close()
@@ -405,89 +428,148 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         void runtime.dumpNow()
         return
       }
-      if (char === '1') setTab('skills')
-      else if (char === '2') setTab('mcp')
-      else if (char === '3') setTab('groups')
-      else if (char === '4') setTab('diagnostics')
+      if (char === '1') return goTab('skills')
+      if (char === '2') return goTab('mcp')
+      if (char === '3') return goTab('groups')
+      if (char === '4') return goTab('diagnostics')
 
-      if (tab === 'skills') {
-        if (narrow && narrowDetail) {
-          if (key.upArrow || char === 'k') setDetailOffset((value) => Math.max(0, value - 1))
-          else if (key.downArrow || char === 'j') setDetailOffset((value) => value + 1)
-          else if (key.pageUp) setDetailOffset((value) => Math.max(0, value - bodyRows))
-          else if (key.pageDown) setDetailOffset((value) => value + bodyRows)
-          else if (key.home) setDetailOffset(0)
-          else if (key.return || key.leftArrow || char === 'h') setNarrowDetail(false)
+      if (tab !== 'skills') {
+        if (focus === 'tabs') {
+          if (key.leftArrow || char === 'h') switchTab(-1)
+          else if (key.rightArrow || char === 'l') switchTab(1)
+          else if (key.downArrow || char === 'j' || key.return) setFocus('body')
           return
         }
-        if (key.upArrow || char === 'k') moveSelection(-1)
-        else if (key.downArrow || char === 'j') moveSelection(1)
-        else if (key.leftArrow || char === 'h') cycleScope(-1)
-        else if (key.rightArrow || char === 'l') cycleScope(1)
-        else if (key.pageUp) setDetailOffset((value) => Math.max(0, value - bodyRows))
-        else if (key.pageDown) setDetailOffset((value) => value + bodyRows)
-        else if (key.home) moveSelection(-filtered.length)
-        else if (key.end) moveSelection(filtered.length)
-        else if (key.return && narrow) setNarrowDetail(true)
+        if (key.upArrow || char === 'k') {
+          if (diagOffset === 0) setFocus('tabs')
+          else setDiagOffset((value) => Math.max(0, value - 1))
+        } else if (key.downArrow || char === 'j') {
+          setDiagOffset((value) => value + 1)
+        } else if (key.leftArrow || char === 'h') {
+          switchTab(-1)
+        } else if (key.rightArrow || char === 'l') {
+          switchTab(1)
+        } else if (key.pageUp) {
+          setDiagOffset((value) => Math.max(0, value - bodyRows))
+        } else if (key.pageDown) {
+          setDiagOffset((value) => value + bodyRows)
+        } else if (key.home) {
+          setDiagOffset(0)
+        }
         return
       }
 
-      if (tab === 'diagnostics') {
-        if (key.upArrow || char === 'k') setDiagOffset((value) => Math.max(0, value - 1))
-        else if (key.downArrow || char === 'j') setDiagOffset((value) => value + 1)
-        else if (key.pageUp) setDiagOffset((value) => Math.max(0, value - bodyRows))
-        else if (key.pageDown) setDiagOffset((value) => value + bodyRows)
-        else if (key.home) setDiagOffset(0)
+      if (focus === 'tabs') {
+        if (key.leftArrow || char === 'h') switchTab(-1)
+        else if (key.rightArrow || char === 'l') switchTab(1)
+        else if (key.downArrow || char === 'j' || key.return) setFocus(wide ? 'scope' : 'list')
         return
       }
-      if (key.upArrow || char === 'k') setDetailOffset((value) => Math.max(0, value - 1))
-      else if (key.downArrow || char === 'j') setDetailOffset((value) => value + 1)
+
+      if (focus === 'scope') {
+        if (key.upArrow || char === 'k') {
+          const index = SCOPE_FILTERS.indexOf(scope)
+          if (index <= 0) setFocus('tabs')
+          else setScope(SCOPE_FILTERS[index - 1] ?? 'all')
+        } else if (key.downArrow || char === 'j') {
+          const index = SCOPE_FILTERS.indexOf(scope)
+          if (index >= SCOPE_FILTERS.length - 1) setFocus('list')
+          else setScope(SCOPE_FILTERS[index + 1] ?? 'all')
+        } else if (key.rightArrow || char === 'l' || key.return) {
+          setFocus('list')
+        } else if (key.leftArrow || char === 'h') {
+          setFocus('tabs')
+        }
+        return
+      }
+
+      if (focus === 'detail') {
+        if (key.upArrow || char === 'k') scrollDetail(-1)
+        else if (key.downArrow || char === 'j') scrollDetail(1)
+        else if (key.pageUp) scrollDetail(-bodyRows)
+        else if (key.pageDown) scrollDetail(bodyRows)
+        else if (key.home) setDetailOffset(0)
+        else if (key.leftArrow || char === 'h' || key.return) setFocus('list')
+        return
+      }
+
+      // focus === 'list'
+      if (key.upArrow || char === 'k') {
+        if (selectedIndex <= 0) setFocus(narrow ? 'scope' : 'tabs')
+        else moveSelection(-1)
+      } else if (key.downArrow || char === 'j') {
+        moveSelection(1)
+      } else if (key.leftArrow || char === 'h') {
+        setFocus('scope')
+      } else if (key.rightArrow || char === 'l' || key.return) {
+        setFocus('detail')
+      } else if (key.pageUp) {
+        moveSelection(-bodyRows)
+      } else if (key.pageDown) {
+        moveSelection(bodyRows)
+      } else if (key.home) {
+        moveSelection(-filtered.length)
+      } else if (key.end) {
+        moveSelection(filtered.length)
+      }
     })
 
-    // ── shared pieces ────────────────────────────────────────────────────────
-    const tabBar = (
-      <Box flexDirection="row">
-        {TABS.map((candidate) => (
-          <Box
-            key={candidate}
-            onClick={() => {
-              setTab(candidate)
-              setNarrowDetail(false)
-            }}
-          >
-            <Text bold={candidate === tab} inverse={candidate === tab} dimColor={candidate !== tab}>
-              {` ${twoPane ? TAB_LABELS[candidate] : TAB_LABELS_NARROW[candidate]} `}
+    // ── card primitives (native-looking: rounded border + accent focus) ─────
+    const card = (options: {
+      title: string
+      subtitle?: string
+      focused: boolean
+      width: number
+      children: ReactNode
+      onClick?: () => void
+      onWheel?: (event: { deltaY: number }) => void
+    }): ReactNode => (
+      <Box
+        flexDirection="column"
+        width={options.width}
+        height={cardsHeight}
+        borderStyle="round"
+        borderColor={options.focused ? 'accent' : 'promptBorder'}
+        paddingX={1}
+        onClick={options.onClick}
+        onWheel={options.onWheel}
+      >
+        <Box flexDirection="row" height={1}>
+          <Text bold={options.focused} color={options.focused ? 'accent' : undefined} dimColor={!options.focused} wrap="truncate">
+            {options.title}
+          </Text>
+          {options.subtitle === undefined ? null : (
+            <Text dimColor wrap="truncate">
+              {`  ${options.subtitle}`}
             </Text>
-          </Box>
-        ))}
+          )}
+        </Box>
+        <Box flexDirection="column" flexGrow={1} overflow="hidden">
+          {options.children}
+        </Box>
       </Box>
     )
 
-    const scopeItems = SCOPE_FILTERS.map((candidate) => {
-      const marker = candidate === scope ? '▸ ' : '  '
-      return (
-        <Box
-          key={candidate}
-          onClick={() => {
-            setScope(candidate)
-            setNarrowDetail(false)
-          }}
-        >
-          <Text inverse={candidate === scope} dimColor={candidate !== scope}>
-            {truncateToWidth(
-              `${marker}${SCOPE_LABELS[candidate]} (${scopeCounts[candidate]})`,
-              wide ? scopeWidth : contentWidth,
-              '…',
-            )}
-          </Text>
-        </Box>
-      )
-    })
-
-    const topLine = `Skill / MCP manager · ${columns}x${rows} · ${sceneId}`
-    const summaryLine = searchMode
-      ? `搜索: ${query}▌  (Enter/Esc 退出)`
-      : `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}${query.length > 0 ? ` · 过滤 "${query}"` : ''}`
+    const rowNode = (
+      key: string,
+      content: string,
+      options: { selected: boolean; dim?: boolean; onClick?: () => void; pointer?: string },
+    ): ReactNode => (
+      <Box
+        key={key}
+        flexDirection="row"
+        height={1}
+        backgroundColor={options.selected ? 'selectionBg' : undefined}
+        onClick={options.onClick}
+      >
+        <Text color={options.selected ? 'accent' : undefined} bold={options.selected}>
+          {options.selected ? '❯ ' : '  '}
+        </Text>
+        <Text bold={options.selected} dimColor={options.dim === true && !options.selected} wrap="truncate">
+          {content}
+        </Text>
+      </Box>
+    )
 
     // Verification-only render snapshot (SKILL_MCP_PANEL_RENDER_DUMP).
     const verificationRows = filtered.map((instance) => {
@@ -495,7 +577,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       return `${STATUS_GLYPHS[instance.status]} ${instance.name} [${SOURCE_LABELS[instance.source]}${flags.length > 0 ? ` ${flags}` : ''}]`
     })
     const verificationFrame = [
-      `tab=${tab} scope=${scope} query=${JSON.stringify(query)} search=${searchMode} help=${helpOpen} narrow=${narrow} narrowDetail=${narrowDetail}`,
+      `tab=${tab} scope=${scope} query=${JSON.stringify(query)} search=${searchMode} help=${helpOpen} focus=${focus} narrow=${narrow}`,
       `screen=${columns}x${rows} listWidth=${listWidth} detailWidth=${detailWidth}`,
       `summary total=${summary.total} enabled=${summary.enabled} disabled=${summary.disabled} invalid=${summary.invalid} shadowed=${summary.shadowed} workspace=${summary.workspace} global=${summary.global}`,
       `list(${filtered.length}):`,
@@ -512,17 +594,75 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       ...(helpOpen ? HELP_LINES : []),
     ].join('\n')
     React.useEffect(() => {
-      runtime.writeRenderFrame(`tab=${tab} scope=${scope}${helpOpen ? ' help' : ''}${narrowDetail ? ' detail' : ''}`, verificationFrame)
-    }, [tab, scope, selected?.id, state.scan?.scannedAt, helpOpen, narrowDetail, searchMode, query, state.detail.status, state.dumpMessage])
+      runtime.writeRenderFrame(`tab=${tab} scope=${scope} focus=${focus}${helpOpen ? ' help' : ''}`, verificationFrame)
+    }, [tab, scope, focus, selected?.id, state.scan?.scannedAt, helpOpen, searchMode, query, state.detail.status, state.dumpMessage])
+
+    const tabBar = (
+      <Box flexDirection="row" height={1}>
+        <Text color="accent">{focus === 'tabs' ? '❯' : ' '}</Text>
+        {TABS.map((candidate) => (
+          <Box
+            key={candidate}
+            onClick={() => {
+              goTab(candidate)
+            }}
+          >
+            <Text
+              bold={candidate === tab}
+              color={candidate === tab ? 'accent' : undefined}
+              backgroundColor={candidate === tab ? 'selectionBg' : undefined}
+              dimColor={candidate !== tab}
+            >
+              {` ${twoPane ? TAB_LABELS[candidate] : TAB_LABELS_NARROW[candidate]} `}
+            </Text>
+          </Box>
+        ))}
+        <Box flexGrow={1} />
+        <Text dimColor wrap="truncate">
+          {searchMode ? `搜索: ${query}▌  (Enter/Esc)` : tab === 'skills' ? `${SCOPE_LABELS[scope]} · ${filtered.length} 项` : ''}
+        </Text>
+      </Box>
+    )
+
+    const scopeChips = (
+      <Box flexDirection="row" height={1}>
+        <Text color="accent">{focus === 'scope' ? '❯' : ' '}</Text>
+        <Text dimColor>作用域 </Text>
+        {SCOPE_FILTERS.map((candidate) => (
+          <Box
+            key={candidate}
+            onClick={() => {
+              setScope(candidate)
+              setFocus('scope')
+            }}
+          >
+            <Text
+              bold={candidate === scope}
+              color={candidate === scope ? 'accent' : undefined}
+              backgroundColor={candidate === scope ? 'selectionBg' : undefined}
+              dimColor={candidate !== scope}
+            >
+              {` ${SCOPE_LABELS[candidate]}(${scopeCounts[candidate]}) `}
+            </Text>
+          </Box>
+        ))}
+      </Box>
+    )
 
     if (helpOpen) {
       return (
         <Box flexDirection="column" flexGrow={1} paddingX={1}>
-          <Text bold>{topLine}</Text>
+          <Box flexDirection="row" height={1}>
+            <Text bold color="accent">
+              Skill / MCP manager
+            </Text>
+            <Box flexGrow={1} />
+            <Text dimColor>帮助 Help · {columns}x{rows}</Text>
+          </Box>
           {tabBar}
           <Box flexDirection="column" flexGrow={1} marginTop={1}>
             {HELP_LINES.map((line, index) => (
-              <Text key={`help-${index}`} wrap="truncate" dimColor={index > 0 && line.startsWith('  ')}>
+              <Text key={`help-${index}`} wrap="truncate" bold={index === 0} color={index === 0 ? 'accent' : undefined} dimColor={index > 0 && line.startsWith('  ')}>
                 {line}
               </Text>
             ))}
@@ -532,180 +672,182 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       )
     }
 
-    const listHeader = `技能列表 · ${SCOPE_LABELS[scope]}${query.length > 0 ? ` · "${query}"` : ''}`
+    // ── skills tab panes ────────────────────────────────────────────────────
     const listWindowStart = Math.max(
       0,
       Math.min(selectedIndex - Math.floor(bodyRows / 2), Math.max(0, filtered.length - bodyRows)),
     )
-    const listWindow = filtered.slice(listWindowStart, listWindowStart + bodyRows)
-    const nameWidth = Math.max(10, Math.min(26, listWidth - 30))
-
-    const listPane = (
-      <Box
-        flexDirection="column"
-        width={narrow ? contentWidth : listWidth}
-        onWheel={(event: WheelLike) => wheelBy(event, moveSelection)}
-      >
-        <Text bold dimColor>
-          {truncateToWidth(listHeader, narrow ? contentWidth : listWidth, '…')}
-        </Text>
-        {filtered.length === 0 ? (
-          <Text dimColor wrap="wrap">
+    const listRows = filtered.length === 0
+      ? [
+          <Text key="empty" dimColor wrap="wrap">
             {scan === undefined
               ? '扫描中…'
               : query.length > 0
-                ? '没有匹配的技能（/ 修改搜索，Esc 退出搜索）。'
+                ? '没有匹配的技能（/ 修改搜索）。'
                 : scope !== 'all' && summary.total > 0
                   ? `当前筛选「${SCOPE_LABELS[scope]}」下没有技能（←/→ 切换作用域）。`
-                  : '没有任何技能。把技能放到发现根即可：\n  <project>/.dsh/skills/<name>/SKILL.md\n  或 ~/.dsh/skills/<name>/SKILL.md'}
-          </Text>
-        ) : (
-          listWindow.map((instance) => {
-            const isSelected = instance.id === selected?.id
-            const dim = !isSelected && !instance.effective
-            const flags = statusFlags(instance)
-            const line = `${STATUS_GLYPHS[instance.status]} ${padToWidth(instance.name, nameWidth)} ${SOURCE_LABELS[instance.source]}${flags.length > 0 ? `  ${flags}` : ''}`
-            return (
-              <Box
-                key={instance.id}
-                onClick={() => {
-                  setSelectedId(instance.id)
-                  if (narrow) setNarrowDetail(true)
-                }}
-              >
-                <Text inverse={isSelected} bold={isSelected} dimColor={dim} wrap="truncate">
-                  {padToWidth(line, narrow ? contentWidth : listWidth)}
-                </Text>
-              </Box>
-            )
-          })
-        )}
-        {filtered.length > bodyRows ? (
-          <Text dimColor>
-            {`${listWindowStart + 1}-${Math.min(listWindowStart + bodyRows, filtered.length)} / ${filtered.length}`}
-          </Text>
-        ) : null}
-      </Box>
-    )
-
-    const detailLines = skillDetailLines(selected, state, narrow ? contentWidth : detailWidth)
-    const detailWindow = detailLines.slice(detailOffset, detailOffset + bodyRows)
-    const detailPane = (
-      <Box
-        flexDirection="column"
-        width={narrow ? contentWidth : detailWidth}
-        onWheel={(event: WheelLike) =>
-          wheelBy(event, (delta) =>
-            setDetailOffset((value) => Math.max(0, Math.min(Math.max(0, detailLines.length - bodyRows), value + delta))),
+                  : '没有任何技能。\n把技能放到 <project>/.dsh/skills/<name>/SKILL.md\n或 ~/.dsh/skills/<name>/SKILL.md'}
+          </Text>,
+        ]
+      : filtered.slice(listWindowStart, listWindowStart + bodyRows).map((instance) => {
+          const isSelected = instance.id === selected?.id
+          const dim = !instance.effective
+          const flags = statusFlags(instance)
+          const content = truncateToWidth(
+            `${padToWidth(instance.name, nameWidth)}  ${SOURCE_LABELS[instance.source]}${flags.length > 0 ? `  ${flags}` : ''}`,
+            listInner,
           )
-        }
-      >
-        <Text bold dimColor>
-          {selected === undefined
-            ? '详情'
-            : `详情 · ${truncateToWidth(selected.name, Math.max(8, (narrow ? contentWidth : detailWidth) - 8))}`}
-        </Text>
-        <Box flexDirection="column" flexGrow={1}>
-          {detailWindow.map((line, index) => (
-            <Text key={`detail-${detailOffset + index}`} wrap="truncate" dimColor={line.startsWith('  ')}>
-              {line}
-            </Text>
-          ))}
-        </Box>
-      </Box>
-    )
+          return rowNode(instance.id, content, {
+            selected: isSelected,
+            dim,
+            onClick: () => {
+              setSelectedId(instance.id)
+              setFocus(narrow ? 'detail' : 'list')
+            },
+          })
+        })
 
-    const scopePane = (
-      <Box flexDirection="column" width={scopeWidth}>
-        <Text bold dimColor>
-          作用域
-        </Text>
-        {scopeItems}
-        <Box flexGrow={1} />
-      </Box>
-    )
+    const listCard = card({
+      title: '技能列表',
+      subtitle: `${SCOPE_LABELS[scope]} · ${filtered.length}项${query.length > 0 ? ` · "${query}"` : ''}`,
+      focused: tab === 'skills' && focus === 'list',
+      width: listWidth,
+      onClick: () => setFocus('list'),
+      onWheel: (event: { deltaY: number }) => {
+        if (event.deltaY === 0) return
+        moveSelection(event.deltaY > 0 ? 1 : -1)
+      },
+      children: [
+        ...listRows,
+        ...(filtered.length > bodyRows
+          ? [
+              <Text key="scroll-hint" dimColor>
+                {`${listWindowStart + 1}-${Math.min(listWindowStart + bodyRows, filtered.length)} / ${filtered.length}`}
+              </Text>,
+            ]
+          : []),
+      ],
+    })
 
-    const skillsContent = narrow ? (
-      narrowDetail ? (
-        detailPane
-      ) : (
-        <Box flexDirection="column" flexGrow={1}>
-          <Box flexDirection="row">{scopeItems.slice(0, 3)}</Box>
-          {listPane}
-        </Box>
-      )
+    const detailLines = skillDetailLines(selected, state, detailWidth - 4)
+    const detailWindow = detailLines.slice(detailOffset, detailOffset + bodyRows)
+    const detailCard = card({
+      title: '详情',
+      subtitle:
+        selected === undefined
+          ? undefined
+          : `${truncateToWidth(selected.name, Math.max(8, detailWidth - 12))}${detailLines.length > bodyRows ? `  ↕${detailOffset + 1}/${detailLines.length}` : ''}`,
+      focused: tab === 'skills' && focus === 'detail',
+      width: detailWidth,
+      onClick: () => setFocus('detail'),
+      onWheel: (event: { deltaY: number }) => {
+        if (event.deltaY === 0) return
+        setFocus('detail')
+        scrollDetail(event.deltaY > 0 ? 1 : -1)
+      },
+      children: detailWindow.map((line, index) => (
+        <Text key={`detail-${detailOffset + index}`} wrap="truncate" dimColor={line.startsWith('  ')}>
+          {line}
+        </Text>
+      )),
+    })
+
+    const scopeCard = card({
+      title: '作用域',
+      focused: tab === 'skills' && focus === 'scope',
+      width: scopeCardWidth,
+      onClick: () => setFocus('scope'),
+      children: SCOPE_FILTERS.map((candidate) => {
+        const isSelected = candidate === scope
+        return rowNode(candidate, truncateToWidth(`${SCOPE_LABELS[candidate]} (${scopeCounts[candidate]})`, scopeCardWidth - 6), {
+          selected: isSelected,
+          dim: !isSelected,
+          onClick: () => {
+            setScope(candidate)
+            setFocus('scope')
+          },
+        })
+      }),
+    })
+
+    const skillsBody = wide ? (
+      <Box flexDirection="row" flexGrow={1} height={cardsHeight}>
+        {scopeCard}
+        <Box width={gap} />
+        {listCard}
+        <Box width={gap} />
+        {detailCard}
+      </Box>
+    ) : twoPane ? (
+      <Box flexDirection="row" flexGrow={1} height={cardsHeight}>
+        {listCard}
+        <Box width={gap} />
+        {detailCard}
+      </Box>
+    ) : focus === 'detail' && selected !== undefined ? (
+      detailCard
     ) : (
-      <Box flexDirection="row" flexGrow={1}>
-        {wide ? scopePane : null}
-        {listPane}
-        <Box width={1} />
-        {detailPane}
-      </Box>
+      listCard
     )
 
-    const placeholder = (title: string, lines: string[]): ReturnType<typeof ui.Box> => (
-      <Box flexDirection="column" flexGrow={1} marginTop={1}>
-        <Text bold>{title}</Text>
-        {lines.map((line, index) => (
-          <Text key={`placeholder-${index}`} wrap="truncate" dimColor>
-            {line}
-          </Text>
-        ))}
-      </Box>
-    )
+    const bodyLines =
+      tab === 'mcp'
+        ? ['MCP（M3 计划）', ...MCP_PLACEHOLDER_LINES]
+        : tab === 'groups'
+          ? ['分组（M2 计划）', ...GROUPS_PLACEHOLDER_LINES]
+          : diagnosticLines(state, contentWidth - 4)
+    const bodyWindow = bodyLines.slice(diagOffset, diagOffset + bodyRows)
+    const bodyCard = card({
+      title: tab === 'mcp' ? 'MCP' : tab === 'groups' ? '分组 Groups' : '诊断 Diagnostics',
+      subtitle: tab === 'diagnostics' ? `扫描 ${scan?.scannedAt ?? '(pending)'}` : undefined,
+      focused: tab !== 'skills' && focus === 'body',
+      width: contentWidth,
+      onClick: () => setFocus('body'),
+      onWheel: (event: { deltaY: number }) => {
+        if (event.deltaY === 0) return
+        setFocus('body')
+        setDiagOffset((value) => Math.max(0, value + (event.deltaY > 0 ? 1 : -1)))
+      },
+      children: bodyWindow.map((line, index) => (
+        <Text key={`body-${diagOffset + index}`} wrap="truncate" dimColor={line.startsWith('  ')}>
+          {line}
+        </Text>
+      )),
+    })
 
-    const diagnosticsAll = diagnosticLines(state, contentWidth)
-    const diagnosticsWindow = diagnosticsAll.slice(diagOffset, diagOffset + bodyRows)
-
-    const body =
-      tab === 'skills' ? (
-        skillsContent
-      ) : tab === 'mcp' ? (
-        placeholder('MCP（M3 计划）', MCP_PLACEHOLDER_LINES)
-      ) : tab === 'groups' ? (
-        placeholder('分组（M2 计划）', GROUPS_PLACEHOLDER_LINES)
-      ) : (
-        <Box
-          flexDirection="column"
-          flexGrow={1}
-          marginTop={1}
-          onWheel={(event: WheelLike) => wheelBy(event, (delta) => setDiagOffset((value) => Math.max(0, value + delta)))}
-        >
-          {diagnosticsWindow.map((line, index) => (
-            <Text key={`diag-${diagOffset + index}`} wrap="truncate" dimColor={line.startsWith('  ')}>
-              {line}
-            </Text>
-          ))}
-          {diagnosticsAll.length > diagnosticsWindow.length ? (
-            <Text dimColor>
-              {`${diagOffset + 1}-${diagOffset + diagnosticsWindow.length} / ${diagnosticsAll.length}（↑/↓ 或滚轮滚动）`}
-            </Text>
-          ) : null}
-        </Box>
-      )
+    const footerHints = narrow
+      ? '↑↓ 选择/滚动 · ←→ 移动 · Tab 页签 · Enter 详情 · / 搜索 · ? 帮助 · q 关闭'
+      : '↑↓ 选择 · ←→ 移动/切换 · Tab 页签 · Enter 进入详情 · / 搜索 · r 刷新 · ? 帮助 · q 关闭'
+    const footerStats = `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}`
 
     return (
       <Box flexDirection="column" flexGrow={1} paddingX={1}>
-        <Text bold>{topLine}</Text>
-        <Box flexDirection="row">
-          {tabBar}
-          {tab === 'skills' && !wide && twoPane ? <Box width={2} /> : null}
-          {tab === 'skills' && !wide && twoPane ? <Box flexDirection="row">{scopeItems.slice(0, 3)}</Box> : null}
-        </Box>
-        <Text dimColor wrap="truncate">
-          {summaryLine}
-        </Text>
-        {body}
-        <Text bold dimColor wrap="truncate">
-          {`↑↓ 选择 · ←→ 作用域 · Tab 页签 · ${narrow ? 'Enter 详情 · ' : ''}/ 搜索 · r 刷新 · ? 帮助 · q 关闭 · 支持鼠标`}
-        </Text>
-        {state.status === 'error' ? (
-          <Text wrap="truncate">{`错误：${state.error ?? 'unknown'}`}</Text>
-        ) : state.dumpMessage !== undefined ? (
-          <Text dimColor wrap="truncate">
-            {state.dumpMessage}
+        <Box flexDirection="row" height={1}>
+          <Text bold color="accent">
+            Skill / MCP manager
           </Text>
-        ) : null}
+          <Box flexGrow={1} />
+          <Text dimColor wrap="truncate">
+            {sceneId} · {columns}x{rows}
+          </Text>
+        </Box>
+        {tabBar}
+        {tab === 'skills' && !wide ? scopeChips : null}
+        {tab === 'skills' ? skillsBody : bodyCard}
+        <Box flexDirection="row" height={1}>
+          <Text dimColor wrap="truncate">
+            {footerHints}
+          </Text>
+          <Box flexGrow={1} />
+          <Text dimColor wrap="truncate">
+            {footerStats}
+          </Text>
+        </Box>
+        {statusLine === undefined ? null : (
+          <Text wrap="truncate" dimColor>
+            {statusLine}
+          </Text>
+        )}
       </Box>
     )
   }
