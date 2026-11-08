@@ -571,6 +571,7 @@ export class ManagerRuntime {
     if (this.disposed) return
     this.disposed = true
     if (this.capabilityTimer !== undefined) clearTimeout(this.capabilityTimer)
+    if (this.statusTimer !== undefined) clearTimeout(this.statusTimer)
     this.listeners.clear()
   }
 }

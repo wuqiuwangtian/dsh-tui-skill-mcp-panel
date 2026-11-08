@@ -32,7 +32,15 @@
   - `write.test.js`（8）：启停双向、目标冲突、bundled 拒绝、删除+清单、撤销、撤销冲突、批量部分失败、清理策略、添加 .md/目录束、frontmatter 非法/重名/相对路径/超大文件；
   - `groups.test.js`（5）：v1 读写往返、重名/空名/重命名、成员（scope,name）增删、损坏备份回退、非法结构丢弃。
 - **运行时集成**（本机临时目录脚本，非仓库测试）：`ManagerRuntime.refresh → toggleSkills → deleteSkillInstances → undoLastDelete → createGroup` 全链路通过；产生了 `groups.json`（version 1、scope key 为 projectRoot、成员 alpha）与回收站批次，撤销后文件回位。
-- **UI 渲染**：`pnpm test:ui` 通过（160/58 列屏幕还原，含 M2 页脚与卡片）；未覆盖分组页/模态框的自动化渲染（组件内部状态无法从外部切换），需真机走查。
+- **UI 渲染**：`pnpm test:ui` 通过（160/58 列屏幕还原，含 M2 页脚与卡片）。
+- **UI 交互（headless，真实 runtime）**：`pnpm test:ui:interaction` 通过——用真实 `ManagerRuntime` + 临时技能树渲染场景，通过 stdin 驱动按键并断言文件系统/共享 groups.json：
+  1. 空格启停（`SKILL.md` ↔ `.disabled`）；
+  2. `v` + 空格批量启停；
+  3. `d` 打开确认模态 → `y` 移入回收站 → `u` 恢复；
+  4. `a` 输入绝对路径 → 选择作用域 → 文件复制导入；
+  5. `g` → 新建分组 → `groups.json` 写入（与 web 版同结构）；
+  6. `Tab` 进分组页 → `a` 新建第二个分组。
+  → 说明 **UI 的写操作 wiring 与模态键盘流程可用**；仍缺真实 TTY 下的观感与鼠标点击模态验收。
 
 ## 4. 待真机验收（未验证，勿写成已通过）
 

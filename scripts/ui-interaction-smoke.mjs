@@ -1,0 +1,208 @@
+/**
+ * Headless interaction smoke test (dev-only): render the real manager scene
+ * against a REAL ManagerRuntime on a temporary skill tree, then drive it with
+ * stdin chunks and assert the filesystem + screens. Covers M2 write paths
+ * (toggle / delete+undo / add / groups) without a real TTY.
+ */
+import { createRequire } from 'node:module'
+import { EventEmitter } from 'node:events'
+import { Readable } from 'node:stream'
+import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { pathToFileURL } from 'node:url'
+
+const repo = process.cwd()
+const require = createRequire(import.meta.url)
+const { Terminal: XtermTerminal } = require('@xterm/headless')
+const dshTuiManifest = require.resolve('@deepseek-harness-tui/dsh-tui/package.json')
+const dshTuiDir = dirname(dshTuiManifest)
+const requireFromHost = createRequire(dshTuiManifest)
+const React = requireFromHost('react')
+const ui = await import(pathToFileURL(join(dshTuiDir, 'lib', 'types', 'ui.js')).href)
+const { createManagerScene } = await import(pathToFileURL(join(repo, 'lib', 'types', 'ui', 'ManagerScene.js')).href)
+const { ManagerRuntime } = await import(pathToFileURL(join(repo, 'lib', 'types', 'host', 'manager-runtime.js')).href)
+
+const SKILL = (name) => `---\nname: ${name}\ndescription: ${name} fixture\n---\n\n# ${name}\n\nBody.\n`
+
+const root = await mkdtemp(join(tmpdir(), 'skill-mcp-ui-'))
+const project = join(root, 'project')
+const home = join(root, 'home')
+const panel = join(root, 'panel')
+const source = join(root, 'source')
+await mkdir(join(project, '.git'), { recursive: true })
+await mkdir(join(project, '.dsh', 'skills', 'alpha'), { recursive: true })
+await writeFile(join(project, '.dsh', 'skills', 'alpha', 'SKILL.md'), SKILL('alpha'))
+await writeFile(join(project, '.dsh', 'skills', 'beta.md'), SKILL('beta'))
+await mkdir(source, { recursive: true })
+await writeFile(join(source, 'gamma.md'), SKILL('gamma'))
+
+process.env.DSH_HOME = home
+process.env.SKILL_MCP_PANEL_HOME = panel
+process.chdir(project)
+
+class FakeStdout extends EventEmitter {
+  constructor(columns, rows) {
+    super()
+    this.isTTY = true
+    this.columns = columns
+    this.rows = rows
+    this.chunks = []
+  }
+  write(chunk) {
+    this.chunks.push(String(chunk))
+    return true
+  }
+  getColorDepth() { return 8 }
+  hasColors() { return true }
+}
+
+class FakeStdin extends Readable {
+  constructor() {
+    super({ read() {} })
+    this.isTTY = true
+  }
+  setRawMode() {}
+  ref() {}
+  unref() {}
+}
+
+const stdout = new FakeStdout(160, 40)
+const stdin = new FakeStdin()
+stdin.setEncoding('utf8')
+const runtime = new ManagerRuntime({ get: () => undefined })
+await runtime.refresh('interaction-test')
+
+const Component = createManagerScene(runtime, 'skill-mcp-panel')
+const instance = ui.renderSync(React.createElement(Component, { React, ui, channel: {}, close() {} }), {
+  stdout,
+  stdin,
+  stderr: stdout,
+  patchConsole: false,
+  exitOnCtrlC: false,
+  terminalImages: false,
+})
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const failures = []
+const check = (label, condition, detail) => {
+  if (!condition) failures.push(`${label}${detail === undefined ? '' : `: ${detail}`}`)
+}
+const screenText = async () => {
+  const raw = stdout.chunks.join('')
+  const term = new XtermTerminal({ cols: 160, rows: 40, allowProposedApi: true, scrollback: 0 })
+  await new Promise((resolve) => term.write(raw, resolve))
+  const buffer = term.buffer.active
+  const lines = []
+  for (let y = 0; y < 40; y += 1) lines.push((buffer.getLine(y)?.translateToString(true) ?? '').replace(/\s+$/u, ''))
+  term.dispose()
+  return lines.join('\n')
+}
+const press = async (key) => {
+  stdin.push(key)
+  await sleep(140)
+}
+const pressText = async (text) => {
+  for (const char of text) await press(char)
+  await sleep(100)
+}
+
+try {
+  await sleep(200)
+  let screen = await screenText()
+  check('initial renders list', screen.includes('技能列表') && screen.includes('alpha'), screen.slice(0, 400))
+
+  await press(' ')
+  await sleep(200)
+  check('space disables alpha', existsSync(join(project, '.dsh', 'skills', 'alpha', 'SKILL.md.disabled')))
+  screen = await screenText()
+  check('screen shows 停用', screen.includes('停用'), screen.slice(0, 400))
+
+  await press(' ')
+  await sleep(200)
+  check('space re-enables alpha', existsSync(join(project, '.dsh', 'skills', 'alpha', 'SKILL.md')))
+
+  // mark (v) + batch toggle
+  await press('v')
+  await press(' ')
+  await sleep(200)
+  check('batch toggle via v+space', existsSync(join(project, '.dsh', 'skills', 'alpha', 'SKILL.md.disabled')))
+  await press(' ')
+  await sleep(200)
+
+  // delete + undo
+  await press('d')
+  screen = await screenText()
+  check('delete opens confirm modal', screen.includes('删除技能') && screen.includes('y = 确认'), screen.slice(0, 300))
+  await press('y')
+  await sleep(300)
+  check('delete removes alpha dir', !existsSync(join(project, '.dsh', 'skills', 'alpha')))
+  const trashEntries = existsSync(panel) ? (await import('node:fs/promises')).readdir(join(panel, 'trash')) : []
+  check('trash batch created', (await trashEntries).length > 0)
+  await press('u')
+  await sleep(400)
+  check('undo restores alpha', existsSync(join(project, '.dsh', 'skills', 'alpha', 'SKILL.md')))
+
+  // add via a -> path -> scope
+  await press('a')
+  screen = await screenText()
+  check('add modal asks path', screen.includes('本地绝对路径'), screen.slice(0, 300))
+  await pressText(join(source, 'gamma.md'))
+  await press('\r')
+  await sleep(200)
+  screen = await screenText()
+  check('add modal asks scope', screen.includes('添加到哪个作用域'), screen.slice(0, 300))
+  await press('\r')
+  await sleep(500)
+  check('add copied gamma file', existsSync(join(project, '.dsh', 'skills', 'gamma.md')))
+  screen = await screenText()
+  check('screen shows gamma', screen.includes('gamma'), screen.slice(0, 400))
+
+  // group: g -> new -> name
+  await press('g')
+  await sleep(200)
+  screen = await screenText()
+  check('group modal opens', screen.includes('新建分组') || screen.includes('分组（'), screen.slice(0, 300))
+  await press('\r') // choose the first option (＋ 新建分组… when no groups exist)
+  await sleep(200)
+  screen = await screenText()
+  check('group name input opens', screen.includes('分组名称'), screen.slice(0, 300))
+  await pressText('交互测试')
+  await press('\r')
+  await sleep(400)
+  const groupsPath = join(home, 'skills', '.system', 'skill-viewer', 'groups.json')
+  check('groups.json written', existsSync(groupsPath))
+  if (existsSync(groupsPath)) {
+    const groups = JSON.parse(await readFile(groupsPath, 'utf8'))
+    check('groups.json has group', Object.values(groups.groups).some((group) => group.name === '交互测试'), JSON.stringify(groups))
+  }
+
+  // groups page: Tab twice (skills -> mcp -> groups)
+  await press('\t')
+  await press('\t')
+  await sleep(250)
+  screen = await screenText()
+  check('groups tab renders', screen.includes('分组 Groups'), screen.slice(0, 300))
+  await press('a')
+  await sleep(200)
+  check('group page create input', (await screenText()).includes('分组名称'))
+  await pressText('第二组')
+  await press('\r')
+  await sleep(300)
+  const groups2 = JSON.parse(await readFile(groupsPath, 'utf8'))
+  check('second group created', Object.values(groups2.groups).some((group) => group.name === '第二组'), JSON.stringify(groups2))
+} finally {
+  try { instance.unmount() } catch {}
+  try { runtime.dispose() } catch {}
+  await rm(root, { recursive: true, force: true }).catch(() => undefined)
+  if (failures.length > 0) {
+    console.error('ui-interaction-smoke FAILED')
+    for (const failure of failures) console.error(` - ${failure}`)
+    const screen = await screenText().catch(() => '')
+    console.error('--- last screen (tail) ---')
+    console.error(screen.slice(-4000))
+    process.exit(1)
+  }
+  console.log('ui-interaction-smoke OK: toggle / delete+undo / add / groups')
+}

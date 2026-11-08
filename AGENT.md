@@ -131,6 +131,8 @@ pnpm build                  # tsc → lib/types/
 pnpm typecheck              # 同上，不产出
 pnpm test                   # build + node:test（domain 层，22 个用例）
 pnpm test:ui                # headless Ink 渲染 smoke（160/58 列）
+pnpm test:ui:interaction    # headless 交互 smoke：真实 ManagerRuntime + 临时技能树，
+                            # 驱动 空格/v/d+u/a/g/Tab，断言文件与 groups.json 变化
 ```
 
 **真机安装（已验证流程）**——用独立探针 profile，避免影响日常 `dsh-tui` profile：
