@@ -85,6 +85,8 @@ const HELP_LINES = [
   '',
   '鼠标（仅 fullscreen 布局下）',
   '  点击页签/作用域/技能行切换与选择；滚轮滚动列表、详情与诊断页。',
+  '  底部动作条 [启停]/[删除]/[添加]/[分组]… 可直接点击；确认/输入模态的按钮也可点击，',
+  '  鼠标与键盘的操作范围一致（输入文字仍用键盘）。',
   '',
   '已知限制 Limits',
   '  · MCP 没有工作区级配置：只有当前 profile + home 全局层。',
@@ -489,6 +491,29 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       })
     }
 
+    const pressMark = (): void => {
+      if (selected === undefined) {
+        runtime.setStatus('先选择一个技能', 'warning')
+        return
+      }
+      const next = new Set(marked)
+      if (next.has(selected.id)) next.delete(selected.id)
+      else next.add(selected.id)
+      setMarked(next)
+    }
+
+    const toggleGroupFilter = (): void => {
+      if (selectedGroupId === undefined) {
+        runtime.setStatus('还没有分组', 'warning')
+        return
+      }
+      const enabling = selectedGroupId !== groupFilter
+      setGroupFilter(enabling ? selectedGroupId : undefined)
+      const group = state.groups[selectedGroupId]
+      runtime.setStatus(enabling ? `按分组过滤：${group?.name ?? selectedGroupId}（x 清除）` : '已清除分组过滤', 'info')
+      if (enabling) goTab('skills')
+    }
+
     const openCreateGroup = (): void => {
       setModal({
         kind: 'input',
@@ -568,40 +593,45 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       setFocus('scope')
     }
 
+    const confirmModal = (target: Extract<Modal, { kind: 'confirm' }>): void => {
+      setModal(undefined)
+      target.onConfirm()
+    }
+
+    const submitInputModal = (target: Extract<Modal, { kind: 'input' }>): void => {
+      const value = target.value.trim()
+      const error = target.validate?.(value)
+      if (error !== undefined) {
+        runtime.setStatus(error, 'error')
+        return
+      }
+      setModal(undefined)
+      target.onSubmit(value)
+    }
+
     const scrollDetail = (delta: number): void => {
       const max = Math.max(0, detailLines.length - bodyRows)
       setDetailOffset((value) => Math.max(0, Math.min(max, value + delta)))
     }
 
     useInput((input, key) => {
-      if (key.ctrl || key.meta) return
+      // Human terminals deliver a lone ESC as escape+meta (see Ink's 50ms
+      // escape flush), so the modifier guard must never swallow it.
+      if ((key.ctrl || key.meta) && !key.escape) return
       const text = input.replace(/[\r\n]+/gu, '')
       const char = text.length > 0 ? (text[0]?.toLowerCase() ?? '') : ''
 
       if (modal !== undefined) {
         if (modal.kind === 'confirm') {
-          if (char === 'y' || key.return) {
-            const confirm = modal.onConfirm
-            setModal(undefined)
-            confirm()
-          } else if (char === 'n' || key.escape) {
-            setModal(undefined)
-          }
+          if (char === 'y' || key.return) confirmModal(modal)
+          else if (char === 'n' || key.escape) setModal(undefined)
           return
         }
         if (modal.kind === 'input') {
           if (key.escape) {
             setModal(undefined)
           } else if (key.return) {
-            const value = modal.value.trim()
-            const error = modal.validate?.(value)
-            if (error !== undefined) {
-              runtime.setStatus(error, 'error')
-            } else {
-              const submit = modal.onSubmit
-              setModal(undefined)
-              submit(value)
-            }
+            submitInputModal(modal)
           } else if (key.backspace || key.delete) {
             setModal({ ...modal, value: modal.value.slice(0, -1) })
           } else if (text.length > 0) {
@@ -674,7 +704,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         setSearchMode(true)
         return
       }
-      if (char === 'r') {
+      if (text === 'R') {
         void runtime.refresh('manual')
         return
       }
@@ -701,6 +731,12 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       if (tab === 'groups') {
+        if (focus === 'tabs') {
+          if (key.leftArrow || char === 'h') switchTab(-1)
+          else if (key.rightArrow || char === 'l') switchTab(1)
+          else if (key.downArrow || char === 'j' || key.return) setFocus('body')
+          return
+        }
         if (char === 'a') return openCreateGroup()
         if (char === 'r') return openRenameGroup()
         if (char === 'd') return askDeleteGroup()
@@ -716,14 +752,20 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           }
           return
         }
-        if (key.upArrow || char === 'k') moveGroupSelection(-1)
-        else if (key.downArrow || char === 'j') moveGroupSelection(1)
+        if (key.upArrow || char === 'k') {
+          if (selectedGroupIndex <= 0) setFocus('tabs')
+          else moveGroupSelection(-1)
+        } else if (key.downArrow || char === 'j') moveGroupSelection(1)
         else if (key.pageUp) moveGroupSelection(-bodyRows)
         else if (key.pageDown) moveGroupSelection(bodyRows)
         return
       }
 
       if (tab !== 'skills') {
+        if (char === 'r') {
+          void runtime.refresh('manual')
+          return
+        }
         if (focus === 'tabs') {
           if (key.leftArrow || char === 'h') switchTab(-1)
           else if (key.rightArrow || char === 'l') switchTab(1)
@@ -750,6 +792,10 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       // skills-tab actions (available regardless of focus)
+      if (char === 'r') {
+        void runtime.refresh('manual')
+        return
+      }
       if (char === 'a') return openAdd()
       if (char === 'v') {
         if (selected !== undefined) {
@@ -923,7 +969,15 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                   {index === 0 ? line : line}
                 </Text>
               ))}
-              <Text dimColor>y = 确认 · n/Esc = 取消</Text>
+              <Box flexDirection="row" height={1}>
+                <Box onClick={() => confirmModal(modal)}>
+                  <Text color="accent">[y 确认]</Text>
+                </Box>
+                <Text> </Text>
+                <Box onClick={() => setModal(undefined)}>
+                  <Text>[n / Esc 取消]</Text>
+                </Box>
+              </Box>
             </>
           )
         }
@@ -943,7 +997,15 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                   {modal.hint}
                 </Text>
               )}
-              <Text dimColor>Enter 提交 · Esc 取消</Text>
+              <Box flexDirection="row" height={1}>
+                <Box onClick={() => submitInputModal(modal)}>
+                  <Text color="accent">[Enter 提交]</Text>
+                </Box>
+                <Text> </Text>
+                <Box onClick={() => setModal(undefined)}>
+                  <Text>[Esc 取消]</Text>
+                </Box>
+              </Box>
             </>
           )
         }
@@ -1269,19 +1331,63 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       )),
     })
 
-    const footerHints =
-      tab === 'skills'
-        ? narrow
-          ? '空格 启停 · d 删除 · u 撤销 · a 添加 · v 标记 · g 分组 · / 搜索 · ? 帮助 · q 关闭'
-          : '空格 启停 · d 删除 · u 撤销 · a 添加 · v 标记 · g 分组 · ↑↓←→ 移动 · / 搜索 · ? 帮助 · q 关闭'
-        : tab === 'groups'
-          ? '↑↓ 选择 · Enter 过滤 · a 新建 · r 重命名 · d 删除 · x 清除过滤 · Tab 页签 · ? 帮助 · q 关闭'
-          : '↑↓ 滚动 · Tab 页签 · / 搜索 · ? 帮助 · q 关闭'
     const footerStats = state.busy
       ? '处理中…'
       : `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}`
     const statusColor =
       statusTone === 'success' ? 'success' : statusTone === 'warning' ? 'warning' : statusTone === 'error' ? 'error' : 'accent'
+
+    // Mouse parity: every keyboard action also exists as a clickable footer button.
+    const fullActions = columns >= 110
+    const actionButton = (label: string, onClick: () => void): ReactNode => (
+      <Box key={label} onClick={onClick}>
+        <Text color="accent">{`[${label}] `}</Text>
+      </Box>
+    )
+    const actionItems: { label: string; onClick: () => void }[] =
+      tab === 'skills'
+        ? fullActions
+          ? [
+              { label: '空格 启停', onClick: runToggle },
+              { label: 'v 标记', onClick: () => pressMark() },
+              { label: 'd 删除', onClick: askDelete },
+              { label: 'u 撤销', onClick: () => void runtime.undoLastDelete() },
+              { label: 'a 添加', onClick: openAdd },
+              { label: 'g 分组', onClick: openGroupPicker },
+              { label: '/ 搜索', onClick: () => setSearchMode(true) },
+              { label: 'r 刷新', onClick: () => void runtime.refresh('manual') },
+              { label: '? 帮助', onClick: () => setHelpOpen(true) },
+            ]
+          : [
+              { label: '␣启停', onClick: runToggle },
+              { label: 'v标记', onClick: () => pressMark() },
+              { label: 'd删除', onClick: askDelete },
+              { label: 'u撤销', onClick: () => void runtime.undoLastDelete() },
+              { label: 'a添加', onClick: openAdd },
+              { label: 'g分组', onClick: openGroupPicker },
+              { label: '?', onClick: () => setHelpOpen(true) },
+            ]
+        : tab === 'groups'
+          ? fullActions
+            ? [
+                { label: 'a 新建', onClick: openCreateGroup },
+                { label: 'r 重命名', onClick: openRenameGroup },
+                { label: 'd 删除', onClick: askDeleteGroup },
+                { label: '↵ 过滤', onClick: toggleGroupFilter },
+                { label: 'x 清除', onClick: () => setGroupFilter(undefined) },
+                { label: '? 帮助', onClick: () => setHelpOpen(true) },
+              ]
+            : [
+                { label: 'a新建', onClick: openCreateGroup },
+                { label: 'r改名', onClick: openRenameGroup },
+                { label: 'd删除', onClick: askDeleteGroup },
+                { label: '↵过滤', onClick: toggleGroupFilter },
+                { label: '?', onClick: () => setHelpOpen(true) },
+              ]
+          : [
+              { label: 'r 刷新', onClick: () => void runtime.refresh('manual') },
+              { label: '? 帮助', onClick: () => setHelpOpen(true) },
+            ]
 
     return (
       <Box flexDirection="column" flexGrow={1} paddingX={1}>
@@ -1298,13 +1404,13 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         {tab === 'skills' && !wide ? scopeChips : null}
         {tab === 'skills' ? skillsBody : tab === 'groups' ? groupsCard : bodyCard}
         <Box flexDirection="row" height={1}>
-          <Text dimColor wrap="truncate">
-            {footerHints}
-          </Text>
+          {actionItems.map((item) => actionButton(item.label, item.onClick))}
           <Box flexGrow={1} />
-          <Text dimColor wrap="truncate">
-            {footerStats}
-          </Text>
+          {fullActions ? (
+            <Text dimColor wrap="truncate">
+              {footerStats}
+            </Text>
+          ) : null}
         </Box>
         {statusText === undefined ? null : (
           <Text color={statusColor} wrap="truncate">

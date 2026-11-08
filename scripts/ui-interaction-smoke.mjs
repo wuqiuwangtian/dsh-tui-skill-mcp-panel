@@ -134,7 +134,7 @@ try {
   // delete + undo
   await press('d')
   screen = await screenText()
-  check('delete opens confirm modal', screen.includes('删除技能') && screen.includes('y = 确认'), screen.slice(0, 300))
+  check('delete opens confirm modal', screen.includes('删除技能') && screen.includes('[y 确认]'), screen.slice(0, 300))
   await press('y')
   await sleep(300)
   check('delete removes alpha dir', !existsSync(join(project, '.dsh', 'skills', 'alpha')))
@@ -184,6 +184,43 @@ try {
   await sleep(250)
   screen = await screenText()
   check('groups tab renders', screen.includes('分组 Groups'), screen.slice(0, 300))
+  // focus traversal: up from first group reaches the tab bar, then left switches tab
+  await press('\x1b[B') // down arrow: ensure list focus (if already body, stays)
+  await press('\x1b[A') // up arrow at top group -> tabs
+  await sleep(200)
+  await press('\x1b[D') // left: previous tab (mcp)
+  await sleep(200)
+  screen = await screenText()
+  check('up reaches tab bar and left switches tab', screen.includes('MCP') && !screen.includes('分组 Groups'), screen.slice(0, 300))
+
+  // back to groups (Tab twice from mcp -> groups)
+  await press('\t')
+  await sleep(200)
+
+  // Esc cancels create-group input and delete confirm
+  await press('a')
+  await sleep(200)
+  check('create group modal open', (await screenText()).includes('分组名称'))
+  await press('\x1b')
+  await sleep(200)
+  screen = await screenText()
+  check('esc cancels create group', !screen.includes('分组名称') && screen.includes('分组 Groups'), screen.slice(0, 300))
+  await press('d')
+  await sleep(200)
+  check('delete group confirm open', (await screenText()).includes('删除分组'))
+  await press('\x1b')
+  await sleep(200)
+  screen = await screenText()
+  check('esc cancels delete group', !screen.includes('删除分组') && screen.includes('分组 Groups'), screen.slice(0, 300))
+
+  // r opens rename (regression: r must not be swallowed by refresh)
+  await press('r')
+  await sleep(200)
+  screen = await screenText()
+  check('r opens rename group', screen.includes('重命名分组') && screen.includes('分组名称'), screen.slice(0, 300))
+  await press('\x1b')
+  await sleep(200)
+
   await press('a')
   await sleep(200)
   check('group page create input', (await screenText()).includes('分组名称'))

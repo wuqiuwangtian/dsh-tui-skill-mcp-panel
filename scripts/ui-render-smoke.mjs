@@ -193,7 +193,7 @@ assertContains('wide', frameWide, [
   'beta',
   'software-delivery-workflow',
   'project/.dsh',
-  '共 ',
+  '[空格 启停]',
 ])
 
 const frameNarrow = await renderAt(58)
@@ -205,7 +205,7 @@ if (dumpDir) {
   writeFileSync(join(dumpDir, 'wide.txt'), frameWide, 'utf8')
   writeFileSync(join(dumpDir, 'narrow.txt'), frameNarrow, 'utf8')
 }
-assertContains('narrow', frameNarrow, ['Skill / MCP manager', '技能', '诊断', 'alpha', '技能列表'])
+assertContains('narrow', frameNarrow, ['Skill / MCP manager', '技能', '诊断', 'alpha', '技能列表', '[␣启停]'])
 
 if (failures.length > 0) {
   console.error('render-smoke FAILED')

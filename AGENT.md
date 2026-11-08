@@ -93,7 +93,9 @@
 - **`pluginManager` 管不到 patch 插入的 MCP 行**：`listPlugins()` 为空、`setPluginEnabled` 返回 `failed/unknown-plugin` 且耗时 ≈33s → MCP 列表用 `ctx.loader.entries()` + patch 解析，启停以 patch 文本编辑为主；任何 `pluginManager` 调用都要带超时、不阻塞键盘。
 - **HMR 实测 ≈2.0–2.5s**（2s `awaitWriteFinish` + debounce + 探测轮询）；UI 显示「已保存，热加载中…」并轮询。
 - **多字符输入块**：`useInput` 可能一次收到 `"d\r"` 或整段 paste → 快捷键匹配不能假设 `input.length === 1`。
-- **鼠标**：场景已按 `Box onClick`/`onWheel` 实现点击与滚轮（fullscreen），键盘始终完整可用；插件场景是否真的收到鼠标事件**仍需真机确认**（宿主路由未验证）。
+- **鼠标**：场景已按 `Box onClick`/`onWheel` 实现点击与滚轮（fullscreen），且底部动作条/模态按钮与键盘操作范围一致；鼠标事件已由用户真机确认可用。
+- **裸 ESC 是 escape+meta**：宿主输入解析给 `useInput` 的裸 Esc 同时带 `escape: true` 与 `meta: true`（Ink 50ms flush）→ 快捷键守卫必须写成 `if ((key.ctrl || key.meta) && !key.escape) return`，否则模态框无法用 Esc 取消（M2 实际踩过）。
+- **`r` 键按页签分派**：分组页 `r` = 重命名，技能/诊断页 `r` = 刷新；全局刷新用 `R`。
 - **JSX 已验证可行**：`tsconfig` 的 `jsxImportSource: "@deepseek-harness-tui/dsh-tui"` + props 注入 `React`，真实 TUI 渲染无 invalid hook/元素错误。
 - **`link:` 安装时依赖解析**：插件运行时依赖须写在自身 `dependencies`（pnpm link 不解析目标目录依赖）；类型依赖放 `devDependencies`。
 - **扫盘与内核一致性已验证**（M1）：发现根/rank、frontmatter 名称、遮蔽、`.disabled`、非法条目与内核实测目录逐项一致（`docs/research/06`）；**但 `customSkillDirs` 在 host 层不可读**（按未配置处理），runtime 注册的技能不在扫盘内。
