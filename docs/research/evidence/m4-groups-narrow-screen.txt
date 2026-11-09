@@ -1,0 +1,30 @@
+
+   Skill / MCP manager          skill-mcp-panel · 54x28
+     技能  MCP  分组  诊断                             
+   ╭──────────────────────────────────────────────────╮
+   │ MCP servers  3 行 · 启用 0 · 停用 3              │
+   │ 无工作区级配置 · 当前 profile 可写 · home 全局…  │
+   │ 筛选: 全部 · 分组:全部 · 3/3 行                  │
+   │ ❯ mcp-expr    stdio  停用 · profile · 只读 · ◆T… │
+   │   mcp-home    stdio  停用 · home · 只读          │
+   │   mcp-probe   stdio  停用 · profile · 仅启停     │
+   │ ──────────────────────────────────────────────   │
+   │ 分组：TTY-renamed · g 修改                       │
+   │ id mcp-expr · entryId mcp-expr · 层 profile      │
+   │ serverName mcp-expr · transport stdio · 停用     │
+   │ disabled 表达式 !!js true                        │
+   │ 只读：disabled 由 !!js 表达式控制，不提供布尔…   │
+   │ disabled 由 !!js 表达式控制，不提供布尔开关      │
+   │ · !!js true                                      │
+   │                                                  │
+   │                                                  │
+   │                                                  │
+   │                                                  │
+   │                                                  │
+   │                                                  │
+   ╰──────────────────────────────────────────────────╯
+   [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组]     
+   [f筛选] [/搜索] [x清除] [r刷新] [?]                  
+   已写入 <probe>/dump.json      
+                                                        
+

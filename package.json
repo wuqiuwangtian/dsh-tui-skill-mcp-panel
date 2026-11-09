@@ -31,7 +31,8 @@
     "test:ui": "pnpm build && node scripts/ui-render-smoke.mjs",
     "test:ui:interaction": "pnpm build && node scripts/ui-interaction-smoke.mjs",
     "test:mcp": "pnpm build && node scripts/mcp-smoke.mjs",
-    "test:mcp:crud": "pnpm build && node scripts/mcp-crud-smoke.mjs 120 && node scripts/mcp-crud-smoke.mjs 58"
+    "test:mcp:crud": "pnpm build && node scripts/mcp-crud-smoke.mjs 120 && node scripts/mcp-crud-smoke.mjs 58",
+    "test:mcp:groups": "pnpm build && node scripts/mcp-groups-smoke.mjs 120 && node scripts/mcp-groups-smoke.mjs 58"
   },
   "license": "MIT",
   "dsh": {

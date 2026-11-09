@@ -17,8 +17,8 @@
 
 ## 2. 当前阶段与边界
 
-- **阶段：M4 受管 MCP CRUD 已落地（2026-11-09，D-10 边界）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
-- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组、发布准备与剩余人工验收待补；**不可发布**。
+- **阶段：M4 受管 MCP CRUD + profile 分组/搜索筛选已落地（2026-11-09，D-10/D-11 边界）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
+- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；发布准备与剩余人工验收待补；**不可发布**。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -76,7 +76,7 @@
 - 分组是**显示层元数据**，绝不改技能目录。
 - 参考版存 `$DSH_HOME/skills/.system/skill-viewer/groups.json`（`version: 1`，成员以 `(scope, 技能名)` 二元组计）。同名技能在全局与工作区各自独立归属。
 - 若与 web 版共享该文件，必须**读写兼容**；若要扩展字段，走 version 升级并向后兼容。
-- **MCP 分组不写共享文件**：存本插件配置（`~/.dsh-tui/skill-mcp-panel/config.json` 的 `mcpGroups`），成员是「serverName + entryId」，避免扩展 web 版 schema。
+- **MCP 分组不写共享文件**：存本插件配置（`~/.dsh-tui/skill-mcp-panel/config.json` 的 `mcpGroups`），成员是「serverName + entryId」，按当前 profile patch 绝对路径隔离（D-11），避免扩展 web 版 schema。私有配置损坏只读回退，原文保留，不自动重建。
 
 ### 5.4 UI 与插件形态
 
@@ -138,6 +138,7 @@ pnpm test:ui                # headless Ink 渲染 smoke（160/58 列）
 pnpm test:ui:interaction    # headless 交互 smoke：真实 ManagerRuntime + 临时技能树，
                             # 驱动 空格/v/d+u/a/g/Tab，断言文件与 groups.json 变化
 pnpm test:mcp               # headless MCP smoke：patch/loader 合成、受管块启停、HMR 轮询、home 只读
+pnpm test:mcp:groups        # 120/58 列 UI/runtime：分组、组合筛选、profile 隔离、冷启动与生命周期
 pnpm test:mcp:crud          # 120/58 列真实 UI/runtime：stdio+HTTP 表单、脱敏、CRUD、冷启动撤销
 node scripts/prepare-tui-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui
                             # 准备 /tmp 下独立 home/profile/技能/本地 MCP，输出 run.sh；不启动进程
@@ -145,7 +146,7 @@ node scripts/prepare-tui-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepsee
 
 **推荐真机验证**：先 `pnpm build`，执行上面的 `prepare-tui-probe.mjs`，然后在真实终端运行输出的 `run.sh`。`/skill-mcp` → `2` → 选 `mcp-probe` → 空格启停；预期「热加载中」→「已生效」，退出场景后 `/mcp` 可核对 `ping` 工具出现/消失。夹具初始停用，`mcp-home` / `mcp-expr` 只读。不需要 npm 下载或模型请求。
 
-M4 真机步骤见 [`research/09`](docs/research/09-m4-managed-crud-verification.md)：MCP 页 `a` 填入本地夹具的 Node 命令/JSON args，保存后 `/mcp` 核对 `ping`；`Enter` 修改参数，`d/y` 删除，重新打开面板后 `u` 恢复。夹具位置 `test/fixtures/mcp-stdio-server.mjs`。
+M4 真机步骤见 [`research/09`](docs/research/09-m4-managed-crud-verification.md)：MCP 页 `a` 填入本地夹具的 Node 命令/JSON args，保存后 `/mcp` 核对 `ping`；`Enter` 修改参数，`d/y` 删除，重新打开面板后 `u` 恢复。夹具位置 `test/fixtures/mcp-stdio-server.mjs`。MCP 分组验收见 [`research/10`](docs/research/10-m4-groups-filter-verification.md)：`g` 建组、`f` 筛选、`/` 搜索、分组页 `t` 切换 MCP。
 
 宿主 0.19 的首选项直接使用 `os.homedir()`，不认 `DSH_TUI_HOME`；脚本用仅测试进程的 Node preload 将该路径指向临时目录，**不修改 HOME 或真实首选项**。开发依赖中的宿主可能缺少启动所需的内核 peer，真机脚本应传入 CLI 已安装的宿主目录。证据与剩余人工项见 `docs/research/08`/`09`。
 

@@ -34,8 +34,9 @@ import {
 import {
   backupsRoot,
   groupsFile,
-  loadPanelConfig,
+  loadPanelDocument,
   panelHome,
+  updateMcpGroups,
   type PanelConfig,
 } from '../domain/store.js'
 import {
@@ -52,6 +53,8 @@ import { managedMcpEntries } from '../domain/mcp/managed.js'
 import { deleteMcpEntry, listMcpDeletions, openMcpEditor, restoreMcpEntry, saveMcpEditor,
   type McpDeletionSummary, type McpEditSession } from '../domain/mcp/crud.js'
 import type { McpConfig } from '../domain/mcp/model.js'
+import { deleteMcpGroup, groupsForMcpProfile, mcpGroupIds, mcpMemberKey, mcpProfileKey, renameMcpMember, setMcpMembership, upsertMcpGroup,
+  type McpGroups, type McpIdentity } from '../domain/mcp/groups.js'
 import {
   describeService,
   getService,
@@ -158,6 +161,7 @@ export interface ManagerState {
   groupsWarning?: string
   latestTrash?: TrashBatch
   config: PanelConfig
+  configWarning?: string
   statusMessage?: ManagerStatusMessage
   busy: boolean
   sceneError?: string
@@ -334,11 +338,11 @@ export class ManagerRuntime {
       this.patchState({ groupsWarning: error instanceof Error ? error.message : String(error) })
     }
     try {
-      const [batches, config] = await Promise.all([listTrash(this.panelHomePath), loadPanelConfig(this.panelHomePath)])
+      const [batches, document] = await Promise.all([listTrash(this.panelHomePath), loadPanelDocument(this.panelHomePath)])
       if (this.disposed) return
-      this.patchState({ latestTrash: batches[0], config })
+      this.patchState({ latestTrash: batches[0], config: document.config, configWarning: document.warning })
     } catch (error) {
-      this.patchState({ groupsWarning: error instanceof Error ? error.message : String(error) })
+      this.patchState({ configWarning: error instanceof Error ? error.message : String(error) })
     }
   }
 
@@ -499,6 +503,10 @@ export class ManagerRuntime {
 
   /** Re-read both patch layers + loader runtime rows into `state.mcp`. */
   async refreshMcp(): Promise<void> {
+    try {
+      const document = await loadPanelDocument(this.panelHomePath)
+      if (!this.disposed) this.patchState({ config: document.config, configWarning: document.warning })
+    } catch { this.patchState({ configWarning: '插件配置读取失败；请检查 config.json 权限或语法' }) }
     await this.loadMcp()
   }
 
@@ -593,11 +601,26 @@ export class ManagerRuntime {
 
   async saveMcpForm(session: McpEditSession, config: McpConfig): Promise<void> {
     const runtimeRows = this.state.mcp.rows.filter((row) => row.id !== session.id)
-    await this.runMcpMutation(session.id === undefined ? 'create' : 'edit', session.id, () => saveMcpEditor({
-      session, config, backupRoot: backupsRoot(this.panelHomePath),
-      runtimeNames: runtimeRows.filter((row) => row.enabled).map((row) => row.serverName),
-      runtimeIds: runtimeRows.map((row) => row.id),
-    }))
+    await this.runMcpMutation(session.id === undefined ? 'create' : 'edit', session.id, async () => {
+      const result = await saveMcpEditor({ session, config, backupRoot: backupsRoot(this.panelHomePath),
+        runtimeNames: runtimeRows.filter((row) => row.enabled).map((row) => row.serverName), runtimeIds: runtimeRows.map((row) => row.id) })
+      if (result.changed && session.id !== undefined && session.serverName !== undefined && session.serverName !== result.value.serverName) {
+        try {
+          const current = await loadPanelDocument(this.panelHomePath)
+          const before = { serverName: session.serverName, entryId: session.id }
+          if (mcpGroupIds(current.config.mcpGroups, session.patchPath, before).length > 0) {
+            const document = await updateMcpGroups(this.panelHomePath, session.patchPath,
+              (groups) => renameMcpMember(groups, session.patchPath, before, { serverName: result.value.serverName, entryId: session.id! }))
+            this.patchState({ config: document.config, configWarning: document.warning })
+          }
+        } catch {
+          const warning = '服务器配置已保存，但分组更名同步失败；请刷新并检查成员归属'
+          this.patchState({ configWarning: warning })
+          return { ...result, warning }
+        }
+      }
+      return result
+    })
   }
 
   async deleteMcp(id: string): Promise<void> {
@@ -630,7 +653,7 @@ export class ManagerRuntime {
 
   private async runMcpMutation(
     action: 'create' | 'edit' | 'delete' | 'restore', id: string | undefined,
-    operation: () => Promise<{ changed: boolean; backupPath?: string; value: { id: string; serverName: string } }>,
+    operation: () => Promise<{ changed: boolean; backupPath?: string; warning?: string; value: { id: string; serverName: string } }>,
   ): Promise<void> {
     await this.withBusy(async () => {
       const before = this.loaderRevision(id)
@@ -640,7 +663,7 @@ export class ManagerRuntime {
         const result = await operation()
         if (!result.changed) { this.setStatus('配置未变化，无需保存', 'info'); return }
         const target = result.value
-        saved = { outcome: 'saved', action, id: target.id, serverName: target.serverName, savedAt: Date.now(), backupPath: result.backupPath }
+        saved = { outcome: 'saved', action, id: target.id, serverName: target.serverName, savedAt: Date.now(), backupPath: result.backupPath, detail: result.warning }
         this.patchState({ mcp: { ...this.state.mcp, togglingId: target.id, lastAction: saved } })
         this.setStatus(`已保存，热加载中…（${labels[action]} ${target.serverName}）`, 'info')
         const source = await readPatchSnapshot(this.mcpFiles().patchPath)
@@ -661,7 +684,7 @@ export class ManagerRuntime {
             (action !== 'edit' || revised)
           if (ready) {
             this.patchState({ mcp: { ...this.state.mcp, togglingId: undefined, lastAction: { ...saved, outcome: 'applied', appliedAt: Date.now() } } })
-            this.setStatus(`已生效：${target.serverName} 已${labels[action]}${action === 'delete' ? '，可按 u 撤销' : ''}`, 'success')
+            this.setStatus(`已生效：${target.serverName} 已${labels[action]}${action === 'delete' ? '，可按 u 撤销' : ''}${result.warning === undefined ? '' : `；${result.warning}`}`, result.warning === undefined ? 'success' : 'warning')
             await this.writeDump(`mcp:${action}`)
             return
           }
@@ -766,7 +789,42 @@ export class ManagerRuntime {
     })
   }
 
-  // ── groups (shared groups.json v1) ────────────────────────────────────────
+  // ── MCP groups: private display metadata, isolated by profile ─────────────
+  mcpGroupsForCurrentProfile(): McpGroups {
+    const path = this.state.mcp.profilePatchPath
+    return path === undefined ? {} : groupsForMcpProfile(this.state.config.mcpGroups, path)
+  }
+
+  private async mutateMcpGroups(mutate: (groups: McpGroups, path: string) => McpGroups, message: string): Promise<void> {
+    await this.withBusy(async () => {
+      try {
+        const path = this.state.mcp.profilePatchPath
+        if (path === undefined) throw new Error('无法确定当前 profile，不能保存 MCP 分组')
+        const document = await updateMcpGroups(this.panelHomePath, path, (groups) => mutate(groups, mcpProfileKey(path)), this.state.config.mcpGroups)
+        this.patchState({ config: document.config, configWarning: document.warning })
+        this.setStatus(message, 'success')
+        await this.writeDump('mcp:groups')
+      } catch (error) { this.setStatus(`MCP 分组操作失败：${error instanceof Error ? error.message : '请刷新后重试'}`, 'error') }
+    })
+  }
+
+  async createMcpGroup(name: string, members: McpIdentity[] = []): Promise<void> {
+    await this.mutateMcpGroups((groups, path) => upsertMcpGroup(groups, path, undefined, name, members.map(mcpMemberKey)).groups, '已创建 MCP 分组（仅显示层）')
+  }
+
+  async renameMcpGroup(id: string, name: string): Promise<void> {
+    await this.mutateMcpGroups((groups, path) => upsertMcpGroup(groups, path, id, name).groups, '已重命名 MCP 分组')
+  }
+
+  async deleteMcpGroup(id: string): Promise<void> {
+    await this.mutateMcpGroups((groups, path) => deleteMcpGroup(groups, path, id), '已删除 MCP 分组；服务器配置与连接未改变')
+  }
+
+  async setMcpGroupMembership(id: string, row: McpIdentity, member: boolean): Promise<void> {
+    await this.mutateMcpGroups((groups, path) => setMcpMembership(groups, path, id, row, member), member ? '已加入 MCP 分组' : '已移出 MCP 分组')
+  }
+
+  // ── skill groups (shared groups.json v1) ──────────────────────────────────
   scopeKeyFor(instance: SkillInstance): string {
     if (instance.scope === 'global') return 'global'
     return this.state.scan?.projectRoot ?? 'workspace'
@@ -920,6 +978,8 @@ export class ManagerRuntime {
         paths: this.state.paths,
         sceneError: this.state.sceneError ?? null,
         scan: this.state.scan,
+        mcpGroups: this.mcpGroupsForCurrentProfile(),
+        configWarning: this.state.configWarning,
         mcp: {
           ...this.state.mcp,
           rows: this.state.mcp.rows.map((row) => ({ ...row, config: maskSecretConfig(row.config) })),

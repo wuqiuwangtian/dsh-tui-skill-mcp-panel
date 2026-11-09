@@ -1,0 +1,76 @@
+{
+  "date": "2026-11-09",
+  "host": "0.19.0",
+  "kernel": "0.2.2-rc.1",
+  "version": "0.1.0-dev.0",
+  "type": "real PTY + isolated installed-host process; no model request",
+  "decisions": [
+    "D-10: managed rows only for edit/delete",
+    "D-11: MCP groups isolated by normalized absolute profile patch path"
+  ],
+  "tty": [
+    {
+      "terminal": "160x48",
+      "scene": "156x46",
+      "actions": [
+        "g → new group TTY-group on readonly mcp-expr",
+        "/ → TTY-group; f → disabled",
+        "3 → t → Enter applies group filter",
+        "x clears MCP filters",
+        "3 → r → TTY-renamed",
+        "q → /skill-mcp → 2 retains group"
+      ]
+    },
+    {
+      "terminal": "58x30",
+      "scene": "54x28",
+      "actions": [
+        "exit first process with Ctrl+C twice",
+        "restart same isolated launcher",
+        "/skill-mcp → 2 retains TTY-renamed and double-key membership",
+        "all MCP footer buttons visible on two lines",
+        "exit with Ctrl+C twice"
+      ]
+    }
+  ],
+  "asserts": {
+    "profilePatchUnchanged": true,
+    "homePatchUnchanged": true,
+    "groupFilterAndQueryAndDisabledIntersection": true,
+    "coldProcessRetainsGroup": true,
+    "narrowFooterVisible": true
+  },
+  "hashes": {
+    "profile": {
+      "expected": "1006a4777397699fd0f456d79999dd9d1b2e90b6df663fa4225dae51b4c9109d",
+      "actual": "1006a4777397699fd0f456d79999dd9d1b2e90b6df663fa4225dae51b4c9109d"
+    },
+    "home": {
+      "expected": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90",
+      "actual": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+    }
+  },
+  "group": {
+    "name": "TTY-renamed",
+    "profilePath": "<probe>/dsh/profiles/panel-verification/cordis.patch.yml",
+    "members": [
+      "[\"mcp-expr\",\"mcp-expr\"]"
+    ]
+  },
+  "filteredFrame": "=== frame 17 @ 2026-11-09T08:20:08.672Z tab=mcp scope=all focus=body ===\ntab=mcp scope=all query=\"\" search=false help=false focus=body modal=- groupFilter=- marked=0\nscreen=156x46 listWidth=65 detailWidth=65\nsummary total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\nlist(1):\n● probe-skill [project/.dsh 生效]\nselected=probe-skill status=enabled path=<probe>/project/.dsh/skills/probe-skill/SKILL.md\ngroups(0): \nmcp(1): mcp-expr:off:profile:ro\nmcpView query=\"TTY-group\" status=disabled group=- groupKind=skills\nmcpGroups(1): <group-id>:TTY-group:1\ntrash=- status=-\ndetail=ready\n无工作区级配置 · 当前 profile 可写 · home 全局层只读\nid mcp-expr · entryId mcp-expr · 层 profile\nserverName mcp-expr · transport stdio · 停用\ndisabled 表达式 !!js true\n只读：disabled 由 !!js 表达式控制，不提供布尔开关\ndisabled 由 !!js 表达式控制，不提供布尔开关\n· !!js true\n\n配置（敏感值已脱敏）\n  transport stdio\n  serverName mcp-expr\n  command /home/wqwt/.local/node/bin/node\n  args <repo>/test/fixtures/mcp-stdio-server.mjs\n  env keys PANEL_TEST_TOKEN（值已隐藏）\n",
+  "coldFrame": "=== frame 7 @ 2026-11-09T08:21:03.603Z tab=mcp scope=all focus=body ===\ntab=mcp scope=all query=\"\" search=false help=false focus=body modal=- groupFilter=- marked=0\nscreen=54x28 listWidth=52 detailWidth=52\nsummary total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\nlist(1):\n● probe-skill [project/.dsh 生效]\nselected=probe-skill status=enabled path=<probe>/project/.dsh/skills/probe-skill/SKILL.md\ngroups(0): \nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(1): <group-id>:TTY-renamed:1\ntrash=- status=-\ndetail=ready\n无工作区级配置 · 当前 profile 可写 · home 全局层只读\nid mcp-expr · entryId mcp-expr · 层 profile\nserverName mcp-expr · transport stdio · 停用\ndisabled 表达式 !!js true\n只读：disabled 由 !!js 表达式控制，不提供布尔开关\ndisabled 由 !!js 表达式控制，不提供布尔开关\n· !!js true\n\n配置（敏感值已脱敏）\n  transport stdio\n  serverName mcp-expr\n  command /home/wqwt/.local/node/bin/node\n  args <repo>/test…\n  env keys PANEL_TEST_TOKEN（值已隐藏）\n",
+  "automation": {
+    "domain": "61/61 passed",
+    "uiRender": "160/58 passed",
+    "skillInteraction": "passed",
+    "mcpToggle": "passed",
+    "mcpCrud": "120/58 passed",
+    "mcpGroups": "120/58 passed"
+  },
+  "limits": [
+    "not user manual acceptance",
+    "mouse not verified this round",
+    "full web/TUI coexistence and inline layouts pending",
+    "M5 manifest/tarball/admission/publish pending"
+  ]
+}

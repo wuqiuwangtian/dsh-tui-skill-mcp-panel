@@ -45,7 +45,7 @@ function isAlive(pid: number): boolean {
 export async function withPatchLock<T>(
   patchPath: string,
   operation: () => Promise<T>,
-  options: { timeoutMs?: number; staleMs?: number; pollMs?: number } = {},
+  options: { timeoutMs?: number; staleMs?: number; pollMs?: number; resourceName?: string } = {},
 ): Promise<T> {
   const lockPath = `${patchPath}.panel.lock`
   const started = Date.now()
@@ -67,7 +67,7 @@ export async function withPatchLock<T>(
         if ((lockError as NodeJS.ErrnoException).code !== 'ENOENT') throw lockError
       }
       if (Date.now() - started >= (options.timeoutMs ?? 5000)) {
-        throw new Error('等待 cordis.patch.yml 写锁超时，请稍后重试（其他面板可能正在写入）')
+        throw new Error(`等待 ${options.resourceName ?? 'cordis.patch.yml'} 写锁超时，请稍后重试（其他面板可能正在写入）`)
       }
       await delay(options.pollMs ?? 50)
     }
