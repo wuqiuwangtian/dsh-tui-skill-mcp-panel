@@ -1,0 +1,54 @@
+{
+  "$schema": "urn:dsh-std:community-draft:dsh-plugin:0.15",
+  "manifestVersion": "0.15",
+  "id": "com.dsh-tui.skill-mcp-panel",
+  "name": "dsh-tui-skill-mcp-panel",
+  "version": "0.1.0-dev.0",
+  "facets": {
+    "host": {
+      "entry": "lib/types/index.js",
+      "apiVersion": "v1alpha1"
+    }
+  },
+  "requires": {
+    "contracts": [
+      {
+        "apiVersion": "commands.dsh/v1alpha1",
+        "kind": "Command"
+      }
+    ]
+  },
+  "permissions": [],
+  "contributes": {
+    "commands": [],
+    "panels": [],
+    "x-dsh-tui": [
+      {
+        "apiVersion": "tui.dsh/v1alpha1",
+        "kind": "Scene",
+        "id": "skill-mcp-panel",
+        "name": "skill-mcp-panel",
+        "spec": {
+          "title": "Skill / MCP manager"
+        }
+      }
+    ]
+  },
+  "subscriptions": [],
+  "license": "MIT",
+  "source": {
+    "repository": "https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel"
+  },
+  "compat": {
+    "hosts": [
+      "@deepseek-harness-tui/dsh-tui >=0.19.0 <0.20.0"
+    ]
+  },
+  "overrides": [
+    {
+      "target": "cordis.patch.yml",
+      "kind": "patch",
+      "description": "Insert the skill-mcp-panel Cordis plugin row."
+    }
+  ]
+}

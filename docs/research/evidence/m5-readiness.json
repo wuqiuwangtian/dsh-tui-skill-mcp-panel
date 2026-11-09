@@ -1,0 +1,97 @@
+{
+  "date": "2026-11-09",
+  "sourceBase": "35a9ab5",
+  "version": "0.1.0-dev.0",
+  "environment": {
+    "node": "v26.3.0",
+    "pnpm": "12.6.0",
+    "npm": "12.0.2",
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "os": "linux"
+  },
+  "checks": {
+    "frozenLockfileInstall": "passed (--ignore-scripts; no resolution or lockfile change)",
+    "aggregate": "pnpm check:release: exit 0",
+    "domain": 61,
+    "release": 7,
+    "totalTests": 68,
+    "failed": 0,
+    "uiRender": "160/58 columns passed",
+    "skillsInteraction": "passed",
+    "mcpToggle": "passed",
+    "mcpCrud": "120/58 passed",
+    "mcpGroups": "120/58 passed",
+    "defaultPrepack": "npm pack --json (with lifecycle scripts): passed; JSON remains machine-readable"
+  },
+  "fixes": {
+    "orphanOutput": "tsc retained early probes: original dry-run 71 files; clean build final archive 62 files",
+    "lifecycle": "scene and command disposers belong to injection scopes; real Cordis with fixture providers verifies service removal/recovery and panel deactivation/reactivation"
+  },
+  "manifest": {
+    "manifestVersion": "0.15",
+    "id": "com.dsh-tui.skill-mcp-panel",
+    "version": "0.1.0-dev.0",
+    "stdRevision": "614dfa1ac168db79fcf4577cf0ebb34e2e3b944b",
+    "hostVersion": "0.19.0",
+    "parserSha256": "1041a84e010c5b6924d9d921e82719a63a54ae2a697d041de24c5a32b2ae6dce",
+    "registrySha256": "5c390eabce620c6700da27cd51676e9bd4571cf25a697654cb99dbf2f2b49ad2",
+    "exampleDescriptorDecision": "compatible",
+    "evidence": "parsed + semantic/profile checks + example negotiation; not a Verified claim or live host acceptance"
+  },
+  "artifact": {
+    "name": "dsh-tui-skill-mcp-panel",
+    "version": "0.1.0-dev.0",
+    "fileCount": 62,
+    "bytes": 80549,
+    "sha256": "5dfb3d5e4f085d3e22553d77825d8c7b63fa96857100837088081da306395022",
+    "npmIntegrity": "sha512-KxYMRFQrQoSEG0jBfC+LvAmxU5GgekQr2Nf+UeYOBSpvzqLZ2wkMqYnDV/VZmTR5KO1xl7G72ocQ6Hu1WOwE2w==",
+    "dryRunFileCount": 62,
+    "manifestId": "com.dsh-tui.skill-mcp-panel",
+    "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+    "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+  },
+  "prepack": {
+    "ok": true,
+    "fileCount": 62,
+    "sha256": "5dfb3d5e4f085d3e22553d77825d8c7b63fa96857100837088081da306395022"
+  },
+  "checkedFileSha256": {
+    "package.json": "f1b6ef599ea369b3b3fc5647e0ecd97dc97756f39055732beef62c56abcf7efb",
+    "dsh-plugin.json": "804c42d4bae757388c4dc4f5b649dc26b51196b393b9fcfd78c447f6649eb720",
+    "src/host/register.ts": "034de00df1878cac8ddc553e30816a93a3c8af6bfaeb944542dec898656d6efb",
+    "scripts/build.mjs": "c479ef72bdfc92a0c7af62de69df6d643cd12c7390717ac95af95269ad846322",
+    "scripts/check-manifest.mjs": "1745b15e15cea28305ee5aa8a572ae4c65c6e8458434c3f5668ebe53b487a971",
+    "scripts/check-tarball.mjs": "7340d46ba6c270e487998692b3e00a75ac46788bf02c855a06c994658ffad1ee",
+    "scripts/release/manifest.mjs": "64564bbb8ba2823ee423938d2abc30a6016ffe3907e7a233506c7a62bdef0b61",
+    "scripts/release/tarball.mjs": "2799af39127b993915fa4e64f73f134ad4c03b97ad33bc432b230670dd7f1bf9",
+    "scripts/release/admission-pin.json": "be3884b4ceb861a87c5b6a9fcd8bf5fd92a65f9be914656c0cb2f8bef48a73ac",
+    "README.md": "1bec9e27eb25aa1d245bc16d02a098e0f64b1057feef169fe79900daee98bee1"
+  },
+  "realTTY": {
+    "method": "installed host in real PTY, isolated /tmp home/profile/project; repository link",
+    "terminal": "120x40",
+    "scene": "116x38",
+    "actions": [
+      "start with new manifest present",
+      "/skill-mcp → 2",
+      "q → /skill-mcp → Enter reopens",
+      "q → Ctrl+C twice exits"
+    ],
+    "sceneError": null,
+    "frame": "=== frame 8 @ 2026-11-09T08:36:23.330Z tab=skills scope=all focus=list ===\ntab=skills scope=all query=\"\" search=false help=false focus=list modal=- groupFilter=- marked=0\nscreen=116x38 listWidth=45 detailWidth=45\nsummary total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\nlist(1):\n● probe-skill [project/.dsh 生效]\nselected=probe-skill status=enabled path=<probe>/project/.dsh/skills/probe-skill/SKILL.md\ngroups(0): \nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=-\ndetail=ready\n"
+  },
+  "manualAcceptance": {
+    "state": "pending",
+    "userStatement": "No issues noticed so far; user plans full testing before publishing",
+    "guide": "docs/release-readiness.md section 4"
+  },
+  "limits": [
+    "development artifact only; tarballs removed after checks",
+    "archive import reuses checkout dependencies; not a clean registry install",
+    "compatible decision uses upstream example Host Descriptor; not live negotiation proof",
+    "no official certification, Reproducible, Attested or Verified claim",
+    "no tag, npm publish, Release upload or ecosystem submission",
+    "complete manual layouts/model sync/uninstall/web coexistence still pending"
+  ]
+}

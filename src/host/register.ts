@@ -25,7 +25,12 @@ export function registerManagerScene(ctx: Context, runtime: ManagerRuntime, scen
         title: 'Skill / MCP manager',
         component: component as never,
       })
-      ctx.effect(() => () => dispose())
+      // Injection scopes are disposed when their service disappears, even if
+      // the panel activation stays live. Never retain a handler/proxy from it.
+      sceneCtx.effect(() => () => {
+        runtime.setSceneService(undefined)
+        dispose()
+      })
     } catch (error) {
       runtime.reportSceneError(
         `tuiScenes.register failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -56,7 +61,7 @@ export function registerManagerCommands(ctx: Context, runtime: ManagerRuntime, s
         `commands.register failed: ${error instanceof Error ? error.message : String(error)}`,
       )
     }
-    ctx.effect(() => () => {
+    commandCtx.effect(() => () => {
       for (const dispose of disposers.reverse()) dispose()
     })
   })

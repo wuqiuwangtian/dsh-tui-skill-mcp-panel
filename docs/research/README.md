@@ -71,6 +71,8 @@
 
 - **M4 分组与筛选（D-11）**：2026-11-09 已实现 profile 隔离、双键成员、分组管理、元数据搜索及状态/分组组合过滤；私有配置锁/合并/过期拒写，不改技能共享 schema。61 项域层回归、120/58 列 UI/runtime 与真实 TTY 证据见 [`10`](10-m4-groups-filter-verification.md)。完整人工验收与 M5 准入准备仍待补。
 
+- **M5 发布准备**：manifest 0.15、固定 parser/core/profile 摘要、npm dry-run 与实际打包/入口导入、注册作用域清理回归均已补；A–G 自查、证据与待执行人工表统一见 [`../release-readiness.md`](../release-readiness.md)，不宣称整个 M5 或发布已完成。
+
 ## 5. 证据基线与复核方式
 
 - **类型面基线**：已安装 `@deepseek-harness-tui/dsh-tui@0.19.0` 的 `lib/types/*.d.ts`（`~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui`）。

@@ -17,8 +17,8 @@
 
 ## 2. 当前阶段与边界
 
-- **阶段：M4 受管 MCP CRUD + profile 分组/搜索筛选已落地（2026-11-09，D-10/D-11 边界）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
-- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；发布准备与剩余人工验收待补；**不可发布**。
+- **阶段：M5 发布准备检查已落地，完整人工验收与发布仍待执行（2026-11-09）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
+- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；完整人工验收与发布仍待执行；**不可发布**。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -92,6 +92,7 @@
 - **`tuiDialogs` / `tuiToast` 实测不可用**：dialog 在场景内/命令内都 0ms 静默返回取消值，toast `delivered=false` → 确认、单行输入全部场景内自绘；反馈用场景内状态条。
 - **`pluginManager` 管不到 patch 插入的 MCP 行**：`listPlugins()` 为空、`setPluginEnabled` 返回 `failed/unknown-plugin` 且耗时 ≈33s → MCP 列表用 `ctx.loader.entries()` + patch 解析，启停以 patch 文本编辑为主；任何 `pluginManager` 调用都要带超时、不阻塞键盘。
 - **HMR 实测 ≈2.0–2.5s**（2s `awaitWriteFinish` + debounce + 探测轮询）；UI 显示「已保存，热加载中…」并轮询。
+- **注册资源归属注入作用域**：`sceneCtx.effect` / `commandCtx.effect` 随服务移除立即撤销，不能挂在父插件 `ctx.effect` 上等到整个面板停用才清理。M5 的真实 Cordis lifecycle 测试覆盖移除/恢复与重复 activation。
 - **多字符输入块**：`useInput` 可能一次收到 `"d\r"` 或整段 paste → 快捷键匹配不能假设 `input.length === 1`。
 - **鼠标**：场景已按 `Box onClick`/`onWheel` 实现点击与滚轮（fullscreen），且底部动作条/模态按钮与键盘操作范围一致；鼠标事件已由用户真机确认可用。
 - **裸 ESC 是 escape+meta**：宿主输入解析给 `useInput` 的裸 Esc 同时带 `escape: true` 与 `meta: true`（Ink 50ms flush）→ 快捷键守卫必须写成 `if ((key.ctrl || key.meta) && !key.escape) return`，否则模态框无法用 Esc 取消（M2 实际踩过）。
@@ -131,13 +132,17 @@ src/
 
 ```sh
 pnpm install
-pnpm build                  # tsc → lib/types/
+pnpm build                  # 清理生成目录 lib/types，再 tsc；避免旧源码产物进入发布包
 pnpm typecheck              # 同上，不产出
 pnpm test                   # build + node:test（含 MCP 写入保护的回归用例）
 pnpm test:ui                # headless Ink 渲染 smoke（160/58 列）
 pnpm test:ui:interaction    # headless 交互 smoke：真实 ManagerRuntime + 临时技能树，
                             # 驱动 空格/v/d+u/a/g/Tab，断言文件与 groups.json 变化
 pnpm test:mcp               # headless MCP smoke：patch/loader 合成、受管块启停、HMR 轮询、home 只读
+pnpm check:manifest         # 固定官方 parser/core 摘要 + profile 校验 + 示例 descriptor 协商
+pnpm check:tarball          # clean build + npm dry-run/实际临时打包/解包/入口导入
+pnpm test:release           # 声明、打包拒绝边界、真实 Cordis 服务移除/恢复/停用
+pnpm check:release          # 类型 + 域层/发布测试 + 打包 + 全部 UI/runtime smoke
 pnpm test:mcp:groups        # 120/58 列 UI/runtime：分组、组合筛选、profile 隔离、冷启动与生命周期
 pnpm test:mcp:crud          # 120/58 列真实 UI/runtime：stdio+HTTP 表单、脱敏、CRUD、冷启动撤销
 node scripts/prepare-tui-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui
@@ -165,7 +170,7 @@ env -u DSH_PROFILE -u DSH_PROFILE_DIR -u DSH_SESSION_ID TERM=xterm-256color \
 
 `SKILL_MCP_PANEL_DUMP` 是验证用开关：设置后插件每次扫描写 JSON（扫描结果 + 宿主能力），未设置时不写任何临时文件。
 
-**计划中（M2/M5 落地）**：`pnpm check:manifest`（离线校验 `dsh-plugin.json`，M5）、`pnpm check:tarball`（`npm pack --dry-run` 断言 manifest/entry 在包内，M5）。
+发布基线、A–G 自查与用户发布前完整测试表见 [`docs/release-readiness.md`](docs/release-readiness.md)。`check:manifest` 的 compatible 仅为上游示例 descriptor 协商，不是 live host 或 Verified claim；实际包导入复用当前 checkout 依赖，不代表全新 registry 安装。构建会清理生成目录，先退出真实 TUI 验证进程再构建。
 
 > **不要声称跑过不存在的命令/测试**。真机行为验证必须在真实 TTY 打开 TUI 场景操作，构建成功/截图不能替代交互验证；探针运行限制见 [`docs/research/05`](docs/research/05-m0-real-machine-probe.md) §3.7。
 
@@ -223,9 +228,10 @@ dsh-tui-skill-mcp-panel/
 ├─ .dsh/skills/            # 真机验证用的项目级技能夹具（git 忽略）
 └─ docs/
    ├─ 需求文档.md          # 需求唯一权威（含 FR/NFR/AC/里程碑/未决问题/现状）
-   ├─ research/            # 01–09 调研 + 真机实测；README 为索引
+   ├─ research/            # 01–10 调研 + 真机实测；README 为索引
+   ├─ release-readiness.md # M5 准入自查、固定校验基线与发布前人工测试表
    ├─ decisions/           # ADR（0001 MCP 启停路径）
    └─ research/evidence/   # 探针原始 JSON 报告
 ```
 
-`src/domain/`（纯逻辑、可单测）在 M1 新增；`dsh-plugin.json` 在 M5 补。
+`src/domain/` 负责纯逻辑；`dsh-plugin.json` 已在 M5 补齐，发布校验脚本位于 `scripts/release/`。

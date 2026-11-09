@@ -549,6 +549,8 @@ dsh-tui-skill-mcp-panel/
 | F 信任与声明 | 装/启用前展示 `trusted-in-process`、非沙箱；claim 绑定；不记录 secret | 本插件**不做插件安装**，无需装包披露；但**修改 profile patch** 属于改变组合，UI 要明确提示影响范围（自加要求）；日志/存储不落令牌（§6.3） |
 | G 市场展示 | 兼容性/验证等级/限制分开显示；不写「官方认证」「安全插件」 | README 与面板文案：能力、权限（无）、依赖、TUI-only 限制、实验性接缝（panels）单独标注 |
 
+**2026-11-09 M5 实测修正**：上表 B 行的 `requires.contracts: Scene` 建议不适用于实际 0.19.0：`Scene` 是 `contributes.x-dsh-tui` 的 extension，未作为 runtime protocol 发布；示例 descriptor 对必需 Scene 返回 `REQUIRED_PROTOCOL_UNAVAILABLE`。现有 manifest 声明 Scene 贡献、必需 Command 契约、空标准 commands/permissions，经过宿主官方 parser/语义校验与示例协商。验证入口、固定 revision 和 A–G 实际自查见 [`../release-readiness.md`](../release-readiness.md)。保留上表作为早期建议记录，不将其当成当前 manifest 模板。
+
 ### 8.3 首版必守的质量红线（来自指南，适用于本插件）
 
 - TUI 活动期间 stdout 安静（调试走 `DSH_TUI_DEBUG` 的 stderr）——`TUI17/tui-profile/docs/plugin-admission-and-development.md:1481-1491`。

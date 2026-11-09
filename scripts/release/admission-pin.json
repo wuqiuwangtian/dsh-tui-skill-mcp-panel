@@ -1,0 +1,12 @@
+{
+  "hostPackage": "@deepseek-harness-tui/dsh-tui",
+  "hostVersion": "0.19.0",
+  "stdRepository": "https://github.com/T-Auto/dsh-std",
+  "stdRevision": "614dfa1ac168db79fcf4577cf0ebb34e2e3b944b",
+  "profileVersion": "tui-admission/0.15",
+  "hashes": {
+    "core": "d6b5ad3cb888abe6c04782e8715bcdfdbd623d89b532849776724f124f2fc45f",
+    "manifest": "1041a84e010c5b6924d9d921e82719a63a54ae2a697d041de24c5a32b2ae6dce",
+    "registry": "5c390eabce620c6700da27cd51676e9bd4571cf25a697654cb99dbf2f2b49ad2"
+  }
+}
