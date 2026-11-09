@@ -75,6 +75,8 @@
 
 - **共享技能分组保护**：TUI 锁/快照拒写/写前备份、损坏读取不移动源文件已补；实际 web 2.3.7 API 临时目录互读通过，双端同时写入仍受无锁 web 的后提交覆盖限制。当前证据与复核见 [`../release-readiness.md §6`](../release-readiness.md#6-共享技能分组写入保护)。
 
+- **M5 布局与异常交互**：8 种场景尺寸、176 项断言与真实 TTY 局部走查见 [发布准备 §7](../release-readiness.md#7-布局与异常交互回归)；布局断点设计差异与完整鼠标验收仍待核对。
+
 ## 5. 证据基线与复核方式
 
 - **类型面基线**：已安装 `@deepseek-harness-tui/dsh-tui@0.19.0` 的 `lib/types/*.d.ts`（`~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui`）。

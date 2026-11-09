@@ -1,0 +1,1097 @@
+{
+  "date": "2026-11-09",
+  "baseCommit": "10eb2b5",
+  "version": "0.1.0-dev.0",
+  "environment": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "node": "v26.3.0",
+    "pnpm": "12.6.0",
+    "terminal": "@xterm/headless + Unicode11Addon 0.9.0"
+  },
+  "verification": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "nodeTests": 82,
+    "nodeFailures": 0,
+    "layoutAssertions": 176,
+    "layoutSizes": [
+      "40x16",
+      "20x8",
+      "58x20",
+      "64x24",
+      "72x24",
+      "92x24",
+      "93x24",
+      "110x30",
+      "160x40"
+    ],
+    "cases": [
+      {
+        "viewport": "40x16",
+        "label": "skills-header-footer",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "last-skill-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "skill-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "detail-error-clamps-offset",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "large-body-preview-disclosed",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "help-last-page-footer",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "last-group-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "group-actions-from-tabs",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "group-picker-footer",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "batch-confirm-buttons",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "mcp-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "filtered-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "long-input-tail",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "unicode-backspace",
+        "pass": true
+      },
+      {
+        "viewport": "20x8",
+        "label": "too-small-safeguard",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "resize-preserves-draft",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "invalid-args-keeps-input",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "readonly-no-confirm",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "diagnostics-clamped-end",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "error-empty-skills",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "error-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "error-empty-groups",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "skills-header-footer",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "last-skill-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "skill-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "detail-error-clamps-offset",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "large-body-preview-disclosed",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "help-last-page-footer",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "last-group-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "group-actions-from-tabs",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "group-picker-footer",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "batch-confirm-buttons",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "mcp-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "filtered-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "long-input-tail",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "unicode-backspace",
+        "pass": true
+      },
+      {
+        "viewport": "20x8",
+        "label": "too-small-safeguard",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "resize-preserves-draft",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "invalid-args-keeps-input",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "readonly-no-confirm",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "diagnostics-clamped-end",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "error-empty-skills",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "error-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "58x20",
+        "label": "error-empty-groups",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "skills-header-footer",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "last-skill-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "skill-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "detail-error-clamps-offset",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "large-body-preview-disclosed",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "help-last-page-footer",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "last-group-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "group-actions-from-tabs",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "group-picker-footer",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "batch-confirm-buttons",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "mcp-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "filtered-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "long-input-tail",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "unicode-backspace",
+        "pass": true
+      },
+      {
+        "viewport": "20x8",
+        "label": "too-small-safeguard",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "resize-preserves-draft",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "invalid-args-keeps-input",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "readonly-no-confirm",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "diagnostics-clamped-end",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "error-empty-skills",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "error-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "64x24",
+        "label": "error-empty-groups",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "skills-header-footer",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "last-skill-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "skill-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "detail-error-clamps-offset",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "large-body-preview-disclosed",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "help-last-page-footer",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "last-group-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "group-actions-from-tabs",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "group-picker-footer",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "batch-confirm-buttons",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "mcp-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "filtered-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "long-input-tail",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "unicode-backspace",
+        "pass": true
+      },
+      {
+        "viewport": "20x8",
+        "label": "too-small-safeguard",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "resize-preserves-draft",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "invalid-args-keeps-input",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "readonly-no-confirm",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "diagnostics-clamped-end",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "error-empty-skills",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "error-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "72x24",
+        "label": "error-empty-groups",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "skills-header-footer",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "last-skill-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "skill-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "detail-error-clamps-offset",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "large-body-preview-disclosed",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "help-last-page-footer",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "last-group-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "group-actions-from-tabs",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "group-picker-footer",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "batch-confirm-buttons",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "mcp-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "filtered-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "long-input-tail",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "unicode-backspace",
+        "pass": true
+      },
+      {
+        "viewport": "20x8",
+        "label": "too-small-safeguard",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "resize-preserves-draft",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "invalid-args-keeps-input",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "readonly-no-confirm",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "diagnostics-clamped-end",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "error-empty-skills",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "error-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "92x24",
+        "label": "error-empty-groups",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "skills-header-footer",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "last-skill-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "skill-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "detail-error-clamps-offset",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "large-body-preview-disclosed",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "help-last-page-footer",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "last-group-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "group-actions-from-tabs",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "group-picker-footer",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "batch-confirm-buttons",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "mcp-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "filtered-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "long-input-tail",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "unicode-backspace",
+        "pass": true
+      },
+      {
+        "viewport": "20x8",
+        "label": "too-small-safeguard",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "resize-preserves-draft",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "invalid-args-keeps-input",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "readonly-no-confirm",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "diagnostics-clamped-end",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "error-empty-skills",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "error-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "93x24",
+        "label": "error-empty-groups",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "skills-header-footer",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "last-skill-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "skill-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "detail-error-clamps-offset",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "large-body-preview-disclosed",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "help-last-page-footer",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "last-group-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "group-actions-from-tabs",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "group-picker-footer",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "batch-confirm-buttons",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "mcp-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "filtered-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "long-input-tail",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "unicode-backspace",
+        "pass": true
+      },
+      {
+        "viewport": "20x8",
+        "label": "too-small-safeguard",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "resize-preserves-draft",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "invalid-args-keeps-input",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "readonly-no-confirm",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "diagnostics-clamped-end",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "error-empty-skills",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "error-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "110x30",
+        "label": "error-empty-groups",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "skills-header-footer",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "last-skill-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "skill-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "detail-error-clamps-offset",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "large-body-preview-disclosed",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "help-last-page-footer",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "last-group-reachable",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "group-actions-from-tabs",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "group-picker-footer",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "batch-confirm-buttons",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "mcp-detail-end",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "filtered-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "long-input-tail",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "unicode-backspace",
+        "pass": true
+      },
+      {
+        "viewport": "20x8",
+        "label": "too-small-safeguard",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "resize-preserves-draft",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "invalid-args-keeps-input",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "readonly-no-confirm",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "diagnostics-clamped-end",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "error-empty-skills",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "error-empty-mcp",
+        "pass": true
+      },
+      {
+        "viewport": "160x40",
+        "label": "error-empty-groups",
+        "pass": true
+      }
+    ]
+  },
+  "trueTty": {
+    "isolated": true,
+    "modelRequests": 0,
+    "realUserConfigWrites": 0,
+    "fullscreen": {
+      "terminal": "44x18",
+      "scene": "40x16"
+    },
+    "inline": {
+      "terminal": "62x24",
+      "scene": "58x22"
+    },
+    "boot": [
+      "2026-11-09T09:45:15.723Z pid=<probe> boot: UI mounted {\"fullscreen\":true,\"isRecompose\":false}",
+      "2026-11-09T09:45:54.944Z pid=<probe> boot: UI mounted {\"fullscreen\":true,\"isRecompose\":false}",
+      "2026-11-09T09:49:40.622Z pid=<probe> boot: UI mounted {\"fullscreen\":true,\"isRecompose\":false}",
+      "2026-11-09T09:51:43.888Z pid=<probe> boot: UI mounted {\"fullscreen\":false,\"isRecompose\":false}",
+      "2026-11-09T09:52:48.555Z pid=<probe> boot: UI mounted {\"fullscreen\":false,\"isRecompose\":false}"
+    ],
+    "screens": {
+      "full-skill": [
+        "",
+        "   Skill / MCP manager skill-mcp-panel ·…",
+        "     技能  MCP  分组  诊断    全部 · 1 项",
+        "    作用域  全部  工作区  全局           ",
+        "   ╭────────────────────────────────────╮",
+        "   │ 详情  probe-skill  ↕104/108        │",
+        "   │   LIVE-BODY-096 中文🧭 long body … │",
+        "   │   LIVE-BODY-097 中文🧭 long body … │",
+        "   │   LIVE-BODY-098 中文🧭 long body … │",
+        "   │   LIVE-BODY-099 中文🧭 long body … │",
+        "   │                                    │",
+        "   ╰────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销]       ",
+        "   [a添加] [g分组] [/搜索] [x清除]       ",
+        "   [r刷新] [?]                            ",
+        "   已写入 <isolated-probe>… ",
+        "                                          ",
+        ""
+      ],
+      "full-help": [
+        "",
+        "   Skill / MCP manager  帮助 Help · 40x16",
+        "     技能  MCP  分组  诊断    全部 · 1 项",
+        "                                         ",
+        "   已知限制 Limits                       ",
+        "     · MCP 没有工作区级配置：只有当前 pro",
+        "   file + home 全局层。                  ",
+        "     · 技能只发现一层：<root>/<name>/SKIL",
+        "   L.md 或 <root>/<name>.md。            ",
+        "     · 场景内不使用宿主对话框/toast（实测",
+        "   不可用），确认与输入均为自绘。        ",
+        "     · 迁移/复制、zip 导入为 P1；MCP 分组",
+        "   按 profile 隔离，只改显示层。         ",
+        "                                         ",
+        "   [首] [上页] [下页] [末] 66-75/75       ",
+        "   Esc/? 关闭帮助                         ",
+        "                                          ",
+        ""
+      ],
+      "full-info": [
+        "",
+        "   Skill / MCP manager    skill-mcp-panel",
+        "                                         ",
+        "   ╭────────────────────────────────────╮",
+        "   │ MCP 详情 · mcp-expr                │",
+        "   │ _LAYOUT_069, EXTRA_LAYOUT_070, EXT │",
+        "   │ RA_LAYOUT_071, EXTRA_LAYOUT_072, E │",
+        "   │ XTRA_LAYOUT_073, EXTRA_LAYOUT_074, │",
+        "   │  EXTRA_LAYOUT_075, EXTRA_LAYOUT_07 │",
+        "   │ 6, EXTRA_LAYOUT_077, EXTRA_LAYOUT_ │",
+        "   │ 078, EXTRA_LAYOUT_079, PANEL_TEST_ │",
+        "   │ TOKEN（值已隐藏）                  │",
+        "   │ [首] [上页] [下页] [末] 57-63/63   │",
+        "   │ [Enter/Esc 关闭]                   │",
+        "   ╰────────────────────────────────────╯ ",
+        "                                          ",
+        "                                          ",
+        ""
+      ],
+      "actual-inline-skill": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                      全部 · 1 项",
+        "    作用域  全部(1)  工作区(1)  全局(0) ",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 详情  probe-skill  ↕97/108                           │",
+        "   │   LIVE-BODY-089 中文🧭 long body fixture             │",
+        "   │   LIVE-BODY-090 中文🧭 long body fixture             │",
+        "   │   LIVE-BODY-091 中文🧭 long body fixture             │",
+        "   │   LIVE-BODY-092 中文🧭 long body fixture             │",
+        "   │   LIVE-BODY-093 中文🧭 long body fixture             │",
+        "   │   LIVE-BODY-094 中文🧭 long body fixture             │",
+        "   │   LIVE-BODY-095 中文🧭 long body fixture             │",
+        "   │   LIVE-BODY-096 中文🧭 long body fixture             │",
+        "   │   LIVE-BODY-097 中文🧭 long body fixture             │",
+        "   │   LIVE-BODY-098 中文🧭 long body fixture             │",
+        "   │   LIVE-BODY-099 中文🧭 long body fixture             │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] ",
+        "   [x清除] [r刷新] [?]                                      ",
+        "   已写入 <isolated-probe>/dump.json          ",
+        "                                                            ",
+        ""
+      ],
+      "actual-inline-help": [
+        "",
+        "   Skill / MCP manager                    帮助 Help · 58x22",
+        "     技能  MCP  分组  诊断                      全部 · 1 项",
+        "                                        ",
+        "   鼠标（仅 fullscreen 布局下）                            ",
+        "     点击页签/作用域/技能行切换与选择；滚轮滚动列表、详情与",
+        "   诊断页。                                                ",
+        "     底部动作条 [启停]/[删除]/[添加]/[分组]… 可直接点击；确",
+        "   认/输入模态的按钮也可点击，                             ",
+        "     鼠标与键盘的操作范围一致（输入文字仍用键盘）。        ",
+        "   已知限制 Limits                                         ",
+        "     · MCP 没有工作区级配置：只有当前 profile + home 全局层",
+        "   。                                                      ",
+        "     · 技能只发现一层：<root>/<name>/SKILL.md 或 <root>/<na",
+        "   me>.md。                                                ",
+        "     · 场景内不使用宿主对话框/toast（实测不可用），确认与输",
+        "   入均为自绘。                                            ",
+        "     · 迁移/复制、zip 导入为 P1；MCP 分组按 profile 隔离， ",
+        "   只改显示层。                                            ",
+        "                                                           ",
+        "   [首] [上页] [下页] [末] 39-54/54                         ",
+        "   Esc/? 关闭帮助                                           ",
+        "                                                            ",
+        ""
+      ],
+      "actual-inline-info": [
+        "",
+        "   Skill / MCP manager                      skill-mcp-panel",
+        "                                                           ",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ MCP 详情 · mcp-expr                                  │",
+        "   │ T_045, EXTRA_LAYOUT_046, EXTRA_LAYOUT_047, EXTRA_LAY │",
+        "   │ OUT_048, EXTRA_LAYOUT_049, EXTRA_LAYOUT_050, EXTRA_L │",
+        "   │ AYOUT_051, EXTRA_LAYOUT_052, EXTRA_LAYOUT_053, EXTRA │",
+        "   │ _LAYOUT_054, EXTRA_LAYOUT_055, EXTRA_LAYOUT_056, EXT │",
+        "   │ RA_LAYOUT_057, EXTRA_LAYOUT_058, EXTRA_LAYOUT_059, E │",
+        "   │ XTRA_LAYOUT_060, EXTRA_LAYOUT_061, EXTRA_LAYOUT_062, │",
+        "   │  EXTRA_LAYOUT_063, EXTRA_LAYOUT_064, EXTRA_LAYOUT_06 │",
+        "   │ 5, EXTRA_LAYOUT_066, EXTRA_LAYOUT_067, EXTRA_LAYOUT_ │",
+        "   │ 068, EXTRA_LAYOUT_069, EXTRA_LAYOUT_070, EXTRA_LAYOU │",
+        "   │ T_071, EXTRA_LAYOUT_072, EXTRA_LAYOUT_073, EXTRA_LAY │",
+        "   │ OUT_074, EXTRA_LAYOUT_075, EXTRA_LAYOUT_076, EXTRA_L │",
+        "   │ AYOUT_077, EXTRA_LAYOUT_078, EXTRA_LAYOUT_079, PANEL │",
+        "   │ _TEST_TOKEN（值已隐藏）                              │",
+        "   │ [首] [上页] [下页] [末] 30-42/42                     │",
+        "   │ [Enter/Esc 关闭]                                     │",
+        "   ╰──────────────────────────────────────────────────────╯ ",
+        "                                                            ",
+        "                                                            ",
+        ""
+      ]
+    },
+    "processExitCodes": [
+      0,
+      0
+    ],
+    "limits": "Keyboard subset only; mouse and complete user acceptance remain pending."
+  },
+  "remaining": [
+    "requirements §6.1 layout breakpoint mismatch (actual 72/110)",
+    "full manual acceptance",
+    "install/uninstall from real tarball",
+    "model synchronization",
+    "complete web/TUI coexistence",
+    "no tag or npm publish"
+  ],
+  "artifact": {
+    "name": "dsh-tui-skill-mcp-panel",
+    "version": "0.1.0-dev.0",
+    "fileCount": 62,
+    "bytes": 85332,
+    "sha256": "94acdd05f582ccc6a5f3f71460624d1b5f1415d568cb956db8f8eb4499a1551c",
+    "npmIntegrity": "sha512-OtyFc/KqO7H2mYD9N0PLaJUjnPa77336uXlseq7NRen2oCYmWuh2ICHCMylrq/KgX1wejWbhu1UzYVQ7HeEUDg==",
+    "dryRunFileCount": 62,
+    "manifestId": "com.dsh-tui.skill-mcp-panel",
+    "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+    "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+  }
+}

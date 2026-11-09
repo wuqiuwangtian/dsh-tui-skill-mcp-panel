@@ -18,7 +18,7 @@
 ## 2. 当前阶段与边界
 
 - **阶段：M5 发布准备检查已落地，完整人工验收与发布仍待执行（2026-11-09）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
-- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；共享技能分组 TUI 写入保护与 web 边界见同文档 §6；完整人工验收与发布仍待执行；**不可发布**。
+- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；共享技能分组 TUI 写入保护与 web 边界见同文档 §6；布局/异常交互回归及最小可用区域见 §7；完整人工验收与发布仍待执行；**不可发布**。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -103,7 +103,7 @@
 - **`link:` 安装时依赖解析**：插件运行时依赖须写在自身 `dependencies`（pnpm link 不解析目标目录依赖）；类型依赖放 `devDependencies`。
 - **扫盘与内核一致性已验证**（M1）：发现根/rank、frontmatter 名称、遮蔽、`.disabled`、非法条目与内核实测目录逐项一致（`docs/research/06`）；**但 `customSkillDirs` 在 host 层不可读**（按未配置处理），runtime 注册的技能不在扫盘内。
 - **写操作不变量**（M2）：启停/删除前重读 frontmatter 校验 name；目标已存在拒绝；bundled 只读；删除进回收站（manifest + 撤销冲突不覆盖）；添加用临时路径 + rename，限制 200 文件/8 MiB/1 MiB；分组写共享 groups.json：TUI 锁、加载快照/提交前比对、强制写前备份；损坏时精确复制备份并保留原文件，未备份不允许恢复写入。web 2.3.7 不使用分组锁，不能宣称双端同时写安全。细节与测试见 `docs/research/07`。
-- **UI 可验证方式**：真实 TTY 人工走查是最终验收；自动化用 `pnpm test:ui`（headless Ink + host ui kit）证明组件能渲染出列表/详情/页签，避免把「环境截不到图」当成「UI 不可用」。
+- **UI 可验证方式**：真实 TTY 人工走查是最终验收；布局回归用 `pnpm test:ui:layout`（8 种尺寸、缩小/恢复、长内容/只读/错误），自动化用 `pnpm test:ui`（headless Ink + host ui kit）证明组件能渲染出列表/详情/页签，避免把「环境截不到图」当成「UI 不可用」。
 
 ## 6. 架构约束（编码阶段必须遵守）
 

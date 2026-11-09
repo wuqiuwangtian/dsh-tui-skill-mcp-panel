@@ -17,7 +17,7 @@ pnpm check:release     # 类型、域层/发布检查、打包、全部现有 UI
 
 打包文件清单由 `src/**/*.ts(x)` 推导：每个源文件对应 `.js` / `.d.ts` / `.d.ts.map`，另含 package.json、manifest、patch、README、LICENSE；多出旧探针、少了入口、混入私有文件或依赖未声明，均失败。实际 archive 逐文件核对字节并导入 `name/Config/apply`，依赖从当前锁定 checkout 解析；**这不等于全新 registry 安装验证**。
 
-首次 M5 准备基线（de3b27d）的环境与结果见[结构化证据](research/evidence/m5-readiness.json)；后续共享分组写入修正与当前包检查见下方 §6。自动化通过不替代下方人工验收，也不会自动启动发布。
+首次 M5 准备基线（de3b27d）的环境与结果见[结构化证据](research/evidence/m5-readiness.json)；后续共享分组写入修正见下方 §6，布局与当前包检查见 §7。自动化通过不替代下方人工验收，也不会自动启动发布。
 
 ## 2. 固定的准入基线
 
@@ -90,3 +90,20 @@ node scripts/skill-groups-interop.mjs ~/.dsh/profiles/web/node_modules/dsh-skill
 后者需要本机已装 web 2.3.7，只从安装目录读代码，所有数据写入临时目录并清理，不纳入要求独立可运行的 `check:release`。其他环境可使用域层/界面回归，无需安装 web 插件。
 
 **未解决的边界**：web 2.3.7 的组 API 不遵守此锁，也没有快照比较；它在 TUI 保存后提交旧内容仍会丢掉 TUI 的新成员。最终检查与 rename 之间也存在不遵守锁的写入竞争窗口。因此完整 web/TUI 并发安全仍需要上游协作，当前使用时避免同时编辑同一个共享分组文件；这不是“自动化已通过”的项目。备份自动清理未接入，发布前完整人工验收继续保持待执行。
+
+
+## 7. 布局与异常交互回归
+
+2026-11-09 补齐 M5 局部回归，证据为 [m5-layout-verification.json](research/evidence/m5-layout-verification.json)。`pnpm check:release` 完整通过：82 项域层/发布测试，原有全部 UI/runtime smoke，以及新增 8 种场景尺寸下的 176 项断言。可单独运行 `pnpm test:ui:layout`；若需逐屏文本，使用 `LAYOUT_SMOKE_DUMP=/tmp/panel-layout pnpm test:ui:layout`。构建前先退出正在运行的测试 TUI，避免 HMR 干扰。
+
+场景尺寸为 40×16、58×20、64×24、72×24、92×24、93×24、110×30、160×40，每种含缩小到 20×8 后恢复。夹具使用 60 项技能、分组及 MCP、长 CJK/🧭 字段、多页正文/帮助/确认框、空结果、只读行与扫描/读取错误。检查包括标题与动作可见、首尾可达、过度翻页不空白、错误替换长详情时偏移收敛、输入末尾和 Unicode 退格、错误 args 不提交、过小区域阻止隐藏操作且恢复草稿、密钥不出现在终端帧。该脚本是内存 runtime + 真实宿主 React/ui 渲染，不声称替代真实文件写入或宿主服务测试。
+
+本轮修复：帮助/确认/信息框按 cell 折行并分页；所有页签动作条按实际行数分配高度；技能/分组首尾及诊断滚动边界统一收敛；长输入显示末尾；MCP `i` 可分页查看已知字段的脱敏详情（未知键仍不展示）；窄屏组名分配更多宽度；技能正文超过 400 行显示预览限制。可用区域小于 40×16 时保留草稿，暂停隐藏操作，只允许关闭。终端最后一行需留给渲染器换行，避免整个标题被推出屏幕。
+
+测试终端使用开发依赖 `@xterm/headless` 与精确固定的 `@xterm/addon-unicode11@0.9.0`，按[官方用法](https://github.com/xtermjs/xterm.js/blob/master/addons/addon-unicode11/README.md)启用 Unicode 11 宽度表，避免旧宽度表把 🧭 当成一个 cell 后生成假的残影。该依赖不进入运行时 dependencies；不据此保证所有组合 emoji/字体宽度一致。
+
+真实 TTY 另用本机 0.19.0 / 内核 0.2.2-rc.1，全部数据在 `/tmp` 的独立 home/profile：fullscreen 终端 44×18（场景 40×16），inline 终端 62×24（场景 58×22）。两种模式实按键盘打开场景、技能详情 End 到第 99 行、帮助 End 到限制段、MCP `i` + End 到第 79 个 env 键；标题、翻页/关闭入口均可见，env 仅显示键与“值已隐藏”。宿主 `restart.log` 分别记录 `fullscreen:true/false`，没有仅凭修改配置推断模式。宿主会把显示偏好导入临时 `user/.dsh-tui/settings.json`，inline 复验需在该临时文件设 `values.fullscreen:false` 并重启；仅修改 patch 不足以覆盖已导入偏好。探针未请求模型、未改真实 `~/.dsh`，退出码均为 0。
+
+复核时先按 AGENT.md §7 准备隔离探针：调整窗口，使场景显示目标可用尺寸；`?` → `End` 应看见限制段与关闭提示；技能 `Enter` → `End` 应显示正文末尾；MCP `i` → `End` 应显示脱敏末页；编辑长字段应能看到末尾，缩小窗口后操作暂停，放大恢复草稿。输入和确认都用 `Esc` 取消即可。
+
+**仍待完整验收**：鼠标点击/滚轮、不同终端渲染器与连续 resize、安装/卸载、模型侧同步、web/TUI 完整 UI 共存。当前布局为 <72 单栏、72–109 双栏、≥110 三栏，与需求 §6.1 的初始分档/可选帮助栏有差异；原设计与 AC-14 不改为“已通过”，由发布前完整验收核对。

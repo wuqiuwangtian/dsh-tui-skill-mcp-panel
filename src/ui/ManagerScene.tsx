@@ -19,13 +19,25 @@ import { filterMcpRows, groupsForMcpProfile, mcpGroupIds, mcpMemberKey, type Mcp
 import { splitFrontmatter } from '../domain/skills/frontmatter.js'
 import type { SkillInstance, SkillScanResult, SkillSource, SkillStatus } from '../domain/skills/types.js'
 import type { ManagerRuntime, ManagerState } from '../host/manager-runtime.js'
-import { cellWidth, firstLines, oneLine, padToWidth, truncateToWidth } from '../shared/format.js'
+import { cellWidth, firstLines, inputTail, oneLine, padToWidth, truncateToWidth, wrapTextLines } from '../shared/format.js'
+
+const SKILL_ACTIONS = [
+  ['toggle', '空格 启停', '␣启停'], ['mark', 'v 标记', 'v标记'], ['delete', 'd 删除', 'd删除'],
+  ['undo', 'u 撤销', 'u撤销'], ['create', 'a 添加', 'a添加'], ['group', 'g 分组', 'g分组'],
+  ['search', '/ 搜索', '/搜索'], ['clear', 'x 清除', 'x清除'], ['refresh', 'r 刷新', 'r刷新'], ['help', '? 帮助', '?'],
+] as const
+const GROUP_ACTIONS = [
+  ['create', 'a 新建', 'a新建'], ['rename', 'r 重命名', 'r改名'], ['delete', 'd 删除', 'd删除'],
+  ['filter', '↵ 过滤', '↵过滤'], ['clear', 'x 清除', 'x清除'], ['kind', 't 技能/MCP', 't切换'], ['refresh', 'R 刷新', 'R刷新'], ['help', '? 帮助', '?'],
+] as const
+const DIAG_ACTIONS = [['refresh', 'r 刷新', 'r刷新'], ['help', '? 帮助', '?']] as const
 
 const MCP_STATUSES: Record<McpStatusFilter, string> = { all: '全部', enabled: '启用', disabled: '停用', failed: '失败' }
 const MCP_ACTIONS = [
   ['toggle', '空格 启停', '␣启停'], ['create', 'a 新增', 'a新增'], ['edit', '↵ 编辑', '↵编辑'],
   ['delete', 'd 删除', 'd删除'], ['undo', 'u 撤销', 'u撤销'], ['group', 'g 分组', 'g分组'],
   ['filter', 'f 筛选', 'f筛选'], ['search', '/ 搜索', '/搜索'], ['clear', 'x 清除', 'x清除'],
+  ['detail', 'i 详情', 'i详情'],
   ['refresh', 'r 刷新', 'r刷新'], ['help', '? 帮助', '?'],
 ] as const
 
@@ -40,6 +52,21 @@ function packActions<T extends { label: string }>(items: T[], width: number): T[
   }
   return lines
 }
+
+interface NavigationKey { upArrow?: boolean; downArrow?: boolean; pageUp?: boolean; pageDown?: boolean; home?: boolean; end?: boolean }
+function textOffset(key: NavigationKey, char: string, current: number, total: number, pageRows: number): number | undefined {
+  const max = Math.max(0, total - pageRows)
+  const at = Math.min(current, max)
+  if (key.home) return 0
+  if (key.end) return max
+  if (key.upArrow || char === 'k') return Math.max(0, at - 1)
+  if (key.downArrow || char === 'j') return Math.min(max, at + 1)
+  if (key.pageUp) return Math.max(0, at - pageRows)
+  if (key.pageDown) return Math.min(max, at + pageRows)
+  return undefined
+}
+
+const displayLine = (text: string, width: number): string => truncateToWidth(text.replace(/[\r\n\t]/gu, ' '), width)
 
 const TABS = ['skills', 'mcp', 'groups', 'diagnostics'] as const
 type Tab = (typeof TABS)[number]
@@ -106,10 +133,12 @@ const HELP_LINES = [
   '                     a 新增 · Enter 编辑 · d 删除 · u 撤销（仅本面板受管行）',
   '                     home/表达式行只读；已有 profile 行仅支持启停',
   '                     g 加入/移出分组 · f 状态/分组筛选 · / 搜索元数据 · x 清除 MCP 过滤',
+  '                     i 完整详情（只读、敏感值隐藏）；详情内 ↑/↓、PgUp/PgDn、Home/End',
   '  分组页             t 切换技能/MCP · a 新建 · r 重命名 · d 删除组 · Enter 过滤',
   '  MCP 表单           逐字段 Enter 编辑；args 使用 JSON 数组；Ctrl+U 清空当前输入',
   '                     env/headers 每行 KEY=VALUE；Shift+Enter 换行；留空保留、-KEY 删除、! 清空',
   '  /                  搜索（Enter/Esc 退出搜索）',
+  '  Home / End         列表首尾；详情/帮助首尾；PgUp/PgDn 翻页',
   '  r                  重新扫描磁盘',
   '  ?                  本帮助',
   '  Esc / q            返回 / 关闭（搜索、帮助、详情、标记逐层退出）',
@@ -207,7 +236,7 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   const scan = state.scan
   const lines: string[] = []
   const push = (line: string): void => {
-    lines.push(truncateToWidth(line, width, '…'))
+    lines.push(displayLine(line, width))
   }
   push('宿主能力 Host seams')
   const present = state.services.filter((service) => service.present).map((service) => service.name)
@@ -283,7 +312,7 @@ function skillDetailLines(instance: SkillInstance | undefined, state: ManagerSta
   }
   const lines: string[] = []
   const push = (line: string): void => {
-    lines.push(truncateToWidth(line, width, '…'))
+    lines.push(displayLine(line, width))
   }
   push(
     `状态 ${STATUS_LABELS[instance.status]} · 来源 ${SOURCE_LABELS[instance.source]} · rank ${instance.rank} · ${instance.scope === 'workspace' ? '工作区' : '全局'}`,
@@ -315,7 +344,9 @@ function skillDetailLines(instance: SkillInstance | undefined, state: ManagerSta
   const raw = content ?? instance.bodyPreview ?? ''
   const split = splitFrontmatter(raw)
   const body = split?.body ?? raw
-  for (const line of firstLines(body, 400)) push(`  ${line}`)
+  const preview = firstLines(body, 401)
+  for (const line of preview.slice(0, 400)) push(`  ${line}`)
+  if (preview.length > 400) push('（仅预览前400行；完整正文请查看技能文件）')
   return lines
 }
 
@@ -336,7 +367,7 @@ function mcpDetailLines(row: McpRowView | undefined, width: number): string[] {
   }
   const lines: string[] = []
   const push = (line: string): void => {
-    lines.push(truncateToWidth(line, width, '…'))
+    lines.push(displayLine(line, width))
   }
   push(`id ${row.id} · entryId ${row.entryId} · 层 ${row.layer}`)
   push(
@@ -359,6 +390,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const sceneUi = ui as unknown as SceneUi
     const { Box, Text, useInput, useTerminalSize } = sceneUi
     const { columns, rows } = useTerminalSize()
+    const tooSmall = columns < 40 || rows < 16
     const [, forceRender] = React.useReducer((value: number) => value + 1, 0)
     const [tab, setTab] = React.useState<Tab>('skills')
     const [scope, setScope] = React.useState<ScopeFilter>('all')
@@ -366,6 +398,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const [searchMode, setSearchMode] = React.useState(false)
     const [selectedId, setSelectedId] = React.useState<string | undefined>(undefined)
     const [helpOpen, setHelpOpen] = React.useState(false)
+    const [helpOffset, setHelpOffset] = React.useState(0)
+    const [modalOffset, setModalOffset] = React.useState(0)
     const [focus, setFocus] = React.useState<FocusArea>('list')
     const [diagOffset, setDiagOffset] = React.useState(0)
     const [detailOffset, setDetailOffset] = React.useState(0)
@@ -440,6 +474,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     React.useEffect(() => {
       setDetailOffset(0)
     }, [selected?.id])
+    React.useEffect(() => { setModalOffset(0) }, [modal?.kind, modal?.title])
 
     React.useEffect(() => {
       if (groupFilter !== undefined && state.groups[groupFilter] === undefined) setGroupFilter(undefined)
@@ -454,8 +489,9 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const twoPane = columns >= 72
     const narrow = !twoPane
     const fullActions = columns >= 110
-    const mcpActionLabels = MCP_ACTIONS.map(([, full, short]) => ({ label: fullActions ? full : short }))
-    const extraFooterRows = tab === 'mcp' ? packActions(mcpActionLabels, contentWidth).length - 1 : 0
+    const actionDefinitions = tab === 'skills' ? SKILL_ACTIONS : tab === 'mcp' ? MCP_ACTIONS : tab === 'groups' ? GROUP_ACTIONS : DIAG_ACTIONS
+    const actionLabels = actionDefinitions.map(([, full, short]) => ({ label: fullActions ? full : short }))
+    const extraFooterRows = packActions(actionLabels, contentWidth).length - 1
     const statusText =
       state.statusMessage?.text ??
       (state.status === 'error' ? `错误：${state.error ?? 'unknown'}` : state.groupsWarning ?? state.configWarning ?? state.dumpMessage)
@@ -479,6 +515,18 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         : contentWidth
     const listInner = listWidth - 6
     const nameWidth = Math.max(8, Math.min(28, listInner - 22))
+    const detailLines = skillDetailLines(selected, state, detailWidth - 4)
+    const detailAt = Math.min(detailOffset, Math.max(0, detailLines.length - bodyRows))
+    const bodyLines = diagnosticLines(state, contentWidth - 4)
+    const diagAt = Math.min(diagOffset, Math.max(0, bodyLines.length - bodyRows))
+    const helpLines = wrapTextLines(HELP_LINES, contentWidth)
+    const helpRows = Math.max(1, rows - 6)
+    const helpAt = Math.min(helpOffset, Math.max(0, helpLines.length - helpRows))
+    const modalWidth = Math.max(20, Math.min(contentWidth, 100))
+    const modalRows = Math.max(1, rows - 9)
+    const modalLines = modal?.kind === 'confirm' ? wrapTextLines(modal.message, modalWidth - 4)
+      : modal?.kind === 'info' ? wrapTextLines(modal.lines, modalWidth - 4) : []
+    const modalAt = Math.min(modalOffset, Math.max(0, modalLines.length - modalRows))
 
     // ── shared actions ──────────────────────────────────────────────────────
     const targetInstances = (): SkillInstance[] =>
@@ -606,6 +654,12 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       void runtime.openMcpForm(id).then((session) => {
         if (session !== undefined) showMcpForm(session, session.config)
       })
+    }
+
+    const openMcpInfo = (): void => {
+      if (selectedMcp === undefined) { runtime.setStatus('先选择 MCP 行', 'warning'); return }
+      setModal({ kind: 'info', title: `MCP 详情 · ${selectedMcp.serverName}`,
+        lines: mcpDetailLines(selectedMcp, Number.MAX_SAFE_INTEGER) })
     }
 
     const askDeleteMcp = (): void => {
@@ -839,6 +893,10 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     }
 
     useInput((input, key) => {
+      if (tooSmall) {
+        if (key.escape || (!key.ctrl && !key.meta && input.toLowerCase() === 'q')) close()
+        return
+      }
       if (modal?.kind === 'input' && key.ctrl && input.toLowerCase() === 'u') {
         setModal({ ...modal, value: '' })
         return
@@ -851,6 +909,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
       if (modal !== undefined) {
         if (modal.kind === 'confirm') {
+          const next = textOffset(key, char, modalAt, modalLines.length, modalRows)
+          if (next !== undefined) { setModalOffset(next); return }
           if (char === 'y' || key.return) confirmModal(modal)
           else if (char === 'n' || key.escape) cancelModal()
           return
@@ -863,7 +923,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           } else if (key.return) {
             submitInputModal(modal)
           } else if (key.backspace || key.delete) {
-            setModal({ ...modal, value: modal.value.slice(0, -1) })
+            setModal({ ...modal, value: Array.from(modal.value).slice(0, -1).join('') })
           } else if (input.length > 0) {
             const entered = modal.multiline ? input.replaceAll('\r\n', '\n').replaceAll('\r', '\n') : text
             setModal({ ...modal, value: modal.value + entered })
@@ -890,12 +950,16 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           }
           return
         }
-        if (key.escape || key.return || char === 'q') setModal(undefined)
+        const next = textOffset(key, char, modalAt, modalLines.length, modalRows)
+        if (next !== undefined) setModalOffset(next)
+        else if (key.escape || key.return || char === 'q') setModal(undefined)
         return
       }
 
       if (helpOpen) {
-        if (key.escape || text === '?' || char === 'q') setHelpOpen(false)
+        const next = textOffset(key, char, helpAt, helpLines.length, helpRows)
+        if (next !== undefined) setHelpOffset(next)
+        else if (key.escape || text === '?' || char === 'q') setHelpOpen(false)
         return
       }
       if (searchMode) {
@@ -904,8 +968,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           return
         }
         if (key.backspace || key.delete) {
-          if (tab === 'mcp') setMcpQuery((current) => current.slice(0, -1))
-          else setQuery((current) => current.slice(0, -1))
+          if (tab === 'mcp') setMcpQuery((current) => Array.from(current).slice(0, -1).join(''))
+          else setQuery((current) => Array.from(current).slice(0, -1).join(''))
           return
         }
         if (text.length > 0) {
@@ -935,6 +999,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         return
       }
       if (char === '?') {
+        setHelpOffset(0)
         setHelpOpen(true)
         return
       }
@@ -966,15 +1031,15 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
       if (tab === 'groups') {
         if (char === 't') { setGroupKind(groupKind === 'skills' ? 'mcp' : 'skills'); return }
+        if (char === 'a') return openCreateGroup()
+        if (char === 'r') return openRenameGroup()
+        if (char === 'd') return askDeleteGroup()
         if (focus === 'tabs') {
           if (key.leftArrow || char === 'h') switchTab(-1)
           else if (key.rightArrow || char === 'l') switchTab(1)
           else if (key.downArrow || char === 'j' || key.return) setFocus('body')
           return
         }
-        if (char === 'a') return openCreateGroup()
-        if (char === 'r') return openRenameGroup()
-        if (char === 'd') return askDeleteGroup()
         if (key.return) {
           toggleGroupFilter()
           return
@@ -987,6 +1052,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         else if (key.rightArrow || char === 'l') switchTab(1)
         else if (key.pageUp) moveGroupSelection(-bodyRows)
         else if (key.pageDown) moveGroupSelection(bodyRows)
+        else if (key.home) setGroupSelectedId(groupListEntries[0]?.id)
+        else if (key.end) setGroupSelectedId(groupListEntries[groupListEntries.length - 1]?.id)
         return
       }
 
@@ -996,6 +1063,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       if (tab === 'mcp') {
+        if (char === 'i') return openMcpInfo()
         if (char === 'g') return openGroupPicker()
         if (char === 'f') return openMcpFilters()
         if (char === 'r') { void runtime.refreshMcp(); return }
@@ -1032,21 +1100,13 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           else if (key.downArrow || char === 'j' || key.return) setFocus('body')
           return
         }
-        if (key.upArrow || char === 'k') {
-          if (diagOffset === 0) setFocus('tabs')
-          else setDiagOffset((value) => Math.max(0, value - 1))
-        } else if (key.downArrow || char === 'j') {
-          setDiagOffset((value) => value + 1)
-        } else if (key.leftArrow || char === 'h') {
+        const next = textOffset(key, char, diagAt, bodyLines.length, bodyRows)
+        if ((key.upArrow || char === 'k') && diagAt === 0) setFocus('tabs')
+        else if (next !== undefined) setDiagOffset(next)
+        else if (key.leftArrow || char === 'h') {
           switchTab(-1)
         } else if (key.rightArrow || char === 'l') {
           switchTab(1)
-        } else if (key.pageUp) {
-          setDiagOffset((value) => Math.max(0, value - bodyRows))
-        } else if (key.pageDown) {
-          setDiagOffset((value) => value + bodyRows)
-        } else if (key.home) {
-          setDiagOffset(0)
         }
         return
       }
@@ -1095,11 +1155,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       if (focus === 'detail') {
-        if (key.upArrow || char === 'k') scrollDetail(-1)
-        else if (key.downArrow || char === 'j') scrollDetail(1)
-        else if (key.pageUp) scrollDetail(-bodyRows)
-        else if (key.pageDown) scrollDetail(bodyRows)
-        else if (key.home) setDetailOffset(0)
+        const next = textOffset(key, char, detailAt, detailLines.length, bodyRows)
+        if (next !== undefined) setDetailOffset(next)
         else if (key.leftArrow || char === 'h' || key.return) setFocus('list')
         return
       }
@@ -1154,7 +1211,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
             </Text>
           )}
         </Box>
-        <Box flexDirection="column" flexGrow={1} overflow="hidden">
+        <Box flexDirection="column" flexGrow={1} minHeight={0} overflow="hidden">
           {options.children}
         </Box>
       </Box>
@@ -1219,19 +1276,33 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       )
     }, [tab, scope, focus, selected?.id, selectedMcp?.id, state.mcp, state.groupsFingerprint, state.groupsWarning, state.config, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.statusMessage?.at, modal?.kind, marked, groupFilter])
 
+    const textPager = (at: number, total: number, page: number, setOffset: (value: number) => void): ReactNode => (
+      <Box flexDirection="row" height={1}>
+        {([
+          ['首', 0], ['上页', Math.max(0, at - page)],
+          ['下页', Math.min(Math.max(0, total - page), at + page)], ['末', Math.max(0, total - page)],
+        ] as const).map(([label, next]) => <Box key={label} flexShrink={0} onClick={() => setOffset(next)}><Text color="accent">{`[${label}] `}</Text></Box>)}
+        <Text dimColor wrap="truncate">{`${at + 1}-${Math.min(at + page, total)}/${total}`}</Text>
+      </Box>
+    )
+
     // ── modal screen ────────────────────────────────────────────────────────
+    if (tooSmall) {
+      return <Box flexDirection="column" height={Math.max(1, rows - 1)} paddingX={1}>
+        {['空间不足 · q/Esc', '可用区域需 40×16', '放大后草稿仍在'].slice(0, Math.max(1, rows - 1)).map((line) => <Text key={line} wrap="truncate">{line}</Text>)}
+        {rows >= 5 ? <Box onClick={close}><Text color="accent">[q 关闭]</Text></Box> : null}
+      </Box>
+    }
     if (modal !== undefined) {
       const modalDanger = modal.kind === 'confirm' && modal.danger === true
-      const modalWidth = Math.max(30, Math.min(contentWidth, 100))
       const modalBody = ((): ReactNode => {
         if (modal.kind === 'confirm') {
           return (
             <>
-              {modal.message.map((line, index) => (
-                <Text key={`modal-${index}`} wrap="truncate" dimColor={index > 0}>
-                  {index === 0 ? line : line}
-                </Text>
+              {modalLines.slice(modalAt, modalAt + modalRows).map((line, index) => (
+                <Text key={`modal-${modalAt + index}`} wrap="truncate" dimColor={modalAt + index > 0}>{line}</Text>
               ))}
+              {textPager(modalAt, modalLines.length, modalRows, setModalOffset)}
               <Box flexDirection="row" height={1}>
                 <Box onClick={() => confirmModal(modal)}>
                   <Text color="accent">[y 确认]</Text>
@@ -1247,19 +1318,13 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         if (modal.kind === 'input') {
           return (
             <>
-              <Text dimColor wrap="truncate">
-                {`${modal.label}：`}
-              </Text>
+              <Text dimColor wrap="truncate">{displayLine(`${modal.label}：`, modalWidth - 4)}</Text>
               <Box flexDirection="row" height={1}>
                 <Text color="accent">❯ </Text>
-                <Text wrap="truncate">{modal.secret ? `（已输入 ${Array.from(modal.value).length} 字符，值已隐藏）` : oneLine(modal.value.replaceAll('\n', ' ↵ '), modalWidth - 8)}</Text>
+                <Text wrap="truncate">{modal.secret ? `（已输入 ${Array.from(modal.value).length} 字符，值已隐藏）` : inputTail(modal.value.replaceAll('\n', ' ↵ '), modalWidth - 8)}</Text>
                 <Text color="accent">▌</Text>
               </Box>
-              {modal.hint === undefined ? null : (
-                <Text dimColor wrap="truncate">
-                  {modal.hint}
-                </Text>
-              )}
+              {wrapTextLines(modal.hint === undefined ? [] : [modal.hint], modalWidth - 4).slice(0, Math.max(1, rows - 10)).map((line, index) => <Text key={`input-hint-${index}`} dimColor wrap="truncate">{line}</Text>)}
               <Box flexDirection="row" height={1}>
                 <Box onClick={() => submitInputModal(modal)}>
                   <Text color="accent">[Enter 提交]</Text>
@@ -1291,9 +1356,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                     }}
                   >
                     <Text color={active ? 'accent' : undefined}>{active ? '❯ ' : '  '}</Text>
-                    <Text bold={active} wrap="truncate">
-                      {option.label}
-                    </Text>
+                    <Text bold={active} wrap="truncate">{oneLine(option.label, modalWidth - 6)}</Text>
                     {option.hint === undefined ? null : (
                       <Text dimColor wrap="truncate">
                         {`  ${option.hint}`}
@@ -1302,29 +1365,24 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                   </Box>
                 )
               })}
-              <Text dimColor>{`↑/↓ 选择 · Enter 确认 · Esc 取消${modal.options.length > pageSize ? ` · ${modal.index + 1}/${modal.options.length} PgUp/PgDn` : ''}`}</Text>
+              <Text dimColor wrap="truncate">{`↑↓ ↵确认 Esc取消 · ${modal.index + 1}/${modal.options.length}`}</Text>
             </>
           )
         }
         return (
           <>
-            {modal.lines.map((line, index) => (
-              <Text key={`modal-info-${index}`} wrap="truncate">
-                {line}
-              </Text>
-            ))}
-            <Text dimColor>Enter/Esc 关闭</Text>
+            {modalLines.slice(modalAt, modalAt + modalRows).map((line, index) => <Text key={`modal-info-${modalAt + index}`} wrap="truncate">{line}</Text>)}
+            {textPager(modalAt, modalLines.length, modalRows, setModalOffset)}
+            <Box onClick={cancelModal}><Text color="accent">[Enter/Esc 关闭]</Text></Box>
           </>
         )
       })()
       return (
-        <Box flexDirection="column" flexGrow={1} paddingX={1}>
+        <Box flexDirection="column" height={Math.max(1, rows - 1)} paddingX={1}>
           <Box flexDirection="row" height={1}>
-            <Text bold color="accent">
-              Skill / MCP manager
-            </Text>
+            <Box flexShrink={0}><Text bold color="accent">Skill / MCP manager</Text></Box>
             <Box flexGrow={1} />
-            <Text dimColor>{sceneId}</Text>
+            <Text dimColor wrap="truncate">{oneLine(sceneId, Math.max(0, contentWidth - 20))}</Text>
           </Box>
           <Box flexDirection="column" flexGrow={1} marginTop={1}>
             <Box
@@ -1333,15 +1391,20 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
               borderStyle="round"
               borderColor={modalDanger ? 'error' : 'accent'}
               paddingX={1}
+              onWheel={(event: { deltaY: number }) => {
+                const step = Math.sign(event.deltaY)
+                if (modal.kind === 'select') setModal({ ...modal, index: Math.max(0, Math.min(modal.options.length - 1, modal.index + step)) })
+                else if (modalLines.length > 0) setModalOffset(Math.max(0, Math.min(Math.max(0, modalLines.length - modalRows), modalAt + step)))
+              }}
             >
               <Text bold color={modalDanger ? 'error' : 'accent'} wrap="truncate">
-                {modal.title}
+                {oneLine(modal.title, modalWidth - 4)}
               </Text>
               {modalBody}
             </Box>
           </Box>
           <Text dimColor wrap="truncate">
-            {state.statusMessage?.text ?? ''}
+            {displayLine(state.statusMessage?.text ?? '', contentWidth)}
           </Text>
         </Box>
       )
@@ -1371,23 +1434,23 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
     if (helpOpen) {
       return (
-        <Box flexDirection="column" flexGrow={1} paddingX={1}>
+        <Box flexDirection="column" height={Math.max(1, rows - 1)} paddingX={1}>
           <Box flexDirection="row" height={1}>
-            <Text bold color="accent">
-              Skill / MCP manager
-            </Text>
+            <Box flexShrink={0}><Text bold color="accent">Skill / MCP manager</Text></Box>
             <Box flexGrow={1} />
             <Text dimColor>帮助 Help · {columns}x{rows}</Text>
           </Box>
           {tabBar}
-          <Box flexDirection="column" flexGrow={1} marginTop={1}>
-            {HELP_LINES.map((line, index) => (
+          <Box flexDirection="column" flexGrow={1} minHeight={0} marginTop={1}
+            onWheel={(event: { deltaY: number }) => setHelpOffset(Math.max(0, Math.min(Math.max(0, helpLines.length - helpRows), helpAt + Math.sign(event.deltaY))))}>
+            {helpLines.slice(helpAt, helpAt + helpRows).map((line, index) => (
               <Text key={`help-${index}`} wrap="truncate" bold={index === 0} color={index === 0 ? 'accent' : undefined} dimColor={index > 0 && line.startsWith('  ')}>
                 {line}
               </Text>
             ))}
           </Box>
-          <Text dimColor>Esc/? 关闭帮助</Text>
+          {textPager(helpAt, helpLines.length, helpRows, setHelpOffset)}
+          <Box onClick={() => setHelpOpen(false)}><Text dimColor>Esc/? 关闭帮助</Text></Box>
         </Box>
       )
     }
@@ -1411,7 +1474,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
               backgroundColor={candidate === scope ? 'selectionBg' : undefined}
               dimColor={candidate !== scope}
             >
-              {` ${SCOPE_LABELS[candidate]}(${scopeCounts[candidate]}) `}
+              {` ${SCOPE_LABELS[candidate]}${columns < 50 ? '' : `(${scopeCounts[candidate]})`} `}
             </Text>
           </Box>
         ))}
@@ -1419,9 +1482,10 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     )
 
     // ── skills panes ────────────────────────────────────────────────────────
+    const skillPageRows = Math.max(1, bodyRows - (filtered.length > bodyRows ? 1 : 0))
     const listWindowStart = Math.max(
       0,
-      Math.min(selectedIndex - Math.floor(bodyRows / 2), Math.max(0, filtered.length - bodyRows)),
+      Math.min(selectedIndex - Math.floor(skillPageRows / 2), Math.max(0, filtered.length - skillPageRows)),
     )
     const listRows =
       filtered.length === 0
@@ -1438,7 +1502,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                       : '没有任何技能。按 a 添加，或把技能放到发现根。'}
             </Text>,
           ]
-        : filtered.slice(listWindowStart, listWindowStart + bodyRows).map((instance) => {
+        : filtered.slice(listWindowStart, listWindowStart + skillPageRows).map((instance) => {
             const isSelected = instance.id === selected?.id
             const flags = statusFlags(instance)
             const groupNames = groupIds(instance)
@@ -1471,24 +1535,23 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       },
       children: [
         ...listRows,
-        ...(filtered.length > bodyRows
+        ...(filtered.length > skillPageRows
           ? [
               <Text key="scroll-hint" dimColor>
-                {`${listWindowStart + 1}-${Math.min(listWindowStart + bodyRows, filtered.length)} / ${filtered.length}`}
+                {`${listWindowStart + 1}-${Math.min(listWindowStart + skillPageRows, filtered.length)} / ${filtered.length}`}
               </Text>,
             ]
           : []),
       ],
     })
 
-    const detailLines = skillDetailLines(selected, state, detailWidth - 4)
-    const detailWindow = detailLines.slice(detailOffset, detailOffset + bodyRows)
+    const detailWindow = detailLines.slice(detailAt, detailAt + bodyRows)
     const detailCard = card({
       title: '详情',
       subtitle:
         selected === undefined
           ? undefined
-          : `${truncateToWidth(selected.name, Math.max(8, detailWidth - 12))}${detailLines.length > bodyRows ? `  ↕${detailOffset + 1}/${detailLines.length}` : ''}`,
+          : `${truncateToWidth(selected.name, Math.max(8, detailWidth - 12))}${detailLines.length > bodyRows ? `  ↕${detailAt + 1}/${detailLines.length}` : ''}`,
       focused: tab === 'skills' && focus === 'detail',
       width: detailWidth,
       onClick: () => setFocus('detail'),
@@ -1543,18 +1606,17 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     )
 
     // ── MCP tab ─────────────────────────────────────────────────────────────
-    const mcpListRows = Math.max(3, Math.min(bodyRows - 5, 8))
-    const mcpDetailRows = Math.max(1, bodyRows - mcpListRows - 3)
+    const mcpErrors = state.mcp.errors.slice(0, Math.min(2, Math.max(0, bodyRows - 4)))
+    const mcpFixedRows = 2 + mcpErrors.length + (mcpRows.length > 1 ? 1 : 0)
+    const mcpListRows = Math.max(1, Math.min(8, bodyRows - mcpFixedRows - 3))
+    const mcpDetailRows = Math.max(0, bodyRows - mcpFixedRows - mcpListRows - 1)
     const mcpWindowStart = Math.max(
       0,
       Math.min(selectedMcpIndex - Math.floor(mcpListRows / 2), Math.max(0, mcpRows.length - mcpListRows)),
     )
     const mcpListNodes = mcpRows.length === 0
-      ? [
-          <Text key="mcp-empty" dimColor wrap="wrap">
-            {state.mcp.rows.length === 0 ? '当前 profile / home 层没有 MCP 行。按 a 新增；仅本面板受管行支持编辑/删除，已有 profile 行可启停。' : '没有匹配的 MCP 行。按 x 清除搜索、状态与分组过滤。'}
-          </Text>,
-        ]
+      ? wrapTextLines([state.mcp.rows.length === 0 ? (columns < 72 ? '没有 MCP 行。按 a 新增；已有行仅启停。' : '当前 profile / home 层没有 MCP 行。按 a 新增；仅本面板受管行支持编辑/删除，已有 profile 行可启停。') : '没有匹配的 MCP 行。按 x 清除搜索、状态与分组过滤。'], contentWidth - 6)
+          .slice(0, Math.max(1, bodyRows - 2 - mcpErrors.length)).map((line, index) => <Text key={`mcp-empty-${index}`} dimColor wrap="truncate">{line}</Text>)
       : mcpRows.slice(mcpWindowStart, mcpWindowStart + mcpListRows).map((row) => {
           const isSelected = row.id === selectedMcp?.id
           const flags = [
@@ -1592,11 +1654,11 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         moveMcpSelection(event.deltaY > 0 ? 1 : -1)
       },
       children: [
-        <Text key="mcp-scope" dimColor wrap="truncate">{MCP_SCOPE_NOTICE}</Text>,
+        <Text key="mcp-scope" dimColor wrap="truncate">{columns < 72 ? '无工作区 · profile写 · home只读' : MCP_SCOPE_NOTICE}</Text>,
         <Text key="mcp-filters" color="accent" wrap="truncate">{`筛选: ${MCP_STATUSES[mcpStatus]} · 分组:${mcpGroupFilter === undefined ? '全部' : profileGroups[mcpGroupFilter]?.name ?? '?'}${mcpQuery ? ` · 搜索:${mcpQuery}` : ''} · ${mcpRows.length}/${state.mcp.rows.length} 行`}</Text>,
-        ...state.mcp.errors.slice(0, 2).map((error, index) => (
+        ...mcpErrors.map((error, index) => (
           <Text key={`mcp-error-${index}`} color="error" wrap="truncate">
-            {`错误：${error}`}
+            {displayLine(`错误：${error}`, contentWidth - 6)}
           </Text>
         )),
         ...mcpListNodes,
@@ -1607,10 +1669,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
               </Text>,
             ]
           : []),
-        <Text key="mcp-divider" dimColor>
-          {'─'.repeat(Math.max(4, contentWidth - 6))}
-        </Text>,
-        ...mcpDetail.map((line, index) => (
+        ...(mcpDetailRows > 0 && selectedMcp !== undefined ? [<Text key="mcp-divider" dimColor>{'─'.repeat(Math.max(4, contentWidth - 6))}</Text>] : []),
+        ...(selectedMcp === undefined ? [] : mcpDetail).map((line, index) => (
           <Text key={`mcp-detail-${index}`} wrap="truncate" dimColor={line.startsWith('  ')}>
             {line}
           </Text>
@@ -1624,7 +1684,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const groupRows = groupListEntries.length === 0
       ? [<Text key="groups-empty" dimColor wrap="wrap">{`还没有${groupKind === 'mcp' ? '当前 profile 的 MCP' : '技能'}分组。按 a 新建，或在${groupKind === 'mcp' ? 'MCP' : '技能'}页按 g 添加成员。`}</Text>]
       : groupListEntries.slice(groupStart, groupStart + Math.max(1, bodyRows - 2)).map((group) => rowNode(group.id,
-          truncateToWidth(`${padToWidth(group.name, Math.max(8, contentWidth - 40))}  ${group.count} 个成员（当前可见 ${group.visible}）${activeGroupFilter === group.id ? ' · 过滤中' : ''}`, contentWidth - 6), {
+          displayLine(`${padToWidth(group.name, Math.max(12, contentWidth - (columns < 72 ? 16 : 40)))}  ${columns < 72 ? `${group.visible}/${group.count}项` : `${group.count} 个成员（当前可见 ${group.visible}）`}${activeGroupFilter === group.id ? ' ◆' : ''}`, contentWidth - 6), {
             selected: group.id === selectedGroupId, dim: group.count === 0,
             onClick: () => setGroupSelectedId(group.id),
           }))
@@ -1637,8 +1697,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       onWheel: (event: { deltaY: number }) => { if (event.deltaY !== 0) moveGroupSelection(event.deltaY > 0 ? 1 : -1) },
       children: [
         <Box key="group-kind" flexDirection="row" height={1}>
-          {(['skills', 'mcp'] as const).map((kind) => <Box key={kind} onClick={() => setGroupKind(kind)}><Text color={groupKind === kind ? 'accent' : undefined} bold={groupKind === kind}>{`[${kind === 'skills' ? '技能' : 'MCP'}] `}</Text></Box>)}
-          <Text dimColor wrap="truncate">{groupKind === 'mcp' ? `t 切换 · profile: ${profilePath === undefined ? '(未知)' : basename(dirname(profilePath))}` : 't 切换 · 技能分组共享 web 配置'}</Text>
+          {(['skills', 'mcp'] as const).map((kind) => <Box key={kind} flexShrink={0} onClick={() => setGroupKind(kind)}><Text color={groupKind === kind ? 'accent' : undefined} bold={groupKind === kind}>{`[${kind === 'skills' ? '技能' : 'MCP'}] `}</Text></Box>)}
+          <Text dimColor wrap="truncate">{columns < 72 ? 't 切换 · 可见/总数' : groupKind === 'mcp' ? `t 切换 · profile: ${profilePath === undefined ? '(未知)' : basename(dirname(profilePath))}` : 't 切换 · 技能分组共享 web 配置'}</Text>
         </Box>,
         ...groupRows,
         ...(groupKind === 'mcp' ? [<Text key="group-note" dimColor wrap="truncate">成员引用按 profile 保存；删除服务器保留归属供撤销恢复。</Text>] : []),
@@ -1646,8 +1706,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     })
 
     // ── mcp / diagnostics tab ───────────────────────────────────────────────
-    const bodyLines = tab === 'diagnostics' ? diagnosticLines(state, contentWidth - 4) : []
-    const bodyWindow = bodyLines.slice(diagOffset, diagOffset + bodyRows)
+    const bodyWindow = bodyLines.slice(diagAt, diagAt + bodyRows)
     const bodyCard = card({
       title: tab === 'mcp' ? 'MCP' : '诊断 Diagnostics',
       subtitle: tab === 'diagnostics' ? `扫描 ${scan?.scannedAt ?? '(pending)'}` : undefined,
@@ -1657,7 +1716,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       onWheel: (event: { deltaY: number }) => {
         if (event.deltaY === 0) return
         setFocus('body')
-        setDiagOffset((value) => Math.max(0, value + (event.deltaY > 0 ? 1 : -1)))
+        setDiagOffset(Math.max(0, Math.min(Math.max(0, bodyLines.length - bodyRows), diagAt + (event.deltaY > 0 ? 1 : -1))))
       },
       children: bodyWindow.map((line, index) => (
         <Text key={`body-${diagOffset + index}`} wrap="truncate" dimColor={line.startsWith('  ')}>
@@ -1676,87 +1735,54 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
     // Mouse parity: every keyboard action also exists as a clickable footer button.
     const actionButton = (label: string, onClick: () => void): ReactNode => (
-      <Box key={label} onClick={onClick}>
+      <Box key={label} flexShrink={0} onClick={onClick}>
         <Text color="accent">{`[${label}] `}</Text>
       </Box>
     )
-    const actionItems: { label: string; onClick: () => void }[] =
-      tab === 'skills'
-        ? fullActions
-          ? [
-              { label: '空格 启停', onClick: runToggle },
-              { label: 'v 标记', onClick: () => pressMark() },
-              { label: 'd 删除', onClick: askDelete },
-              { label: 'u 撤销', onClick: () => void runtime.undoLastDelete() },
-              { label: 'a 添加', onClick: openAdd },
-              { label: 'g 分组', onClick: openGroupPicker },
-              { label: '/ 搜索', onClick: () => setSearchMode(true) },
-              { label: 'r 刷新', onClick: () => void runtime.refresh('manual') },
-              { label: '? 帮助', onClick: () => setHelpOpen(true) },
-            ]
-          : [
-              { label: '␣启停', onClick: runToggle },
-              { label: 'v标记', onClick: () => pressMark() },
-              { label: 'd删除', onClick: askDelete },
-              { label: 'u撤销', onClick: () => void runtime.undoLastDelete() },
-              { label: 'a添加', onClick: openAdd },
-              { label: 'g分组', onClick: openGroupPicker },
-              { label: '?', onClick: () => setHelpOpen(true) },
-            ]
-        : tab === 'groups'
-          ? fullActions
-            ? [
-                { label: 'a 新建', onClick: openCreateGroup },
-                { label: 'r 重命名', onClick: openRenameGroup },
-                { label: 'd 删除', onClick: askDeleteGroup },
-                { label: '↵ 过滤', onClick: toggleGroupFilter },
-                { label: 'x 清除', onClick: clearFilters },
-                { label: 't 技能/MCP', onClick: () => setGroupKind(groupKind === 'skills' ? 'mcp' : 'skills') },
-                { label: '? 帮助', onClick: () => setHelpOpen(true) },
-              ]
-            : [
-                { label: 'a新建', onClick: openCreateGroup },
-                { label: 'r改名', onClick: openRenameGroup },
-                { label: 'd删除', onClick: askDeleteGroup },
-                { label: '↵过滤', onClick: toggleGroupFilter },
-                { label: 'x清除', onClick: clearFilters },
-                { label: 't切换', onClick: () => setGroupKind(groupKind === 'skills' ? 'mcp' : 'skills') },
-                { label: '?', onClick: () => setHelpOpen(true) },
-              ]
-          : tab === 'mcp'
-            ? MCP_ACTIONS.map(([id, full, short]) => ({ label: fullActions ? full : short, onClick: () => {
-                if (id === 'toggle') { if (selectedMcp !== undefined) void runtime.toggleMcp(selectedMcp.id) }
-                else if (id === 'create') openMcpForm()
-                else if (id === 'edit') { if (selectedMcp !== undefined) openMcpForm(selectedMcp.id) }
-                else if (id === 'delete') askDeleteMcp()
-                else if (id === 'undo') void runtime.undoMcpDelete()
-                else if (id === 'group') openGroupPicker()
-                else if (id === 'filter') openMcpFilters()
-                else if (id === 'search') setSearchMode(true)
-                else if (id === 'clear') clearFilters()
-                else if (id === 'refresh') void runtime.refreshMcp()
-                else setHelpOpen(true)
-              } }))
-            : [
-                { label: 'r 刷新', onClick: () => void runtime.refresh('manual') },
-                { label: '? 帮助', onClick: () => setHelpOpen(true) },
-              ]
+    const actionItems = actionDefinitions.map(([id, full, short]) => ({ label: fullActions ? full : short, onClick: () => {
+      if (id === 'help') { setHelpOffset(0); setHelpOpen(true); return }
+      if (id === 'refresh') { if (tab === 'mcp') void runtime.refreshMcp(); else void runtime.refresh('manual'); return }
+      if (id === 'clear') { clearFilters(); return }
+      if (tab === 'skills') {
+        if (id === 'toggle') runToggle()
+        else if (id === 'mark') pressMark()
+        else if (id === 'delete') askDelete()
+        else if (id === 'undo') void runtime.undoLastDelete()
+        else if (id === 'create') openAdd()
+        else if (id === 'group') openGroupPicker()
+        else if (id === 'search') setSearchMode(true)
+      } else if (tab === 'groups') {
+        if (id === 'create') openCreateGroup()
+        else if (id === 'rename') openRenameGroup()
+        else if (id === 'delete') askDeleteGroup()
+        else if (id === 'filter') toggleGroupFilter()
+        else if (id === 'kind') setGroupKind(groupKind === 'skills' ? 'mcp' : 'skills')
+      } else if (tab === 'mcp') {
+        if (id === 'toggle') { if (selectedMcp !== undefined) void runtime.toggleMcp(selectedMcp.id) }
+        else if (id === 'create') openMcpForm()
+        else if (id === 'edit') { if (selectedMcp !== undefined) openMcpForm(selectedMcp.id) }
+        else if (id === 'delete') askDeleteMcp()
+        else if (id === 'undo') void runtime.undoMcpDelete()
+        else if (id === 'group') openGroupPicker()
+        else if (id === 'filter') openMcpFilters()
+        else if (id === 'search') setSearchMode(true)
+        else if (id === 'detail') openMcpInfo()
+      }
+    } }))
 
     return (
-      <Box flexDirection="column" flexGrow={1} paddingX={1}>
+      <Box flexDirection="column" height={Math.max(1, rows - 1)} paddingX={1}>
         <Box flexDirection="row" height={1}>
-          <Text bold color="accent">
-            Skill / MCP manager
-          </Text>
+          <Box flexShrink={0}><Text bold color="accent">Skill / MCP manager</Text></Box>
           <Box flexGrow={1} />
           <Text dimColor wrap="truncate">
-            {sceneId} · {columns}x{rows}
+            {` ${sceneId} · ${columns}x${rows}`}
           </Text>
         </Box>
         {tabBar}
         {tab === 'skills' && !wide ? scopeChips : null}
         {tab === 'skills' ? skillsBody : tab === 'groups' ? groupsCard : tab === 'mcp' ? mcpCard : bodyCard}
-        {(tab === 'mcp' ? packActions(actionItems, contentWidth) : [actionItems]).map((items, index) => <Box key={`actions-${index}`} flexDirection="row" height={1}>
+        {packActions(actionItems, contentWidth).map((items, index) => <Box key={`actions-${index}`} flexDirection="row" height={1}>
           {items.map((item) => actionButton(item.label, item.onClick))}
           <Box flexGrow={1} />
           {fullActions && tab !== 'mcp' ? (
@@ -1767,7 +1793,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         </Box>)}
         {statusText === undefined ? null : (
           <Text color={statusColor} wrap="truncate">
-            {statusText}
+            {displayLine(statusText, contentWidth)}
           </Text>
         )}
       </Box>

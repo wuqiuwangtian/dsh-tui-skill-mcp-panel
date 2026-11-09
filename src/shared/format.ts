@@ -43,6 +43,38 @@ export function oneLine(text: string, maxCells: number): string {
   return truncateToWidth(sanitizeText(text).replace(/\s+/gu, ' ').trim(), maxCells)
 }
 
+/** Show the cursor end of an append-only input without splitting a code point. */
+export function inputTail(text: string, maxCells: number): string {
+  const clean = sanitizeText(text).replace(/\s+/gu, ' ')
+  if (cellWidth(clean) <= maxCells) return clean
+  let out = ''
+  let width = 0
+  for (const char of Array.from(clean).reverse()) {
+    if (width + charWidth(char) > Math.max(0, maxCells - 1)) break
+    out = char + out
+    width += charWidth(char)
+  }
+  return maxCells > 0 ? `…${out}` : ''
+}
+
+/** Hard-wrap plain text by terminal cells; one returned string is one screen row. */
+export function wrapTextLines(lines: string[], width: number): string[] {
+  const limit = Math.max(2, width)
+  return lines.flatMap((line) => {
+    const result: string[] = []
+    let row = ''
+    let cells = 0
+    for (const char of sanitizeText(line).replace(/[\r\n\t]/gu, ' ')) {
+      const size = charWidth(char)
+      if (cells + size > limit) { result.push(row); row = ''; cells = 0 }
+      row += char
+      cells += size
+    }
+    result.push(row)
+    return result
+  })
+}
+
 /** Pad with spaces to exactly `width` cells (truncating first when needed). */
 export function padToWidth(text: string, width: number): string {
   const truncated = truncateToWidth(text, width, '')
