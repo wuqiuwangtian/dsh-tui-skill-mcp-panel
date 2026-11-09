@@ -1,0 +1,118 @@
+{
+  "recordedAt": "2026-11-09T07:43:47.275251+00:00",
+  "baseCommit": "cf05ddc5e531aaf5689ea88f30df5ba1d3bb7acb",
+  "scopeDecision": "D-10: CRUD only for this panel managed inserts; existing profile rows toggle only; home read-only",
+  "environment": {
+    "node": "v26.3.0",
+    "dsh": "0.2.2-rc.1",
+    "dshTui": "0.19.0"
+  },
+  "automated": {
+    "build": "passed",
+    "typecheck": "passed",
+    "domain": {
+      "passed": 54,
+      "failed": 0
+    },
+    "mcpToggleSmoke": "passed",
+    "mcpCrudUISmoke": {
+      "columns": [
+        120,
+        58
+      ],
+      "stdioForm": "passed",
+      "httpForm": "passed",
+      "unknownKeysAndExpressions": "passed",
+      "maskedInputAndDiff": "passed",
+      "editWaitsForReload": "passed",
+      "deleteUndo": "passed",
+      "freshRuntimeUndo": "passed",
+      "existingRowsRemainToggleOnly": "passed"
+    },
+    "existingSkillUIInteraction": "passed",
+    "uiRender": {
+      "columns": [
+        160,
+        58
+      ],
+      "result": "passed"
+    }
+  },
+  "realTTY": {
+    "driver": "PTY keyboard input to real dsh CLI, DSH backend",
+    "columns": 160,
+    "rows": 48,
+    "layout": "fullscreen",
+    "isolation": "temporary DSH_HOME/profile/project/panel and test-process os.homedir preload; HOME unchanged",
+    "actions": {
+      "created": {
+        "action": "create",
+        "outcome": "applied",
+        "id": "mcp-m4-local",
+        "serverName": "m4-local",
+        "savedAtEpochMs": 1794209171402,
+        "appliedAtEpochMs": 1794209173942,
+        "elapsedMs": 2540
+      },
+      "edited": {
+        "action": "edit",
+        "outcome": "applied",
+        "id": "mcp-m4-local",
+        "serverName": "m4-local",
+        "savedAtEpochMs": 1794209225643,
+        "appliedAtEpochMs": 1794209228157,
+        "elapsedMs": 2514
+      },
+      "deleted": {
+        "action": "delete",
+        "outcome": "applied",
+        "id": "mcp-m4-local",
+        "serverName": "m4-local",
+        "savedAtEpochMs": 1794209266424,
+        "appliedAtEpochMs": 1794209268488,
+        "elapsedMs": 2064
+      },
+      "restored": {
+        "action": "restore",
+        "outcome": "applied",
+        "id": "mcp-m4-local",
+        "serverName": "m4-local",
+        "savedAtEpochMs": 1794209298895,
+        "appliedAtEpochMs": 1794209301406,
+        "elapsedMs": 2511
+      }
+    },
+    "toolReportBeforeDelete": "m4-local（1 个工具）: ping",
+    "toolReportAfterDelete": "未配置 MCP 服务器。",
+    "toolReportAfterUndo": "m4-local（1 个工具）: ping",
+    "deletionReturnsToOriginalFileBytes": true,
+    "undoRestoresPreDeleteBytes": true,
+    "envReferenceStoredAsJs": true,
+    "envValuesMaskedInDump": true,
+    "testPrivateValueAbsentFromRenderDump": true,
+    "stdioFixtureProcessesRemaining": 0
+  },
+  "notVerified": [
+    "real HTTP endpoint connection",
+    "real TTY cold-process restart undo (fresh runtime covered in smoke)",
+    "user mouse/visual acceptance",
+    "full inline/fullscreen and width matrix",
+    "model-side skill catalog synchronization",
+    "full web/TUI UI concurrency",
+    "manifest/tarball/publication checks"
+  ],
+  "notImplemented": [
+    "MCP groups/search/state filters",
+    "original user row edit/delete per D-10",
+    "MCP journal automatic cleanup"
+  ],
+  "sourceSha256": {
+    "src/domain/mcp/model.ts": "69ffa6c2cb545aa037388b926feee08e61a23e59bae996351da4ec6e28169178",
+    "src/domain/mcp/managed.ts": "34ab8467c7851f08628055c34a83d54f23b40ced5a5bf9e0456be4635aaea464",
+    "src/domain/mcp/crud.ts": "61f45bb6e334d984d751be5257f818a0f8062cea70b17f835084a6fe812f48d9",
+    "src/domain/mcp/patch.ts": "3703c7e72059b7f95b17f6bacb0b3e844521a9736edfe467a193340640e59eb8",
+    "src/domain/mcp/write.ts": "67768d9378ce55513668290ef124523ae3f8a830d051f3857e69198354b4f5b8",
+    "src/host/manager-runtime.ts": "485ec162ef2f7b6676af3ee50760e2701a3cf41365a3253d220b98ad7bd308bb",
+    "src/ui/ManagerScene.tsx": "afe9935d72dcb97c8eef31e22f6eb78b28c97d2097ec14d9bb2bd8fdd7a0f43f"
+  }
+}

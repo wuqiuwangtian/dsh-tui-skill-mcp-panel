@@ -1,6 +1,5 @@
 /**
- * Full-screen manager scene (M1): skills read-only list + detail, host
- * diagnostics, and placeholders for the M2/M3 tabs.
+ * Full-screen manager: skill writes, panel-owned MCP CRUD, and diagnostics.
  *
  * Interaction model:
  * - keyboard is primary and sufficient: ↑/↓ select, ←/→ switch scope,
@@ -14,6 +13,8 @@ import { isAbsolute } from 'node:path'
 import type { TuiSceneProps } from '@deepseek-harness-tui/dsh-tui/scenes'
 import { groupMemberCount } from '../domain/groups.js'
 import { describeMcpConfig, type McpRowView } from '../domain/mcp/patch.js'
+import { configChanges, fieldDisplay, fieldInput, patchMcpField, validateMcpConfig, type McpConfig, type McpField } from '../domain/mcp/model.js'
+import type { McpEditSession } from '../domain/mcp/crud.js'
 import { splitFrontmatter } from '../domain/skills/frontmatter.js'
 import type { SkillInstance, SkillScanResult, SkillSource, SkillStatus } from '../domain/skills/types.js'
 import type { ManagerRuntime, ManagerState } from '../host/manager-runtime.js'
@@ -81,7 +82,10 @@ const HELP_LINES = [
   '  g                  把选中/标记技能加入或移出分组',
   '  x                  清除分组过滤 / 清除标记',
   '  MCP 页              ↑/↓ 选择 · 空格 启停（写 profile patch 受管块）· r 重新读取',
-  '                     详情含脱敏配置；home 层与 !!js 表达式控制的行只读',
+  '                     a 新增 · Enter 编辑 · d 删除 · u 撤销（仅本面板受管行）',
+  '                     home/表达式行只读；已有 profile 行仅支持启停',
+  '  MCP 表单           逐字段 Enter 编辑；args 使用 JSON 数组；Ctrl+U 清空当前输入',
+  '                     env/headers 每行 KEY=VALUE；Shift+Enter 换行；留空保留、-KEY 删除、! 清空',
   '  /                  搜索（Enter/Esc 退出搜索）',
   '  r                  重新扫描磁盘',
   '  ?                  本帮助',
@@ -96,7 +100,7 @@ const HELP_LINES = [
   '  · MCP 没有工作区级配置：只有当前 profile + home 全局层。',
   '  · 技能只发现一层：<root>/<name>/SKILL.md 或 <root>/<name>.md。',
   '  · 场景内不使用宿主对话框/toast（实测不可用），确认与输入均为自绘。',
-  '  · 迁移/复制、zip 导入为 P1；MCP 新增/编辑/删除与分组尚未实现。',
+  '  · 迁移/复制、zip 导入为 P1；MCP 分组尚未实现。',
 ]
 
 
@@ -204,6 +208,7 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   push(`  profile patch: ${state.mcp.profilePatchPath ?? '(unknown)'}`)
   push(`  home patch: ${state.mcp.homePatchPath ?? '(unknown)'}`)
   push(`  rows: ${state.mcp.rows.length} · 读取于 ${state.mcp.loadedAt ?? '(pending)'}`)
+  if (state.mcp.latestDeletion !== undefined) push(`  可撤销 MCP 删除：${state.mcp.latestDeletion.serverName} · ${state.mcp.latestDeletion.createdAt}（MCP 页 u）`)
   for (const error of state.mcp.errors) push(`  错误：${error}`)
   for (const warning of state.mcp.warnings) push(`  警告：${warning}`)
   if (state.mcp.lastAction !== undefined) {
@@ -288,14 +293,14 @@ type FocusArea = 'tabs' | 'scope' | 'list' | 'detail' | 'body'
 const HELP_HINTS = '? 帮助'
 
 type Modal =
-  | { kind: 'confirm'; title: string; message: string[]; danger?: boolean; onConfirm: () => void }
-  | { kind: 'input'; title: string; label: string; value: string; hint?: string; validate?: (value: string) => string | undefined; onSubmit: (value: string) => void }
-  | { kind: 'select'; title: string; options: { id: string; label: string; hint?: string }[]; index: number; onSubmit: (id: string) => void }
+  | { kind: 'confirm'; title: string; message: string[]; danger?: boolean; onConfirm: () => void; onCancel?: () => void }
+  | { kind: 'input'; title: string; label: string; value: string; hint?: string; secret?: boolean; multiline?: boolean; preserveWhitespace?: boolean; validate?: (value: string) => string | undefined; onSubmit: (value: string) => void; onCancel?: () => void }
+  | { kind: 'select'; title: string; options: { id: string; label: string; hint?: string }[]; index: number; onSubmit: (id: string) => void; onCancel?: () => void }
   | { kind: 'info'; title: string; lines: string[] }
 
 function mcpDetailLines(row: McpRowView | undefined, width: number): string[] {
   if (row === undefined) {
-    return ['（未选择 MCP 行）', '', '当前 profile / home 层没有 MCP 行；MCP 新增/编辑/删除在 M4（受管块）。']
+    return ['（未选择 MCP 行）', '', '按 a 新增 MCP；仅本面板受管行支持编辑/删除，已有 profile 行可启停。']
   }
   const lines: string[] = []
   const push = (line: string): void => {
@@ -308,6 +313,8 @@ function mcpDetailLines(row: McpRowView | undefined, width: number): string[] {
   if (row.overriddenByHome) push('home 层覆盖同名 profile 行（只读）')
   if (row.disabledExpression !== undefined) push(`disabled 表达式 !!js ${row.disabledExpression}`)
   if (row.readOnlyReason !== undefined) push(`只读：${row.readOnlyReason}`)
+  if (row.managed) push('本面板受管行：Enter 编辑 · d 删除 · u 撤销')
+  else if (row.editReadOnlyReason !== undefined) push(row.editReadOnlyReason)
   for (const note of row.notes) push(`· ${note}`)
   push('')
   push('配置（敏感值已脱敏）')
@@ -492,6 +499,76 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       })
     }
 
+    const showMcpForm = (session: McpEditSession, config: McpConfig, index = 0): void => {
+      const fields: McpField[] = ['serverName', 'transport',
+        ...(config.transport === 'streamable-http' ? ['url', 'headers'] as const : ['command', 'args', 'cwd', 'env'] as const),
+        'toolCallTimeoutMs', 'failOnStartupError']
+      setModal({
+        kind: 'select', title: session.id === undefined ? '新增 MCP' : `编辑 MCP · ${session.serverName}`,
+        options: [...fields.map((field) => ({ id: field,
+          label: oneLine(`${field}  ${fieldDisplay(config, field)}`, Math.max(20, contentWidth - 10)) })),
+          { id: '__save__', label: '✓ 保存配置…', hint: '校验并确认变更字段' }],
+        index: Math.min(index, fields.length),
+        onSubmit: (selectedField) => {
+          if (selectedField === '__save__') {
+            try { validateMcpConfig(config) } catch (error) {
+              runtime.setStatus(error instanceof Error ? error.message : '配置无效', 'error')
+              showMcpForm(session, config, fields.length)
+              return
+            }
+            const changed = configChanges(session.config, config)
+            if (changed.length === 0 && session.id !== undefined) {
+              runtime.setStatus('配置未变化', 'info')
+              showMcpForm(session, config, fields.length)
+              return
+            }
+            setModal({ kind: 'confirm', title: '保存 MCP 配置',
+              message: [`${session.id === undefined ? '新增' : '修改'} ${String(config.serverName)} · ${String(config.transport)}`,
+                `变更字段：${changed.join(', ') || '(默认配置)'}`,
+                changed.some((field) => field === 'env' || field === 'headers') ? '包含敏感配置；值不显示，保存前备份。' : '保存前备份；现有连接可能重启，工具列表会更新。'],
+              onCancel: () => showMcpForm(session, config, fields.length),
+              onConfirm: () => { void runtime.saveMcpForm(session, config) } })
+            return
+          }
+          const field = selectedField as McpField
+          const position = fields.indexOf(field)
+          if (field === 'transport') {
+            setModal({ kind: 'select', title: 'MCP transport', index: config.transport === 'streamable-http' ? 1 : 0,
+              options: [{ id: 'stdio', label: 'stdio · 本地进程' }, { id: 'streamable-http', label: 'streamable-http · HTTP(S)' }],
+              onCancel: () => showMcpForm(session, config, position),
+              onSubmit: (transport) => showMcpForm(session, { ...config, transport }, position) })
+            return
+          }
+          const secret = field === 'env' || field === 'headers'
+          setModal({ kind: 'input', title: `MCP ${field}`, label: field, value: fieldInput(config, field),
+            secret, multiline: secret, preserveWhitespace: secret,
+            hint: secret ? '每行 KEY=VALUE（支持 ${ENV}）；Shift+Enter 换行；留空保留、-KEY 删除、! 清空；值已隐藏' :
+              field === 'args' ? 'JSON 数组，例如 ["--port", "3000"]；Ctrl+U 清空后重输' :
+                'Ctrl+U 清空；已有 !!js 留空保留；Esc 返回表单',
+            validate: (value) => { try { patchMcpField(config, field, value); return undefined } catch (error) { return error instanceof Error ? error.message : '字段格式无效' } },
+            onSubmit: (value) => showMcpForm(session, patchMcpField(config, field, value), position),
+            onCancel: () => showMcpForm(session, config, position),
+          })
+        },
+      })
+    }
+
+    const openMcpForm = (id?: string): void => {
+      void runtime.openMcpForm(id).then((session) => {
+        if (session !== undefined) showMcpForm(session, session.config)
+      })
+    }
+
+    const askDeleteMcp = (): void => {
+      if (selectedMcp === undefined) { runtime.setStatus('先选择 MCP 行', 'warning'); return }
+      if (!selectedMcp.managed) { runtime.setStatus(selectedMcp.editReadOnlyReason ?? '仅能删除本面板受管行', 'warning'); return }
+      const row = selectedMcp
+      setModal({ kind: 'confirm', title: '删除 MCP', danger: true,
+        message: [`删除 ${row.serverName}（${row.entryId} · ${row.layer}）？`,
+          '连接会断开、工具会注销；写前备份并记录原文，可按 u 撤销。'],
+        onConfirm: () => { void runtime.deleteMcp(row.id) } })
+    }
+
     const openGroupPicker = (): void => {
       const targets = targetInstances()
       if (targets.length === 0) {
@@ -644,8 +721,13 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       target.onConfirm()
     }
 
+    const cancelModal = (): void => {
+      setModal(undefined)
+      if (modal !== undefined && modal.kind !== 'info') modal.onCancel?.()
+    }
+
     const submitInputModal = (target: Extract<Modal, { kind: 'input' }>): void => {
-      const value = target.value.trim()
+      const value = target.preserveWhitespace ? target.value : target.value.trim()
       const error = target.validate?.(value)
       if (error !== undefined) {
         runtime.setStatus(error, 'error')
@@ -661,6 +743,10 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     }
 
     useInput((input, key) => {
+      if (modal?.kind === 'input' && key.ctrl && input.toLowerCase() === 'u') {
+        setModal({ ...modal, value: '' })
+        return
+      }
       // Human terminals deliver a lone ESC as escape+meta (see Ink's 50ms
       // escape flush), so the modifier guard must never swallow it.
       if ((key.ctrl || key.meta) && !key.escape) return
@@ -670,24 +756,27 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (modal !== undefined) {
         if (modal.kind === 'confirm') {
           if (char === 'y' || key.return) confirmModal(modal)
-          else if (char === 'n' || key.escape) setModal(undefined)
+          else if (char === 'n' || key.escape) cancelModal()
           return
         }
         if (modal.kind === 'input') {
           if (key.escape) {
-            setModal(undefined)
+            cancelModal()
+          } else if (key.return && key.shift && modal.multiline) {
+            setModal({ ...modal, value: `${modal.value}\n` })
           } else if (key.return) {
             submitInputModal(modal)
           } else if (key.backspace || key.delete) {
             setModal({ ...modal, value: modal.value.slice(0, -1) })
-          } else if (text.length > 0) {
-            setModal({ ...modal, value: modal.value + text })
+          } else if (input.length > 0) {
+            const entered = modal.multiline ? input.replaceAll('\r\n', '\n').replaceAll('\r', '\n') : text
+            setModal({ ...modal, value: modal.value + entered })
           }
           return
         }
         if (modal.kind === 'select') {
           if (key.escape) {
-            setModal(undefined)
+            cancelModal()
           } else if (key.upArrow || char === 'k') {
             setModal({ ...modal, index: Math.max(0, modal.index - 1) })
           } else if (key.downArrow || char === 'j') {
@@ -763,7 +852,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (char === '3') return goTab('groups')
       if (char === '4') return goTab('diagnostics')
       if (char === 'u') {
-        void runtime.undoLastDelete()
+        if (tab === 'mcp') void runtime.undoMcpDelete()
+        else void runtime.undoLastDelete()
         return
       }
       if (char === 'x') {
@@ -815,6 +905,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       if (tab === 'mcp') {
+        if (char === 'a') return openMcpForm()
+        if (char === 'd') return askDeleteMcp()
         if (focus === 'tabs') {
           if (key.leftArrow || char === 'h') switchTab(-1)
           else if (key.rightArrow || char === 'l') switchTab(1)
@@ -831,6 +923,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         else if (key.pageDown) moveMcpSelection(bodyRows)
         else if (key.home) setMcpSelectedId(mcpRows[0]?.id)
         else if (key.end) setMcpSelectedId(mcpRows[mcpRows.length - 1]?.id)
+        else if (key.return || char === 'e') { if (selectedMcp !== undefined) openMcpForm(selectedMcp.id) }
         return
       }
 
@@ -1048,7 +1141,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                   <Text color="accent">[y 确认]</Text>
                 </Box>
                 <Text> </Text>
-                <Box onClick={() => setModal(undefined)}>
+                <Box onClick={cancelModal}>
                   <Text>[n / Esc 取消]</Text>
                 </Box>
               </Box>
@@ -1063,7 +1156,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
               </Text>
               <Box flexDirection="row" height={1}>
                 <Text color="accent">❯ </Text>
-                <Text wrap="truncate">{modal.value}</Text>
+                <Text wrap="truncate">{modal.secret ? `（已输入 ${Array.from(modal.value).length} 字符，值已隐藏）` : oneLine(modal.value.replaceAll('\n', ' ↵ '), modalWidth - 8)}</Text>
                 <Text color="accent">▌</Text>
               </Box>
               {modal.hint === undefined ? null : (
@@ -1076,7 +1169,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                   <Text color="accent">[Enter 提交]</Text>
                 </Box>
                 <Text> </Text>
-                <Box onClick={() => setModal(undefined)}>
+                <Box onClick={cancelModal}>
                   <Text>[Esc 取消]</Text>
                 </Box>
               </Box>
@@ -1361,7 +1454,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const mcpListNodes = mcpRows.length === 0
       ? [
           <Text key="mcp-empty" dimColor wrap="wrap">
-            当前 profile / home 层没有 MCP 行。MCP 新增、编辑、删除在 M4（受管块）；诊断页可见 patch 路径与解析错误。
+            当前 profile / home 层没有 MCP 行。按 a 新增；仅本面板受管行支持编辑/删除，已有 profile 行可启停。
           </Text>,
         ]
       : mcpRows.slice(mcpWindowStart, mcpWindowStart + mcpListRows).map((row) => {
@@ -1371,6 +1464,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
             row.layer,
             ...(row.phase === undefined ? [] : [row.phase]),
             ...(row.targetable ? [] : ['只读']),
+            ...(row.managed ? ['受管'] : row.targetable ? ['仅启停'] : []),
           ].join(' · ')
           return rowNode(
             row.id,
@@ -1533,6 +1627,10 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                       if (selectedMcp !== undefined) void runtime.toggleMcp(selectedMcp.id)
                     },
                   },
+                  { label: 'a 新增', onClick: () => openMcpForm() },
+                  { label: '↵ 编辑', onClick: () => { if (selectedMcp !== undefined) openMcpForm(selectedMcp.id) } },
+                  { label: 'd 删除', onClick: askDeleteMcp },
+                  { label: 'u 撤销', onClick: () => void runtime.undoMcpDelete() },
                   { label: 'r 刷新', onClick: () => void runtime.refreshMcp() },
                   { label: '? 帮助', onClick: () => setHelpOpen(true) },
                 ]
@@ -1543,6 +1641,10 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                       if (selectedMcp !== undefined) void runtime.toggleMcp(selectedMcp.id)
                     },
                   },
+                  { label: 'a新增', onClick: () => openMcpForm() },
+                  { label: '↵编辑', onClick: () => { if (selectedMcp !== undefined) openMcpForm(selectedMcp.id) } },
+                  { label: 'd删除', onClick: askDeleteMcp },
+                  { label: 'u撤销', onClick: () => void runtime.undoMcpDelete() },
                   { label: 'r刷新', onClick: () => void runtime.refreshMcp() },
                   { label: '?', onClick: () => setHelpOpen(true) },
                 ]

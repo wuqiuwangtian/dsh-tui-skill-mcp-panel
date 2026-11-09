@@ -10,6 +10,10 @@ export interface PatchSnapshot {
   fingerprint: string
 }
 
+export function patchFingerprint(text: string): string {
+  return createHash('sha256').update(`file\0${text}`).digest('hex')
+}
+
 export class PatchConflictError extends Error {
   constructor() {
     super('配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动')
@@ -20,7 +24,7 @@ export class PatchConflictError extends Error {
 export async function readPatchSnapshot(path: string): Promise<PatchSnapshot> {
   try {
     const text = await readFile(path, 'utf8')
-    return { text, fingerprint: createHash('sha256').update(`file\0${text}`).digest('hex') }
+    return { text, fingerprint: patchFingerprint(text) }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
     return { text: '', fingerprint: 'missing' }

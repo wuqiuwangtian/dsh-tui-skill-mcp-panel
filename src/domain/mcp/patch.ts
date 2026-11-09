@@ -22,9 +22,18 @@ export interface JsValue {
   __js: string
 }
 
-const JS_TAG = {
+const JS_VALUE_MARK = Symbol.for('dsh-tui-skill-mcp-panel:yaml-js-value')
+
+/** Non-enumerable provenance keeps ordinary `{ __js: ... }` mappings as data. */
+export function jsValue(expression: string): JsValue {
+  return Object.defineProperty({ __js: expression }, JS_VALUE_MARK, { value: true })
+}
+
+export const JS_TAG = {
   tag: 'tag:yaml.org,2002:js',
-  resolve: (value: string): JsValue => ({ __js: value }),
+  identify: (value: unknown): boolean => isJsValue(value),
+  resolve: (value: string): JsValue => jsValue(value),
+  stringify: (node: { value: unknown }): string => isJsValue(node.value) ? JSON.stringify(node.value.__js) : '""',
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -32,7 +41,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function isJsValue(value: unknown): value is JsValue {
-  return isRecord(value) && typeof value.__js === 'string'
+  return isRecord(value) && typeof value.__js === 'string' && Object.getOwnPropertyDescriptor(value, JS_VALUE_MARK)?.value === true
 }
 
 export interface PatchRow {
@@ -131,15 +140,15 @@ export function parsePatchText(text: string): ParsedPatch {
   try {
     document = parseDocument(source, { customTags: [JS_TAG] })
   } catch (error) {
-    return { ok: false, rows: [], toggles: [], error: error instanceof Error ? error.message : String(error) }
+    return { ok: false, rows: [], toggles: [], error: 'YAML 解析失败，请检查文件语法' }
   }
   const firstError = document.errors[0]
-  if (firstError !== undefined) return { ok: false, rows: [], toggles: [], error: firstError.message }
+  if (firstError !== undefined) return { ok: false, rows: [], toggles: [], error: `YAML 解析失败（${firstError.code}）；请手工检查语法` }
   let data: unknown
   try {
-    data = document.toJS()
+    data = document.contents === null ? [] : document.toJS()
   } catch (error) {
-    return { ok: false, rows: [], toggles: [], error: error instanceof Error ? error.message : String(error) }
+    return { ok: false, rows: [], toggles: [], error: 'YAML 转换失败，请检查别名或文件结构' }
   }
   if (!Array.isArray(data)) {
     return { ok: false, rows: [], toggles: [], error: 'patch 文件必须是 YAML 数组' }
@@ -281,6 +290,9 @@ export interface McpRowView {
   phase?: string
   config?: Record<string, unknown>
   notes: string[]
+  /** CRUD is deliberately limited to this panel's inserts. Toggle is separate. */
+  managed?: boolean
+  editReadOnlyReason?: string
 }
 
 function lastRowFor(rows: PatchRow[], id: string): PatchRow | undefined {

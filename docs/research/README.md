@@ -67,6 +67,7 @@
 - **M1**：技能扫描（发现根/rank/名称来源/遮蔽/停用/非法/`.system`）**在真机上与内核发现逐项一致**；UI 已补 headless Ink 渲染 smoke 与真实 TUI 进程注册证据，人工 TTY 逐屏走查仍缺。详见 [`06-m1-skill-scan-verification.md`](06-m1-skill-scan-verification.md)。
 - **M2 P0**：启停/软删除+撤销/添加导入/分组/批量的域层实现与单测通过；运行时链路与 **headless UI 交互 smoke**（真实 runtime + 临时技能树）通过；真实 TTY 写操作观感/鼠标点击验收待补。详见 [`07-m2-skill-write-verification.md`](07-m2-skill-write-verification.md)。
 - **M3 P0**：MCP 只读列表（profile+home+loader）、受管块启停、`!!js` 安全展示/只读、诊断 MCP 段。**2026-11-09 补启用边界、锁/冲突/强制备份、42 项域层回归与真实 TTY 启停/HMR/工具出现消失/只读/冲突证据**；完整 web/TUI UI 共存、模型侧技能同步与全布局人工验收仍待补。详见 [`08 §6`](08-m3-mcp-verification.md#6-2026-11-09-启用边界与写入保护补强)。
+- **M4 受管 CRUD（D-10）**：2026-11-09 已实现 stdio/HTTP 表单、本面板行编辑/删除/持久撤销、未知键与表达式保留、敏感值掩码。新增域层与 120/58 列 UI/runtime smoke；真实 TTY 本地 stdio CRUD 与工具注册链路见 [`09`](09-m4-managed-crud-verification.md)。已有原始 profile 行仅启停；MCP 分组/筛选与剩余人工验收待补。
 
 ## 5. 证据基线与复核方式
 

@@ -48,6 +48,10 @@ import {
   type PatchRow,
 } from '../domain/mcp/patch.js'
 import { PatchConflictError, readPatchSnapshot, saveMcpToggle } from '../domain/mcp/write.js'
+import { managedMcpEntries } from '../domain/mcp/managed.js'
+import { deleteMcpEntry, listMcpDeletions, openMcpEditor, restoreMcpEntry, saveMcpEditor,
+  type McpDeletionSummary, type McpEditSession } from '../domain/mcp/crud.js'
+import type { McpConfig } from '../domain/mcp/model.js'
 import {
   describeService,
   getService,
@@ -110,6 +114,7 @@ export interface McpToggleOutcome {
   appliedAt?: number
   detail?: string
   backupPath?: string
+  action?: 'create' | 'edit' | 'delete' | 'restore'
 }
 
 export interface McpPanelState {
@@ -123,6 +128,7 @@ export interface McpPanelState {
   warnings: string[]
   togglingId?: string
   lastAction?: McpToggleOutcome
+  latestDeletion?: McpDeletionSummary
 }
 
 export interface ManagerStatusMessage {
@@ -504,11 +510,13 @@ export class ManagerRuntime {
     let profileRows: PatchRow[] = []
     let homeRows: PatchRow[] = []
     const fingerprints: Record<string, string> = {}
+    const texts: Record<string, string> = {}
     const readLayer = async (path: string, label: string): Promise<PatchRow[]> => {
       let text: string
       try {
         const snapshot = await readPatchSnapshot(path)
         text = snapshot.text
+        texts[path] = text
         fingerprints[path] = snapshot.fingerprint
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') errors.push(`${label}读取失败：${error instanceof Error ? error.message : String(error)}`)
@@ -528,7 +536,20 @@ export class ManagerRuntime {
     }
     homeRows = await readLayer(homePatchPath, 'home patch ')
     const loaderRows = this.readLoaderMcpRows(warnings)
-    const rows = buildMcpRows({ loaderRows, profileRows, homeRows })
+    let managedIds = new Set<string>()
+    try { managedIds = new Set(managedMcpEntries(texts[profilePatchPath ?? ''] ?? '').map((row) => row.id)) }
+    catch { warnings.push('MCP 受管块无法安全解析，编辑/删除已禁用；请手工检查标记与 YAML') }
+    const rows = buildMcpRows({ loaderRows, profileRows, homeRows }).map((row) => ({
+      ...row,
+      managed: managedIds.has(row.id) && row.layer === 'profile' && row.targetable,
+      editReadOnlyReason: row.layer !== 'profile' || !row.targetable ? row.readOnlyReason :
+        managedIds.has(row.id) ? undefined : '已有 profile 行仅支持启停；编辑/删除仅限本面板新增的受管行',
+    }))
+    let latestDeletion: McpDeletionSummary | undefined
+    if (profilePatchPath !== undefined) {
+      try { latestDeletion = (await listMcpDeletions(this.mcpTrashDir(), profilePatchPath, (warning) => warnings.push(warning)))[0] }
+      catch { warnings.push('MCP 回收站读取失败，请检查本插件存储目录') }
+    }
     if (rows.length === 0 && errors.length === 0) warnings.push('当前 profile 与 home 层没有 MCP 行')
     this.patchState({
       mcp: {
@@ -540,9 +561,120 @@ export class ManagerRuntime {
         rows,
         errors,
         warnings,
+        latestDeletion,
         ...(this.state.mcp.togglingId === undefined ? {} : { togglingId: this.state.mcp.togglingId }),
         ...(this.state.mcp.lastAction === undefined ? {} : { lastAction: this.state.mcp.lastAction }),
       },
+    })
+  }
+
+  private mcpTrashDir(): string { return join(this.panelHomePath, 'trash', 'mcp') }
+
+  private mcpFiles(): Pick<McpEditSession, 'patchPath' | 'homePatchPath' | 'expectedProfile' | 'expectedHome'> {
+    const mcp = this.state.mcp
+    if (mcp.profilePatchPath === undefined || mcp.homePatchPath === undefined || mcp.profileFingerprint === undefined || mcp.homeFingerprint === undefined) {
+      throw new Error('配置快照不可用，请按 r 重新读取')
+    }
+    return { patchPath: mcp.profilePatchPath, homePatchPath: mcp.homePatchPath,
+      expectedProfile: mcp.profileFingerprint, expectedHome: mcp.homeFingerprint }
+  }
+
+  async openMcpForm(id?: string): Promise<McpEditSession | undefined> {
+    try {
+      if (this.state.busy) throw new Error('已有操作在进行中，请稍候')
+      const row = id === undefined ? undefined : this.state.mcp.rows.find((entry) => entry.id === id)
+      if (id !== undefined && !row?.managed) throw new Error(row?.editReadOnlyReason ?? '仅能编辑本面板的受管行')
+      return await openMcpEditor(this.mcpFiles(), row === undefined ? undefined : { id: row.id, serverName: row.serverName })
+    } catch (error) {
+      this.setStatus(error instanceof Error ? error.message : '无法打开 MCP 表单，请刷新', 'error')
+      return undefined
+    }
+  }
+
+  async saveMcpForm(session: McpEditSession, config: McpConfig): Promise<void> {
+    const runtimeRows = this.state.mcp.rows.filter((row) => row.id !== session.id)
+    await this.runMcpMutation(session.id === undefined ? 'create' : 'edit', session.id, () => saveMcpEditor({
+      session, config, backupRoot: backupsRoot(this.panelHomePath),
+      runtimeNames: runtimeRows.filter((row) => row.enabled).map((row) => row.serverName),
+      runtimeIds: runtimeRows.map((row) => row.id),
+    }))
+  }
+
+  async deleteMcp(id: string): Promise<void> {
+    const session = await this.openMcpForm(id)
+    if (session === undefined) return
+    await this.runMcpMutation('delete', id, () => deleteMcpEntry({ session, backupRoot: backupsRoot(this.panelHomePath), trashDir: this.mcpTrashDir() }))
+  }
+
+  async undoMcpDelete(): Promise<void> {
+    const latest = this.state.mcp.latestDeletion
+    if (latest === undefined) { this.setStatus('没有可撤销的 MCP 删除', 'info'); return }
+    await this.runMcpMutation('restore', latest.id, () => restoreMcpEntry({ files: this.mcpFiles(), backupRoot: backupsRoot(this.panelHomePath),
+      trashDir: this.mcpTrashDir(), batchId: latest.batchId }))
+  }
+
+  private loaderRevision(id: string | undefined): { fiber?: unknown; options?: unknown; signature?: string } {
+    if (id === undefined) return {}
+    const loader = getService<LoaderLike>(this.ctx, 'loader')
+    if (loader === undefined) return {}
+    try {
+      for (const entry of loader.entries()) {
+        if (entry.options?.id !== id) continue
+        let signature: string | undefined
+        try { signature = JSON.stringify(entry.options.config) } catch { /* Reference change can still prove reload. */ }
+        return { fiber: entry.fiber, options: entry.options, signature }
+      }
+    } catch { /* A missing/unready loader cannot crash the scene. */ }
+    return {}
+  }
+
+  private async runMcpMutation(
+    action: 'create' | 'edit' | 'delete' | 'restore', id: string | undefined,
+    operation: () => Promise<{ changed: boolean; backupPath?: string; value: { id: string; serverName: string } }>,
+  ): Promise<void> {
+    await this.withBusy(async () => {
+      const before = this.loaderRevision(id)
+      const labels = { create: '新增', edit: '修改', delete: '删除', restore: '恢复' }
+      let saved: McpToggleOutcome | undefined
+      try {
+        const result = await operation()
+        if (!result.changed) { this.setStatus('配置未变化，无需保存', 'info'); return }
+        const target = result.value
+        saved = { outcome: 'saved', action, id: target.id, serverName: target.serverName, savedAt: Date.now(), backupPath: result.backupPath }
+        this.patchState({ mcp: { ...this.state.mcp, togglingId: target.id, lastAction: saved } })
+        this.setStatus(`已保存，热加载中…（${labels[action]} ${target.serverName}）`, 'info')
+        const source = await readPatchSnapshot(this.mcpFiles().patchPath)
+        let disabled = false
+        for (const row of parsePatchText(source.text).rows) {
+          if (row.id === target.id && typeof row.disabled === 'boolean') disabled = row.disabled
+        }
+        const deadline = Date.now() + 10_000
+        while (Date.now() < deadline && !this.disposed) {
+          await new Promise((resolve) => setTimeout(resolve, 400))
+          await this.loadMcp()
+          const current = this.state.mcp.rows.find((row) => row.id === target.id)
+          const after = this.loaderRevision(target.id)
+          const revised = after.options !== before.options || after.fiber !== before.fiber || after.signature !== before.signature
+          if (current?.enabled && current.phase === 'failed') throw new Error('配置已保存，但 MCP 插件加载失败；请检查诊断/宿主日志')
+          const ready = action === 'delete' ? current === undefined : current !== undefined &&
+            current.enabled === !disabled && (disabled ? current.phase === undefined || current.phase === 'disposed' : current.phase === 'active') &&
+            (action !== 'edit' || revised)
+          if (ready) {
+            this.patchState({ mcp: { ...this.state.mcp, togglingId: undefined, lastAction: { ...saved, outcome: 'applied', appliedAt: Date.now() } } })
+            this.setStatus(`已生效：${target.serverName} 已${labels[action]}${action === 'delete' ? '，可按 u 撤销' : ''}`, 'success')
+            await this.writeDump(`mcp:${action}`)
+            return
+          }
+        }
+        this.patchState({ mcp: { ...this.state.mcp, togglingId: undefined, lastAction: { ...saved, outcome: 'timeout', detail: '10s 内未观察到运行时完成变更' } } })
+        this.setStatus('配置已保存，但尚未观察到生效；请刷新并检查诊断/日志', 'warning')
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : '未知错误，请刷新后重试'
+        this.patchState({ mcp: { ...this.state.mcp, togglingId: undefined, lastAction: {
+          ...(saved ?? { id: id ?? '(new)', savedAt: Date.now(), action }), outcome: error instanceof PatchConflictError ? 'conflict' : 'error', detail,
+        } } })
+        this.setStatus(`MCP ${labels[action]}失败：${detail}`, 'error')
+      }
     })
   }
 
