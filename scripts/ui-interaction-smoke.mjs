@@ -238,6 +238,40 @@ try {
   const groups2 = JSON.parse(await readFile(groupsPath, 'utf8'))
   check('second group created', Object.values(groups2.groups).some((group) => group.name === '第二组'), JSON.stringify(groups2))
 
+  // A web/editor write invalidates the shared snapshot; UI must show a conflict.
+  const beforeExternal = JSON.parse(await readFile(groupsPath, 'utf8'))
+  const originalId = Object.keys(beforeExternal.groups)[0]
+  const external = { ...beforeExternal, extra: { retain: true }, groups: { ...beforeExternal.groups,
+    web: { name: 'Web external', scopes: { global: ['web-added'] } } } }
+  const externalText = `${JSON.stringify(external, null, 2)}\n`
+  await writeFile(groupsPath, externalText)
+  await press('a'); await pressText('stale-create'); await press('\r')
+  await sleep(200)
+  check('stale group create displays refresh conflict', (await screenText()).includes('按 R 刷新'))
+  check('stale create leaves external bytes unchanged', await readFile(groupsPath, 'utf8') === externalText)
+  await press('R'); await sleep(350)
+  check('refresh loads external group', runtime.snapshot().groups.web?.name === 'Web external')
+  await press('a'); await pressText('after-refresh'); await press('\r'); await sleep(200)
+  const savedGroups = JSON.parse(await readFile(groupsPath, 'utf8'))
+  check('retry preserves external member and unknown metadata', savedGroups.groups.web.scopes.global.includes('web-added') && savedGroups.extra.retain)
+  check('retry writes desired group', Object.values(savedGroups.groups).some((group) => group.name === 'after-refresh'))
+  check('write records exact backup', await readFile(runtime.snapshot().groupsBackupPath, 'utf8') === externalText)
+
+  // Two stale runtimes cannot clobber one another; retry uses a fresh snapshot.
+  const concurrent = new ManagerRuntime({ get: () => undefined })
+  try {
+    await concurrent.refresh('shared-group-concurrency')
+    await runtime.renameGroup(originalId, 'runtime-new-name')
+    const firstWrite = await readFile(groupsPath, 'utf8')
+    await concurrent.deleteGroupById(originalId)
+    check('other runtime stale delete rejected', concurrent.snapshot().statusMessage.text.includes('按 R 刷新'))
+    check('stale delete preserves first runtime write', await readFile(groupsPath, 'utf8') === firstWrite)
+    await concurrent.refresh('retry-delete')
+    await concurrent.deleteGroupById(originalId)
+    check('refreshed delete only removes its target', JSON.parse(await readFile(groupsPath, 'utf8')).groups.web.name === 'Web external')
+    await runtime.refresh('reload-after-delete')
+  } finally { concurrent.dispose() }
+
   // MCP tab renders (this runtime has no profile patch → empty state)
   await press('\t') // groups -> diagnostics
   await press('\t') // diagnostics -> skills
@@ -257,5 +291,5 @@ try {
     console.error(screen.slice(-4000))
     process.exit(1)
   }
-  console.log('ui-interaction-smoke OK: toggle / delete+undo / add / groups')
+  console.log('ui-interaction-smoke OK: toggle / delete+undo / add / groups / stale conflict+refresh / multi-runtime / exact backup')
 }

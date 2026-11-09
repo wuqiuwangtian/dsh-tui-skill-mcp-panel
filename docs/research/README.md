@@ -73,6 +73,8 @@
 
 - **M5 发布准备**：manifest 0.15、固定 parser/core/profile 摘要、npm dry-run 与实际打包/入口导入、注册作用域清理回归均已补；A–G 自查、证据与待执行人工表统一见 [`../release-readiness.md`](../release-readiness.md)，不宣称整个 M5 或发布已完成。
 
+- **共享技能分组保护**：TUI 锁/快照拒写/写前备份、损坏读取不移动源文件已补；实际 web 2.3.7 API 临时目录互读通过，双端同时写入仍受无锁 web 的后提交覆盖限制。当前证据与复核见 [`../release-readiness.md §6`](../release-readiness.md#6-共享技能分组写入保护)。
+
 ## 5. 证据基线与复核方式
 
 - **类型面基线**：已安装 `@deepseek-harness-tui/dsh-tui@0.19.0` 的 `lib/types/*.d.ts`（`~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui`）。

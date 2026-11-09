@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-09",
+  "sourceBase": "de3b27d",
+  "version": "0.1.0-dev.0",
+  "scope": "TUI-side shared skills groups.json v1 locking/snapshot/backup; no installed web package modifications",
+  "checks": {
+    "aggregate": "pnpm check:release: exit 0",
+    "domainTests": 73,
+    "releaseTests": 7,
+    "total": 80,
+    "fail": 0,
+    "newGroupWriteTests": 12,
+    "ui": "real host React/ui + ManagerRuntime: stale create rejected, R refresh/retry, multiple runtimes, exact backups; existing UI/MCP CRUD/groups smoke passed",
+    "childProcesses": "two independent Node writers: one saved, one explicit GroupsConflictError",
+    "corruption": "source stays in place; exact private backups; locked reread does not move a repaired web file",
+    "unknownData": "unmodified malformed records/scopes/containers and unknown fields preserved",
+    "permissions": "new files/backup files 0600, backup directories 0700, existing mode preserved"
+  },
+  "webInterop": {
+    "check": "skill-groups-web-interop",
+    "ok": true,
+    "version": "2.3.7",
+    "webGroupsSha256": "5983d85b298ea841b7e3348ef10e61457b70604e0a66ab71a7a8201d6d56dced",
+    "verified": [
+      "v1 format read by both implementations",
+      "workspace and global members survive sequential changes",
+      "stale TUI write after a real web write is refused",
+      "refresh/retry preserves web members",
+      "exact prewrite backup"
+    ],
+    "boundary": {
+      "lateWebOverwriteObserved": true,
+      "fullSimultaneousWebTuiProtection": false,
+      "reason": "web 2.3.7 groups.js does not honor groups.json.panel.lock or compare snapshots"
+    },
+    "isolation": "all writes and backups under temporary home; no installed package or real ~/.dsh data changed"
+  },
+  "realTTY": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "terminal": "120x40",
+    "scene": "116x38",
+    "actions": [
+      "/skill-mcp → 3 → a → TTY-shared",
+      "external fixture writer adds web-added and unknown top-level metadata",
+      "a → stale-create refused; external bytes unchanged",
+      "R → r → Ctrl+U → TTY-renamed succeeds",
+      "4 displays protected status and exact backup path",
+      "q → Ctrl+C twice exits"
+    ],
+    "conflictFrame": "=== frame 13 @ 2026-11-09T09:09:11.617Z tab=groups scope=all focus=body ===\ntab=groups scope=all query=\"\" search=false help=false focus=body modal=- groupFilter=- marked=0\nscreen=116x38 listWidth=45 detailWidth=45\nsummary total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\nlist(1):\n● probe-skill [project/.dsh 生效]\nselected=probe-skill status=enabled path=<probe>/project/.dsh/skills/probe-skill/SKILL.md\ngroups(1): <group-id>:TTY-shared:0\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=分组操作失败：共享技能分组文件已变化，请按 R 刷新后重试；未覆盖外部改动；文件：<probe>/dsh/skills/.system/skill-viewer/groups.json\ndetail=ready\n",
+    "successFrame": "=== frame 22 @ 2026-11-09T09:09:35.211Z tab=diagnostics scope=all focus=body ===\ntab=diagnostics scope=all query=\"\" search=false help=false focus=body modal=- groupFilter=- marked=0\nscreen=116x38 listWidth=45 detailWidth=45\nsummary total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\nlist(1):\n● probe-skill [project/.dsh 生效]\nselected=probe-skill status=enabled path=<probe>/project/.dsh/skills/probe-skill/SKILL.md\ngroups(1): <group-id>:TTY-renamed:1\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=已重命名为 \"TTY-renamed\"\ndetail=ready\n宿主能力 Host seams\n  present: tuiScenes, tuiDialogs, tuiToast, tuiPanels, tuiSettingsSections, tuiWorkspaces, tuiPluginHost, command…\n  missing: (none)\n\n路径 Paths\n  cwd: <probe>/project\n  DSH_HOME: <probe>/dsh\n  AGENTS_HOME: <probe>/agents\n  projectRoot: <probe>/project\n  settings patch: <probe>/dsh/profiles/panel-verification/cordis.patch.yml\n  configEditor patch: <probe>/dsh/profiles/panel-verification/cordis.patch.yml\n  home patch: <probe>/dsh/cordis.patch.yml\n  dump: <probe>/dump.json\n  dump message: 已写入 <probe>/dump.json\n\n共享技能分组（groups.json v1）\n  文件：<probe>/dsh/skills/.system/skill-viewer/groups.json\n  写入状态：可写（快照保护）\n  上次写前备份：<probe>/panel/backups/skill-groups/99ed640e-ef6a-4c1e-a92a-1b782af084a7/gr…\n  web 2.3.7 不使用分组锁；外部变化时按 R 刷新，不强制覆盖\n\nMCP（当前 profile patch + home 层 + loader）\n  profile patch: <probe>/dsh/profiles/panel-verification/cordis.patch.yml\n  home patch: <probe>/dsh/cordis.patch.yml\n  rows: 3 · 读取于 2026-11-09T09:09:33.441Z\n  当前 profile 的 MCP 分组：0\n\n发现根 Discovery roots（rank 小者优先）\n  [100] project-dsh workspace 存在 <probe>/project/.dsh/skills\n  [200] project-agents workspace 缺失 <probe>/project/.agents/skills\n  [400] user-dsh global 存在 <probe>/dsh/skills\n  [500] user-agents global 缺失 <probe>/agents/skills\n\n统计 total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\n扫描时间 2026-11-09T09:09:33.433Z · 原因 manual\n\n警告 Warnings (0)\n\n说明 Notes\n  · MCP 没有工作区级配置：只有当前 profile + home 全局层（M3 实现）。\n  · 技能发现规则与 DSH 内核一致；本页结果由插件自行扫盘，非 ctx.skills。\n  · customSkillDirs 无法从宿主层读取，当前按未配置处理（未列出的自定义根会被漏掉）。\n  · 只覆盖文件来源；运行期注册（runtime/agent scope）的技能不在扫盘结果内。\n",
+    "finalGroup": {
+      "name": "TTY-renamed",
+      "scopes": {
+        "global": [
+          "web-added"
+        ]
+      }
+    },
+    "externalMetadata": {
+      "retain": 1
+    },
+    "backupExact": true,
+    "isolation": "temporary home/profile/project; no real ~/.dsh config changed"
+  },
+  "currentArtifact": {
+    "name": "dsh-tui-skill-mcp-panel",
+    "version": "0.1.0-dev.0",
+    "fileCount": 62,
+    "bytes": 83089,
+    "sha256": "4f59815dee56372171ab796ca1bda7cad1bd63a400db83712a77be22672bddcd",
+    "npmIntegrity": "sha512-u39ZtVP9fP9mVceYTcJnIxvp5fXxvXg/Hgr7jzRZqoGOQiqgnK3LVcrrNXWIT1JUEqjPYXle+ZkkwcW37Zibhw==",
+    "dryRunFileCount": 62,
+    "manifestId": "com.dsh-tui.skill-mcp-panel",
+    "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+    "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+  },
+  "checkedFileSha256": {
+    "src/domain/groups.ts": "cc37068b12d7a0f7907e1c93943d65b576f5959780fb4101fba5dcad67fda6cc",
+    "src/host/manager-runtime.ts": "f26d2b4ef1bae05506550d6a2d3782b6dde919acea45515b75fe66d407d25528",
+    "src/ui/ManagerScene.tsx": "15a0546e20d40e6c7efaf8dd0798d70ab3e18e6a093da565e706ff37eb1b39de",
+    "test/domain/groups-write.test.js": "fa609a99daca7a48c8c5bd96ec0fa783fa8f1725abb531f81b5ddabc973b0bfe",
+    "scripts/ui-interaction-smoke.mjs": "4e48518436be992c9aaca401880c1671ca2c3959459ef347dcf0bdf262c95b2d",
+    "scripts/skill-groups-interop.mjs": "53bbd46367f6934d63f33cf1a7f00c80a9c502200599d98ec7372893a3d19a0e"
+  },
+  "limits": [
+    "web 2.3.7 can still submit stale data after TUI saves; shared lock cooperation is required for full cross-client mutual exclusion",
+    "non-cooperating writes retain a final check/rename race window",
+    "group backups have no automatic cleanup yet",
+    "user complete manual acceptance still pending before publishing",
+    "no tag, npm publish or ecosystem submission"
+  ]
+}

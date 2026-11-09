@@ -88,6 +88,7 @@ export interface ManagerServiceInfo {
 }
 
 export interface ManagerPaths {
+  skillGroupsFile?: string
   settingsDocument?: string
   configEditorDocument?: string
   homePatch: string
@@ -159,6 +160,9 @@ export interface ManagerState {
   mcp: McpPanelState
   groups: SkillGroups
   groupsWarning?: string
+  groupsFingerprint?: string
+  groupsWritable?: boolean
+  groupsBackupPath?: string
   latestTrash?: TrashBatch
   config: PanelConfig
   configWarning?: string
@@ -195,6 +199,7 @@ export class ManagerRuntime {
       refreshing: true,
       services: [],
       paths: {
+        skillGroupsFile: groupsFile(process.env.DSH_HOME ?? join(homedir(), '.dsh')),
         homePatch: join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'cordis.patch.yml'),
         panelHome: this.panelHomePath,
       },
@@ -265,6 +270,7 @@ export class ManagerRuntime {
     this.patchState({
       services,
       paths: {
+        skillGroupsFile: this.groupsFilePath(),
         ...(readDocument('settings') === undefined ? {} : { settingsDocument: readDocument('settings') as string }),
         ...(readDocument('configEditor') === undefined
           ? {}
@@ -332,10 +338,12 @@ export class ManagerRuntime {
       if (this.disposed) return
       this.patchState({
         groups: loaded.groups,
+        groupsFingerprint: loaded.fingerprint,
+        groupsWritable: loaded.writable,
         ...(loaded.warning === undefined ? { groupsWarning: undefined } : { groupsWarning: loaded.warning }),
       })
     } catch (error) {
-      this.patchState({ groupsWarning: error instanceof Error ? error.message : String(error) })
+      this.patchState({ groupsFingerprint: undefined, groupsWritable: false, groupsWarning: error instanceof Error ? error.message : String(error) })
     }
     try {
       const [batches, document] = await Promise.all([listTrash(this.panelHomePath), loadPanelDocument(this.panelHomePath)])
@@ -840,12 +848,15 @@ export class ManagerRuntime {
   }
 
   private async persistGroups(groups: SkillGroups): Promise<void> {
-    await saveGroups(this.groupsFilePath(), groups)
-    this.patchState({ groups, groupsWarning: undefined })
+    const expectedFingerprint = this.state.groupsFingerprint
+    if (expectedFingerprint === undefined || this.state.groupsWritable !== true) throw new Error(this.state.groupsWarning ?? '技能分组状态未就绪，请按 R 刷新后重试')
+    const saved = await saveGroups(this.groupsFilePath(), groups, { expectedFingerprint, backupRoot: backupsRoot(this.panelHomePath) })
+    this.patchState({ groups: saved.groups, groupsFingerprint: saved.fingerprint, groupsWritable: saved.writable, groupsWarning: saved.warning,
+      ...(saved.backupPath === undefined ? {} : { groupsBackupPath: saved.backupPath }) })
   }
 
   private groupFailure(error: unknown): void {
-    this.setStatus(`分组操作失败：${error instanceof Error ? error.message : String(error)}`, 'error')
+    this.setStatus(`分组操作失败：${error instanceof Error ? error.message : String(error)}；文件：${this.groupsFilePath()}`, 'error')
   }
 
   async createGroup(name: string, instances: SkillInstance[] = []): Promise<void> {
@@ -980,6 +991,7 @@ export class ManagerRuntime {
         scan: this.state.scan,
         mcpGroups: this.mcpGroupsForCurrentProfile(),
         configWarning: this.state.configWarning,
+        skillGroups: { fingerprint: this.state.groupsFingerprint, writable: this.state.groupsWritable, warning: this.state.groupsWarning, backupPath: this.state.groupsBackupPath },
         mcp: {
           ...this.state.mcp,
           rows: this.state.mcp.rows.map((row) => ({ ...row, config: maskSecretConfig(row.config) })),

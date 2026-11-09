@@ -23,7 +23,8 @@ test('groups round-trip keeps the web-panel v1 shape', async () => {
   const { dir, file } = await tempFile()
   try {
     const upserted = upsertGroup({}, undefined, '前端', 'global', ['alpha', 'beta'])
-    assert.equal((await saveGroups(file, upserted.groups)), undefined)
+    const saved = await saveGroups(file, upserted.groups, { expectedFingerprint: 'missing', backupRoot: join(dir, 'backups') })
+    assert.equal(saved.changed, true)
     const raw = JSON.parse(await readFile(file, 'utf8'))
     assert.equal(raw.version, 1)
     assert.deepEqual(raw.groups[upserted.id], { name: '前端', scopes: { global: ['alpha', 'beta'] } })
@@ -56,7 +57,7 @@ test('upsertGroup rejects empty/duplicate names and supports rename', async () =
     const emptied = upsertGroup(renamed.groups, first.id, '组B', 'global', [])
     assert.deepEqual(emptied.groups[first.id].scopes, {})
     assert.equal(deleteGroup(emptied.groups, first.id)[first.id], undefined)
-    await saveGroups(file, emptied.groups)
+    await saveGroups(file, emptied.groups, { expectedFingerprint: 'missing', backupRoot: join(dir, 'backups') })
   } finally {
     await rm(dir, { recursive: true, force: true })
   }

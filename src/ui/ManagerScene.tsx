@@ -227,6 +227,13 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   if (state.sceneError !== undefined) push(`  scene error: ${state.sceneError}`)
   if (state.dumpMessage !== undefined) push(`  dump message: ${state.dumpMessage}`)
   push('')
+  push('共享技能分组（groups.json v1）')
+  push(`  文件：${state.paths.skillGroupsFile ?? '(unknown)'}`)
+  push(`  写入状态：${state.groupsWritable === true ? '可写（快照保护）' : '只读或未就绪'}`)
+  if (state.groupsWarning !== undefined) push(`  警告：${state.groupsWarning}`)
+  if (state.groupsBackupPath !== undefined) push(`  上次写前备份：${state.groupsBackupPath}`)
+  push('  web 2.3.7 不使用分组锁；外部变化时按 R 刷新，不强制覆盖')
+  push('')
   push('MCP（当前 profile patch + home 层 + loader）')
   push(`  profile patch: ${state.mcp.profilePatchPath ?? '(unknown)'}`)
   push(`  home patch: ${state.mcp.homePatchPath ?? '(unknown)'}`)
@@ -451,7 +458,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const extraFooterRows = tab === 'mcp' ? packActions(mcpActionLabels, contentWidth).length - 1 : 0
     const statusText =
       state.statusMessage?.text ??
-      (state.status === 'error' ? `错误：${state.error ?? 'unknown'}` : state.configWarning ?? state.dumpMessage)
+      (state.status === 'error' ? `错误：${state.error ?? 'unknown'}` : state.groupsWarning ?? state.configWarning ?? state.dumpMessage)
     const statusTone = state.statusMessage?.tone ?? (state.status === 'error' ? 'error' : 'info')
     const cardsHeight = Math.max(
       5,
@@ -1210,7 +1217,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         `tab=${tab} scope=${scope} focus=${focus}${helpOpen ? ' help' : ''}${modal === undefined ? '' : ` modal=${modal.kind}`}`,
         verificationFrame,
       )
-    }, [tab, scope, focus, selected?.id, selectedMcp?.id, state.mcp, state.config, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.statusMessage?.at, modal?.kind, marked, groupFilter])
+    }, [tab, scope, focus, selected?.id, selectedMcp?.id, state.mcp, state.groupsFingerprint, state.groupsWarning, state.config, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.statusMessage?.at, modal?.kind, marked, groupFilter])
 
     // ── modal screen ────────────────────────────────────────────────────────
     if (modal !== undefined) {
