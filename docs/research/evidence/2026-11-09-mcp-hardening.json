@@ -1,0 +1,127 @@
+{
+  "recordedAt": "2026-11-09T06:28:18.231596+00:00",
+  "baseCommit": "8447631f5d514ef346e9ba91e9645c2435d1542a",
+  "environment": {
+    "node": "v26.3.0",
+    "dsh": "0.2.2-rc.1",
+    "dshTui": "0.19.0",
+    "webPanel": "2.3.7"
+  },
+  "automated": {
+    "build": "passed",
+    "typecheck": "passed",
+    "domain": {
+      "passed": 42,
+      "failed": 0
+    },
+    "uiRender": {
+      "passed": true,
+      "columns": [
+        160,
+        58
+      ]
+    },
+    "uiInteraction": "passed",
+    "mcpRuntimeSmoke": "passed"
+  },
+  "realTTY": {
+    "driver": "tool PTY keyboard input to real dsh CLI, not headless Ink",
+    "terminal": {
+      "columns": 160,
+      "rows": 48,
+      "layout": "fullscreen",
+      "backend": "dsh"
+    },
+    "isolation": "temporary DSH_HOME/profile/project/panel; test-process os.homedir preload redirects host preferences; HOME unchanged",
+    "enableOriginallyDisabled": {
+      "outcome": "applied",
+      "savedAtEpochMs": 1794205447289,
+      "appliedAtEpochMs": 1794205449806,
+      "elapsedMs": 2517,
+      "rows": [
+        {
+          "id": "mcp-expr",
+          "enabled": false,
+          "targetable": false,
+          "env": {
+            "PANEL_TEST_TOKEN": "***"
+          }
+        },
+        {
+          "id": "mcp-home",
+          "enabled": false,
+          "targetable": false,
+          "env": {
+            "PANEL_TEST_TOKEN": "***"
+          }
+        },
+        {
+          "id": "mcp-probe",
+          "enabled": true,
+          "phase": "active",
+          "targetable": true,
+          "env": {
+            "PANEL_TEST_TOKEN": "***"
+          }
+        }
+      ]
+    },
+    "disable": {
+      "outcome": "applied",
+      "savedAtEpochMs": 1794205474054,
+      "appliedAtEpochMs": 1794205476535,
+      "elapsedMs": 2481,
+      "rows": [
+        {
+          "id": "mcp-expr",
+          "enabled": false,
+          "targetable": false
+        },
+        {
+          "id": "mcp-home",
+          "enabled": false,
+          "targetable": false
+        },
+        {
+          "id": "mcp-probe",
+          "enabled": false,
+          "phase": "disposed",
+          "targetable": true
+        }
+      ]
+    },
+    "patchRoundTripBytesEqual": true,
+    "mcpCommandEnabled": "mcp-probe（1 个工具）: ping",
+    "mcpCommandDisabled": "未配置 MCP 服务器。",
+    "externalEdit": {
+      "outcome": "conflict",
+      "preserved": true
+    },
+    "homeAndExpressionReadOnly": true,
+    "envValuesMaskedInDump": true,
+    "skills": {
+      "disabledPicker": "当前会话没有可用技能",
+      "enabledPicker": "/probe-skill",
+      "softDeleteUndoBytesEqual": true
+    }
+  },
+  "actualWebLockInterop": {
+    "webThenTui": "passed",
+    "tuiThenWeb": "passed",
+    "implementation": "installed web 2.3.7 withPatchLock versus this plugin; temporary patch"
+  },
+  "notVerified": [
+    "user mouse/visual acceptance",
+    "complete terminal-width and inline/fullscreen matrix",
+    "model-side skill catalog synchronization",
+    "full web+TUI UI concurrent operation",
+    "uninstall acceptance",
+    "MCP create/edit/delete/undo (unimplemented)"
+  ],
+  "sourceSha256": {
+    "src/domain/mcp/patch.ts": "b3e551a39118f22c900cd28b3de75dfe3c48c40f6c6895c6977cb09c21263135",
+    "src/domain/mcp/write.ts": "ec5c5048de3c71dbb886f7ed0e2e063a608c9ca374771008de8e9f7dddec2795",
+    "src/host/manager-runtime.ts": "4a5e1121a1e26a91178cf1dbbb42af1a7a7e0723bc146bf46eda3e599ce2cc84",
+    "src/ui/ManagerScene.tsx": "2fe435a2c0f12295abaec3933396e21c57b46174dfd5755c7d827aa2e97c2e49"
+  }
+}

@@ -40,15 +40,14 @@ import {
 } from '../domain/store.js'
 import {
   MCP_MODULE,
-  backupPatchFile,
   buildMcpRows,
+  maskSecretConfig,
   parsePatchText,
-  upsertManagedToggle,
-  writePatchFileAtomic,
   type LoaderMcpRow,
   type McpRowView,
   type PatchRow,
 } from '../domain/mcp/patch.js'
+import { PatchConflictError, readPatchSnapshot, saveMcpToggle } from '../domain/mcp/write.js'
 import {
   describeService,
   getService,
@@ -104,7 +103,7 @@ const FIBER_PHASE: Record<number, string> = {
 }
 
 export interface McpToggleOutcome {
-  outcome: 'saved' | 'applied' | 'timeout' | 'error'
+  outcome: 'saved' | 'applied' | 'timeout' | 'conflict' | 'error'
   id: string
   serverName?: string
   savedAt: number
@@ -117,6 +116,8 @@ export interface McpPanelState {
   loadedAt?: string
   profilePatchPath?: string
   homePatchPath?: string
+  profileFingerprint?: string
+  homeFingerprint?: string
   rows: McpRowView[]
   errors: string[]
   warnings: string[]
@@ -502,10 +503,13 @@ export class ManagerRuntime {
     const homePatchPath = join(this.dshHomePath(), 'cordis.patch.yml')
     let profileRows: PatchRow[] = []
     let homeRows: PatchRow[] = []
+    const fingerprints: Record<string, string> = {}
     const readLayer = async (path: string, label: string): Promise<PatchRow[]> => {
       let text: string
       try {
-        text = await readFile(path, 'utf8')
+        const snapshot = await readPatchSnapshot(path)
+        text = snapshot.text
+        fingerprints[path] = snapshot.fingerprint
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') errors.push(`${label}读取失败：${error instanceof Error ? error.message : String(error)}`)
         return []
@@ -531,9 +535,12 @@ export class ManagerRuntime {
         loadedAt: new Date().toISOString(),
         ...(profilePatchPath === undefined ? {} : { profilePatchPath }),
         homePatchPath,
+        profileFingerprint: profilePatchPath === undefined ? undefined : fingerprints[profilePatchPath],
+        homeFingerprint: fingerprints[homePatchPath],
         rows,
         errors,
         warnings,
+        ...(this.state.mcp.togglingId === undefined ? {} : { togglingId: this.state.mcp.togglingId }),
         ...(this.state.mcp.lastAction === undefined ? {} : { lastAction: this.state.mcp.lastAction }),
       },
     })
@@ -555,27 +562,25 @@ export class ManagerRuntime {
       this.setStatus('无法确定当前 profile 的 patch 路径', 'error')
       return
     }
+    const { profileFingerprint, homeFingerprint, homePatchPath } = this.state.mcp
+    if (profileFingerprint === undefined || homeFingerprint === undefined || homePatchPath === undefined) {
+      this.setStatus('配置快照不可用，请按 r 重新读取后重试', 'error')
+      return
+    }
     await this.withBusy(async () => {
       const desiredEnabled = !row.enabled
       try {
-        let text = ''
-        try {
-          text = await readFile(profilePatchPath, 'utf8')
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-        }
-        const next = upsertManagedToggle(text, row.id, !desiredEnabled)
-        if (!next.ok) {
-          this.setStatus(`MCP 启停写入失败：${next.error}`, 'error')
-          return
-        }
+        const { backupPath } = await saveMcpToggle({
+          patchPath: profilePatchPath,
+          homePatchPath,
+          expectedProfile: profileFingerprint,
+          expectedHome: homeFingerprint,
+          id: row.id,
+          serverName: row.serverName,
+          disabled: !desiredEnabled,
+          backupRoot: backupsRoot(this.panelHomePath),
+        })
         const savedAt = Date.now()
-        let backupPath: string | undefined
-        if (next.changed) {
-          const stamp = new Date(savedAt).toISOString().replace(/[:.]/gu, '')
-          backupPath = await backupPatchFile(profilePatchPath, join(backupsRoot(this.panelHomePath), stamp))
-          await writePatchFileAtomic(profilePatchPath, next.text)
-        }
         this.patchState({
           mcp: {
             ...this.state.mcp,
@@ -590,7 +595,13 @@ export class ManagerRuntime {
           await new Promise((resolve) => setTimeout(resolve, 400))
           await this.loadMcp()
           const current = this.state.mcp.rows.find((entry) => entry.id === id)
-          if (current !== undefined && current.enabled === desiredEnabled) {
+          if (desiredEnabled && current?.enabled && current.phase === 'failed') {
+            throw new Error('配置已保存，但 MCP 插件加载失败；请检查诊断页/宿主日志')
+          }
+          const settled = desiredEnabled
+            ? current?.phase === 'active'
+            : current?.phase === undefined || current.phase === 'disposed'
+          if (current !== undefined && current.enabled === desiredEnabled && settled) {
             this.patchState({
               mcp: {
                 ...this.state.mcp,
@@ -615,7 +626,7 @@ export class ManagerRuntime {
           mcp: {
             ...this.state.mcp,
             togglingId: undefined,
-            lastAction: { outcome: 'error', id, serverName: row.serverName, savedAt: Date.now(), detail: error instanceof Error ? error.message : String(error) },
+            lastAction: { outcome: error instanceof PatchConflictError ? 'conflict' : 'error', id, serverName: row.serverName, savedAt: Date.now(), detail: error instanceof Error ? error.message : String(error) },
           },
         })
         this.setStatus(`MCP 启停失败：${error instanceof Error ? error.message : String(error)}`, 'error')
@@ -777,7 +788,10 @@ export class ManagerRuntime {
         paths: this.state.paths,
         sceneError: this.state.sceneError ?? null,
         scan: this.state.scan,
-        mcp: this.state.mcp,
+        mcp: {
+          ...this.state.mcp,
+          rows: this.state.mcp.rows.map((row) => ({ ...row, config: maskSecretConfig(row.config) })),
+        },
       }
       await mkdir(dirname(this.dumpPath), { recursive: true })
       await writeFile(this.dumpPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')

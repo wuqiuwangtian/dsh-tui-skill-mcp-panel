@@ -12,6 +12,7 @@ import { pathToFileURL } from 'node:url'
 
 const repo = process.cwd()
 const { ManagerRuntime } = await import(pathToFileURL(join(repo, 'lib', 'types', 'host', 'manager-runtime.js')).href)
+const { parsePatchText } = await import(pathToFileURL(join(repo, 'lib', 'types', 'domain', 'mcp', 'patch.js')).href)
 
 const root = await mkdtemp(join(tmpdir(), 'mcp-smoke-'))
 const project = join(root, 'project')
@@ -63,6 +64,7 @@ await writeFile(
 )
 process.env.DSH_HOME = home
 process.env.SKILL_MCP_PANEL_HOME = panel
+process.env.SKILL_MCP_PANEL_DUMP = join(root, 'dump.json')
 process.chdir(project)
 
 const loaderState = {
@@ -76,7 +78,7 @@ const fakeLoader = {
     Object.entries(loaderState).map(([id, state]) => ({
       options: { id, name: '@deepseek-ai/dsh-mcp-client', ...(state.config === undefined ? {} : { config: state.config }) },
       get disabled() { return state.disabled },
-      fiber: { state: state.phase },
+      get fiber() { return state.disabled ? undefined : { state: state.phase } },
     })),
 }
 const ctx = {
@@ -107,6 +109,8 @@ try {
   check('delta overridden by home layer', delta?.layer === 'home' && delta?.overriddenByHome === true, JSON.stringify(delta))
   check('profile patch path detected', mcp.profilePatchPath === profilePatch)
   check('home patch path detected', mcp.homePatchPath === homePatch)
+  const dump = JSON.parse(await readFile(join(root, 'dump.json'), 'utf8'))
+  check('debug dump masks env values', dump.mcp.rows.find((row) => row.id === 'mcp-alpha')?.config?.env?.TOKEN === '***')
 
   const originalText = await readFile(profilePatch, 'utf8')
   // toggle alpha off: loader flips after a short delay (simulated HMR)
@@ -114,7 +118,7 @@ try {
   await runtime.toggleMcp('mcp-alpha')
   const afterDisable = runtime.snapshot().mcp
   const disabledText = await readFile(profilePatch, 'utf8')
-  check('managed block written', disabledText.includes('mcp-toggle:begin') && disabledText.includes('- id: mcp-alpha'))
+  check('managed block written', parsePatchText(disabledText).toggles.some((row) => row.id === 'mcp-alpha' && row.disabled))
   check('outside bytes preserved', disabledText.startsWith('# test profile patch'))
   check('toggle outcome applied', afterDisable.lastAction?.outcome === 'applied', JSON.stringify(afterDisable.lastAction))
   check('row disabled after toggle', afterDisable.rows.find((row) => row.id === 'mcp-alpha')?.enabled === false)
@@ -122,13 +126,66 @@ try {
   check('backup created', existsSync(backupRoot))
 
   // toggle alpha back on
-  setTimeout(() => { loaderState['mcp-alpha'].disabled = false }, 700)
+  setTimeout(() => {
+    loaderState['mcp-alpha'].disabled = false
+    loaderState['mcp-alpha'].phase = 1
+  }, 700)
+  setTimeout(() => {
+    check('loading is not applied', runtime.snapshot().mcp.lastAction?.outcome === 'saved')
+    check('loading retains progress indicator', runtime.snapshot().mcp.togglingId === 'mcp-alpha')
+  }, 1050)
+  setTimeout(() => { loaderState['mcp-alpha'].phase = 2 }, 1400)
   await runtime.toggleMcp('mcp-alpha')
   const afterEnable = runtime.snapshot().mcp
   const enabledText = await readFile(profilePatch, 'utf8')
   check('managed block removed', !enabledText.includes('mcp-toggle:begin'))
   check('file restored exactly', enabledText === originalText)
   check('toggle back applied', afterEnable.rows.find((row) => row.id === 'mcp-alpha')?.enabled === true)
+
+  // Originally-disabled user rows need an explicit false override, then restore exactly.
+  const originallyDisabled = `${originalText}- id: mcp-alpha\n  disabled: true\n`
+  await writeFile(profilePatch, originallyDisabled)
+  loaderState['mcp-alpha'].disabled = true
+  await runtime.refreshMcp()
+  setTimeout(() => { loaderState['mcp-alpha'].disabled = false }, 700)
+  await runtime.toggleMcp('mcp-alpha')
+  check('originally disabled row gets false override', parsePatchText(await readFile(profilePatch, 'utf8')).toggles.some((row) => row.id === 'mcp-alpha' && !row.disabled))
+  check('originally disabled row enables', runtime.snapshot().mcp.lastAction?.outcome === 'applied')
+  setTimeout(() => { loaderState['mcp-alpha'].disabled = true }, 700)
+  await runtime.toggleMcp('mcp-alpha')
+  check('originally disabled row restores exact bytes', (await readFile(profilePatch, 'utf8')) === originallyDisabled)
+
+  // A stale UI must not silently toggle a changed profile or home layer.
+  const externalEdit = `${originallyDisabled}# changed by editor\n`
+  await writeFile(profilePatch, externalEdit)
+  await runtime.toggleMcp('mcp-alpha')
+  check('external profile edit reports conflict', runtime.snapshot().mcp.lastAction?.outcome === 'conflict')
+  check('external profile edit preserved', (await readFile(profilePatch, 'utf8')) === externalEdit)
+  await runtime.refreshMcp()
+  const homeText = await readFile(homePatch, 'utf8')
+  await writeFile(homePatch, `${homeText}- id: mcp-alpha\n  disabled: true\n`)
+  await runtime.toggleMcp('mcp-alpha')
+  check('new home override reports conflict', runtime.snapshot().mcp.lastAction?.outcome === 'conflict')
+  check('home conflict leaves profile untouched', (await readFile(profilePatch, 'utf8')) === externalEdit)
+  await writeFile(homePatch, homeText)
+  await runtime.refreshMcp()
+
+  // Backups are mandatory: a broken destination must never produce a saved status.
+  await rm(backupRoot, { recursive: true })
+  await writeFile(backupRoot, 'not a directory')
+  await runtime.toggleMcp('mcp-alpha')
+  check('backup failure reports error', runtime.snapshot().mcp.lastAction?.outcome === 'error')
+  check('backup failure leaves patch unchanged', (await readFile(profilePatch, 'utf8')) === externalEdit)
+  await rm(backupRoot)
+
+  // A failed activation is saved-but-failed, never a successful enable.
+  setTimeout(() => {
+    loaderState['mcp-alpha'].disabled = false
+    loaderState['mcp-alpha'].phase = 3
+  }, 700)
+  await runtime.toggleMcp('mcp-alpha')
+  check('failed fiber is not applied', runtime.snapshot().mcp.lastAction?.outcome === 'error')
+  check('failed fiber has an actionable message', (runtime.snapshot().statusMessage?.text ?? '').includes('插件加载失败'))
 
   // read-only row refuses
   const before = await readFile(profilePatch, 'utf8')
@@ -143,5 +200,5 @@ try {
     for (const failure of failures) console.error(` - ${failure}`)
     process.exit(1)
   }
-  console.log('mcp-smoke OK: list layers / mask / !!js / managed toggle / HMR wait / home read-only')
+  console.log('mcp-smoke OK: layers / mask / !!js / toggle both baselines / HMR / conflicts / mandatory backups / home read-only')
 }

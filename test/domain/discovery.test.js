@@ -132,6 +132,7 @@ test('missing roots are reported but do not fail the scan', async () => {
       cwd: root,
       dshHome: join(root, 'nohome'),
       agentsHome: join(root, 'noagents'),
+      bundledDir: join(root, 'nobundled'),
       now: () => new Date('2026-11-08T00:00:00.000Z'),
     })
     assert.equal(result.projectRoot, root)

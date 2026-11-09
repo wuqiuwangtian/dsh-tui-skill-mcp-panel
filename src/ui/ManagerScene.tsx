@@ -96,17 +96,11 @@ const HELP_LINES = [
   '  · MCP 没有工作区级配置：只有当前 profile + home 全局层。',
   '  · 技能只发现一层：<root>/<name>/SKILL.md 或 <root>/<name>.md。',
   '  · 场景内不使用宿主对话框/toast（实测不可用），确认与输入均为自绘。',
-  '  · 迁移/复制、zip 导入为 P1，尚未实现；MCP 管理在 M3。',
+  '  · 迁移/复制、zip 导入为 P1；MCP 新增/编辑/删除与分组尚未实现。',
 ]
 
 
-const MCP_PLACEHOLDER_LINES = [
-  '当前版本尚未解析 profile patch 的 MCP 行。',
-  '已确认的宿主限制：MCP 没有工作区级配置；',
-  '只有当前 profile（可写）+ home 全局层（只读）。',
-  '启停以 patch 文本编辑为主路径（ADR-0001）。',
-  'pluginManager 能力探测见「诊断」页。',
-]
+const MCP_SCOPE_NOTICE = '无工作区级配置 · 当前 profile 可写 · home 全局层只读'
 
 const GROUPS_PLACEHOLDER_LINES = [
   '分组是显示层元数据，不写技能目录。',
@@ -1023,7 +1017,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       `trash=${state.latestTrash?.batchId ?? '-'} status=${state.statusMessage?.text ?? '-'}`,
       `detail=${state.detail.status}${state.detail.error === undefined ? '' : ` error=${state.detail.error}`}`,
       ...(tab === 'mcp'
-        ? ['MCP（M3 计划）', ...MCP_PLACEHOLDER_LINES]
+        ? [MCP_SCOPE_NOTICE, ...mcpDetailLines(selectedMcp, contentWidth)]
         : tab === 'diagnostics'
           ? diagnosticLines(state, contentWidth)
           : []),
@@ -1034,7 +1028,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         `tab=${tab} scope=${scope} focus=${focus}${helpOpen ? ' help' : ''}${modal === undefined ? '' : ` modal=${modal.kind}`}`,
         verificationFrame,
       )
-    }, [tab, scope, focus, selected?.id, state.scan?.scannedAt, helpOpen, searchMode, query, state.detail.status, state.statusMessage?.at, modal?.kind, marked, groupFilter])
+    }, [tab, scope, focus, selected?.id, selectedMcp?.id, state.mcp, state.scan?.scannedAt, helpOpen, searchMode, query, state.detail.status, state.statusMessage?.at, modal?.kind, marked, groupFilter])
 
     // ── modal screen ────────────────────────────────────────────────────────
     if (modal !== undefined) {
@@ -1359,7 +1353,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
     // ── MCP tab ─────────────────────────────────────────────────────────────
     const mcpListRows = Math.max(3, Math.min(bodyRows - 5, 8))
-    const mcpDetailRows = Math.max(1, bodyRows - mcpListRows - 2)
+    const mcpDetailRows = Math.max(1, bodyRows - mcpListRows - 3)
     const mcpWindowStart = Math.max(
       0,
       Math.min(selectedMcpIndex - Math.floor(mcpListRows / 2), Math.max(0, mcpRows.length - mcpListRows)),
@@ -1401,6 +1395,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         moveMcpSelection(event.deltaY > 0 ? 1 : -1)
       },
       children: [
+        <Text key="mcp-scope" dimColor wrap="truncate">{MCP_SCOPE_NOTICE}</Text>,
         ...state.mcp.errors.slice(0, 2).map((error, index) => (
           <Text key={`mcp-error-${index}`} color="error" wrap="truncate">
             {`错误：${error}`}
@@ -1454,12 +1449,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     })
 
     // ── mcp / diagnostics tab ───────────────────────────────────────────────
-    const bodyLines =
-      tab === 'mcp'
-        ? ['MCP（M3 计划）', ...MCP_PLACEHOLDER_LINES]
-        : tab === 'groups'
-          ? []
-          : diagnosticLines(state, contentWidth - 4)
+    const bodyLines = tab === 'diagnostics' ? diagnosticLines(state, contentWidth - 4) : []
     const bodyWindow = bodyLines.slice(diagOffset, diagOffset + bodyRows)
     const bodyCard = card({
       title: tab === 'mcp' ? 'MCP' : '诊断 Diagnostics',

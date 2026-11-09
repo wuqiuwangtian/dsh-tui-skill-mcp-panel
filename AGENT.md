@@ -17,8 +17,8 @@
 
 ## 2. 当前阶段与边界
 
-- **阶段：M3 P0 已落地（2026-11-08）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
-- **当前能力边界**：`/skill-mcp` 技能列表/详情 + 启停 + 软删除/撤销 + 添加导入 + 分组 + 批量；MCP 只读列表 + 启停（profile 层受管块）。扫盘与内核一致已真机验证（[`docs/research/06`](docs/research/06-m1-skill-scan-verification.md)），M2/M3 证据见 [`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)；MCP 写操作与真实 TUI 走查待补；**不可发布**。
+- **阶段：M3 P0 已落地，补启用边界与写入保护（2026-11-09）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
+- **当前能力边界**：`/skill-mcp` 技能列表/详情 + 启停 + 软删除/撤销 + 添加导入 + 分组 + 批量；MCP 只读列表 + 启停（profile 层受管块）。扫盘与内核一致已真机验证（[`docs/research/06`](docs/research/06-m1-skill-scan-verification.md)），M2/M3 与本轮真实 TTY 证据见 [`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)；MCP 完整 CRUD 与剩余人工验收待补；**不可发布**。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -133,14 +133,20 @@ src/
 pnpm install
 pnpm build                  # tsc → lib/types/
 pnpm typecheck              # 同上，不产出
-pnpm test                   # build + node:test（domain 层，22 个用例）
+pnpm test                   # build + node:test（含 MCP 写入保护的回归用例）
 pnpm test:ui                # headless Ink 渲染 smoke（160/58 列）
 pnpm test:ui:interaction    # headless 交互 smoke：真实 ManagerRuntime + 临时技能树，
                             # 驱动 空格/v/d+u/a/g/Tab，断言文件与 groups.json 变化
 pnpm test:mcp               # headless MCP smoke：patch/loader 合成、受管块启停、HMR 轮询、home 只读
+node scripts/prepare-tui-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui
+                            # 准备 /tmp 下独立 home/profile/技能/本地 MCP，输出 run.sh；不启动进程
 ```
 
-**真机安装（已验证流程）**——用独立探针 profile，避免影响日常 `dsh-tui` profile：
+**推荐真机验证**：先 `pnpm build`，执行上面的 `prepare-tui-probe.mjs`，然后在真实终端运行输出的 `run.sh`。`/skill-mcp` → `2` → 选 `mcp-probe` → 空格启停；预期「热加载中」→「已生效」，退出场景后 `/mcp` 可核对 `ping` 工具出现/消失。夹具初始停用，`mcp-home` / `mcp-expr` 只读。不需要 npm 下载或模型请求。
+
+宿主 0.19 的首选项直接使用 `os.homedir()`，不认 `DSH_TUI_HOME`；脚本用仅测试进程的 Node preload 将该路径指向临时目录，**不修改 HOME 或真实首选项**。开发依赖中的宿主可能缺少启动所需的内核 peer，真机脚本应传入 CLI 已安装的宿主目录。证据与剩余人工项见 `docs/research/08`。
+
+**历史真机安装流程**——复制独立探针 profile；此流程会写 `~/.dsh`，仍需遵循 §2 的逐次授权：
 
 ```sh
 pnpm build
@@ -198,6 +204,7 @@ dsh-tui-skill-mcp-panel/
 │  ├─ domain/              # 纯逻辑，可单测、不 import React：
 │  │  ├─ skills/          # 发现根/rank/frontmatter/扫盘/遮蔽 + 写操作（启停/删除/撤销/添加）
 │  │  ├─ mcp/patch.ts     # MCP patch 解析（!!js）、受管块启停、层级/脱敏、原子写/备份
+│  │  ├─ mcp/write.ts     # web 兼容锁、profile/home 快照冲突检测、强制备份与写入事务
 │  │  ├─ groups.ts        # 共享 groups.json v1（损坏回退、原子写、成员）
 │  │  └─ store.ts         # 插件私有路径（trash/backups/config）与配置
 │  ├─ host/                # 场景与命令注册、ManagerRuntime（扫描状态/详情/诊断/dump）

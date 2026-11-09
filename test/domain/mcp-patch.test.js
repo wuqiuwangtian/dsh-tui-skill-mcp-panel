@@ -102,6 +102,60 @@ test('upsertManagedToggle keeps block in place when it exists', () => {
   assert.deepEqual(readManagedToggles(changed.text).map((row) => row.id).sort(), ['mcp-alpha', 'mcp-beta'])
 })
 
+test('originally disabled rows can be enabled and restored without editing the original', () => {
+  const original = `${PATCH}- id: mcp-alpha\n  disabled: true\n`
+  const enabled = upsertManagedToggle(original, 'mcp-alpha', false)
+  assert.equal(enabled.ok, true, enabled.error)
+  assert.equal(enabled.changed, true)
+  assert.ok(enabled.text.startsWith(original))
+  assert.deepEqual(readManagedToggles(enabled.text), [{ id: 'mcp-alpha', disabled: false }])
+  assert.equal(upsertManagedToggle(enabled.text, 'mcp-alpha', false).changed, false)
+  const restored = upsertManagedToggle(enabled.text, 'mcp-alpha', true)
+  assert.equal(restored.ok, true, restored.error)
+  assert.equal(restored.text, original)
+})
+
+test('managed edits preserve CRLF, foreign config, comments and unrelated overrides byte for byte', () => {
+  const foreign = '# keep this comment\r\n- id: foreign\r\n  config:\r\n    token: !!js process.env.TOKEN\r\n'
+  const original = `${PATCH.replaceAll('\n', '\r\n')}\r\n${TOGGLE_BLOCK_BEGIN}\r\n${foreign}${TOGGLE_BLOCK_END}\r\n`
+  const changed = upsertManagedToggle(original, 'mcp-alpha', true)
+  assert.equal(changed.ok, true, changed.error)
+  assert.ok(changed.text.includes(foreign))
+  assert.equal(changed.text.replaceAll('\r\n', '').includes('\n'), false)
+  const restored = upsertManagedToggle(changed.text, 'mcp-alpha', false)
+  assert.equal(restored.ok, true, restored.error)
+  assert.equal(restored.text, original)
+
+  const noBlock = PATCH.replaceAll('\n', '\r\n')
+  const off = upsertManagedToggle(noBlock, 'mcp-alpha', true)
+  assert.equal(upsertManagedToggle(off.text, 'mcp-alpha', false).text, noBlock)
+})
+
+test('damaged markers, duplicate targets, expressions and foreign target fields refuse writes', () => {
+  const cases = [
+    `${PATCH}${TOGGLE_BLOCK_BEGIN}\n`,
+    `${PATCH}${TOGGLE_BLOCK_END}\n`,
+    `${PATCH}${TOGGLE_BLOCK_BEGIN}\n${TOGGLE_BLOCK_END}\n${TOGGLE_BLOCK_BEGIN}\n${TOGGLE_BLOCK_END}`,
+    `${PATCH}${TOGGLE_BLOCK_BEGIN}\n- id: mcp-alpha\n  disabled: true\n- id: mcp-alpha\n  disabled: false\n${TOGGLE_BLOCK_END}`,
+    `${PATCH}${TOGGLE_BLOCK_BEGIN}\n- id: mcp-alpha\n  config: {keep: yes}\n${TOGGLE_BLOCK_END}`,
+    `${PATCH}${TOGGLE_BLOCK_BEGIN}\n- id: mcp-alpha\n  disabled: true\n${TOGGLE_BLOCK_END}\n- id: mcp-alpha\n  disabled: false\n`,
+    `${PATCH}- id: mcp-alpha\n  disabled: !!js process.env.OFF\n`,
+  ]
+  for (const original of cases) {
+    assert.equal(upsertManagedToggle(original, 'mcp-alpha', true).ok, false)
+  }
+  const middle = `${PATCH}${TOGGLE_BLOCK_BEGIN}\n${TOGGLE_BLOCK_END}\n- id: mcp-alpha\n  disabled: false\n`
+  assert.equal(upsertManagedToggle(middle, 'mcp-alpha', true).ok, false)
+})
+
+test('MCP ids are quoted as data, never interpreted as YAML structure', () => {
+  const id = 'row: # true'
+  const changed = upsertManagedToggle(PATCH, id, true)
+  assert.equal(changed.ok, true, changed.error)
+  assert.deepEqual(readManagedToggles(changed.text), [{ id, disabled: true }])
+  assert.equal(upsertManagedToggle(changed.text, id, false).text, PATCH)
+})
+
 test('buildMcpRows combines loader state with profile/home layers', () => {
   const parsed = parsePatchText(PATCH)
   assert.equal(parsed.ok, true)

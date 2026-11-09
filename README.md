@@ -2,9 +2,9 @@
 
 给 [dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI) 的技能（skill）与 MCP 服务器可视化管理面板：在终端里输入 `/skill-mcp` 打开全屏管理场景，不用离开 TUI 就能查看、启用/停用、添加、迁移、分组技能与 MCP 服务器；改动尽量热加载，不要求重启 TUI。
 
-> **开发状态（2026-11-08）**：M1 技能只读面已可用——`/skill-mcp` 打开技能列表/详情与诊断页；**MCP 与技能写操作尚未实现，npm 尚未发布**。完整范围与里程碑以 [docs/需求文档.md](docs/需求文档.md) 为准。
+> **开发状态（2026-11-09）**：技能管理（M2 P0）与 MCP 列表/启停（M3 P0）已实现；MCP 写入已补共享锁、外部修改检测、强制备份与原子写。**MCP 新增/编辑/删除尚未实现，npm 尚未发布**。完整范围、验证证据与剩余验收以 [docs/需求文档.md §14](docs/需求文档.md#14-项目现状与下一步维护) 为准。
 
-## 功能（规划中）
+## 功能与进度
 
 | 模块 | 能力 | 状态 |
 | --- | --- | --- |
@@ -30,9 +30,10 @@ dsh plugin --profile dsh-tui add dsh-tui-skill-mcp-panel
 
 在 dsh-TUI 中输入 `/skill-mcp` 回车打开管理场景，`Esc` / `q` 关闭。当前版本提供：
 
-- **技能页**：全局/工作区筛选、按名称/描述搜索、列表（状态/来源/遮蔽标记）与详情（路径、rank、frontmatter、正文只读预览）；窄终端下 `Enter` 进详情、`Esc` 返回。
+- **技能页**：全局/工作区筛选、搜索、列表与详情；`空格` 启停、`d` 软删除、`u` 撤销、`a` 本地路径导入、`v` 多选后批量操作、`g` 管理分组。窄终端下 `Enter` 进详情、`Esc` 返回。
 - **诊断页**：发现根与路径、扫描统计、警告、宿主接缝能力探测。
-- **MCP / 分组页**：占位，随 M2/M3 落地。
+- **MCP 页**：列表、运行时状态与脱敏详情；`空格` 启停当前 profile 的行，home 层与表达式控制行只读。文件被外部修改时停止写入，按 `r` 重新加载后重试；备份失败不会保存。
+- **分组页**：新建、重命名、删除分组，按组过滤技能；删除分组不删除技能。整组批量动作尚未实现。
 
 界面按「焦点」操作，像文件管理器一样用方向键走过去：
 
@@ -51,6 +52,7 @@ dsh plugin --profile dsh-tui add dsh-tui-skill-mcp-panel
 | **MCP 没有「工作区级」** | DSH 内核只有 profile 级 MCP 配置。面板提供「当前 profile（可写）+ home 全局层（跨 profile，只读）」；工作区维度只适用于技能。 |
 | 技能只发现一层 | 与 DSH 内核一致：`<root>/<name>/SKILL.md` 或 `<root>/<name>.md`，不递归嵌套分类目录。 |
 | 热加载有延迟 | MCP 配置写入后需要 HMR 重组合（实测约 2–2.5 秒），面板如实显示状态，不假装瞬时。 |
+| 外部修改冲突 | 与 web 面板共用 patch 锁；写前核对 profile/home 内容，冲突后刷新重试。没有强制覆盖入口；不遵守锁的编辑器与最终 rename 之间仍有极短竞争窗口。 |
 | 交互为纯键盘自绘 | 场景内不依赖宿主对话框 / toast（实测不可用）；确认与单行输入在场景内完成。 |
 | 面板只列文件来源技能 | 运行期/agent scope 注册的技能不在扫盘结果内；`customSkillDirs` 在宿主层不可读（按未配置处理）。 |
 | 迁移/复制、zip 导入 | 首版未实现（P1）；添加仅支持本地绝对路径的 `.md` 或目录束。 |
@@ -61,7 +63,7 @@ dsh plugin --profile dsh-tui add dsh-tui-skill-mcp-panel
 
 - 目标宿主：`@deepseek-harness-tui/dsh-tui` `>=0.19.0 <0.20.0`
 - DSH 内核：`0.2.2-rc.1` 线；Node `>=24.9`
-- 与 web 版 [`dsh-skill-mcp-panel`](https://github.com/Fishquito7/dsh-skill-mcp-panel) 共享磁盘约定（`*.disabled`、`groups.json`、补丁锁 `<patch>.panel.lock`，但受管块标记不同名）
+- 与 web 版 [`dsh-skill-mcp-panel`](https://github.com/Fishquito7/dsh-skill-mcp-panel) 共享磁盘约定（`*.disabled`、`groups.json`、补丁锁 `<patch>.panel.lock`，但受管块标记不同名）；技能分组文件的并发写保护仍待补。
 
 ## 权限与信任
 

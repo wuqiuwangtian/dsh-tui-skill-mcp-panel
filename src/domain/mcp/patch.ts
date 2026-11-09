@@ -5,13 +5,13 @@
  *
  * Write policy (ADR-0001): patch text editing is the primary enable/disable
  * path; the official `pluginManager` inventory cannot address rows inserted by
- * a profile patch. Our block only ever contains `- id: …` / `disabled: true`
+ * a profile patch. Our block contains `- id: …` / `disabled: true|false`
  * rows appended after the user's content, so composition order makes them win.
  */
-import { copyFile, mkdir, rename, writeFile } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { chmod, copyFile, mkdir, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import { dirname, join } from 'node:path'
-import { parse as parseYaml, parseDocument } from 'yaml'
+import { isSeq, parseDocument } from 'yaml'
 
 export const MCP_MODULE = '@deepseek-ai/dsh-mcp-client'
 export const TOGGLE_BLOCK_BEGIN = '# >>> dsh-tui-skill-mcp-panel:mcp-toggle:begin'
@@ -63,42 +63,65 @@ function normalizeDisabled(value: unknown): boolean | JsValue | undefined {
   return undefined
 }
 
-/** Extract our managed toggle block from a patch text (lenient; malformed block ignored). */
-export function extractManagedBlock(
-  text: string,
-): { before: string; rows: ToggleRow[]; after: string } | undefined {
-  const begin = text.indexOf(TOGGLE_BLOCK_BEGIN)
-  if (begin < 0) return undefined
-  const end = text.indexOf(TOGGLE_BLOCK_END, begin)
-  if (end < 0) return undefined
-  const body = text.slice(begin + TOGGLE_BLOCK_BEGIN.length, end)
-  const rows: ToggleRow[] = []
-  try {
-    const parsed = parseYaml(body) as unknown
-    if (Array.isArray(parsed)) {
-      for (const raw of parsed) {
-        if (!isRecord(raw)) continue
-        if (typeof raw.id !== 'string' || raw.id.length === 0) continue
-        rows.push({ id: raw.id, disabled: raw.disabled === true })
+interface ManagedBlock {
+  before: string
+  rows: ToggleRow[]
+  body: string
+  after: string
+  items: { id?: string; disabled?: boolean; start: number; end: number; owned: boolean }[]
+}
+
+/** Standalone markers only. Ambiguous/damaged blocks must never be rewritten. */
+function readManagedBlock(text: string): ManagedBlock | undefined {
+  const markers = [...text.matchAll(/^# (?:>>>|<<<) dsh-tui-skill-mcp-panel:mcp-toggle:(?:begin|end)(?=\r?$)/gm)]
+  if (markers.length === 0) return undefined
+  const [begin, end] = markers
+  if (markers.length !== 2 || begin?.[0].trimEnd() !== TOGGLE_BLOCK_BEGIN || end?.[0].trimEnd() !== TOGGLE_BLOCK_END) {
+    throw new Error('MCP 受管块标记损坏或重复，请手工修复后重试')
+  }
+  const body = text.slice(begin.index + begin[0].length, end.index)
+  const document = parseDocument(body, { customTags: [JS_TAG] })
+  if (document.errors.length > 0 || (document.contents !== null && !isSeq(document.contents))) {
+    throw new Error('MCP 受管块不是合法 YAML 数组，未修改文件')
+  }
+  const items: ManagedBlock['items'] = []
+  if (isSeq(document.contents)) {
+    for (const item of document.contents.items) {
+      if (item === null || typeof item !== 'object' || !('range' in item) || item.range == null) {
+        throw new Error('MCP 受管块包含无法安全定位的行，未修改文件')
       }
+      const start = body.lastIndexOf('\n', item.range[0]) + 1
+      if (!/^-\s/u.test(body.slice(start, item.range[0]))) {
+        throw new Error('MCP 受管块必须使用顶层列表，未修改文件')
+      }
+      const raw = item.toJSON() as unknown
+      const id = isRecord(raw) && typeof raw.id === 'string' ? raw.id : undefined
+      const disabled = isRecord(raw) && typeof raw.disabled === 'boolean' ? raw.disabled : undefined
+      const owned = isRecord(raw) && Object.keys(raw).length === 2 && id !== undefined && disabled !== undefined
+      items.push({ id, disabled, start, end: item.range[2], owned })
     }
-  } catch {
-    // malformed block → treat as empty; a later write rewrites it
   }
   return {
-    before: text.slice(0, begin),
-    rows,
-    after: text.slice(end + TOGGLE_BLOCK_END.length),
+    before: text.slice(0, begin.index),
+    body,
+    after: text.slice(end.index + end[0].length),
+    rows: items.filter((item) => item.owned).map((item) => ({ id: item.id!, disabled: item.disabled! })),
+    items,
   }
 }
 
-function renderManagedBlock(rows: ToggleRow[]): string {
-  const lines = [TOGGLE_BLOCK_BEGIN]
-  for (const row of rows) {
-    lines.push(`- id: ${row.id}`, `  disabled: ${row.disabled ? 'true' : 'false'}`)
+/** Lenient read for diagnostics; writes use the strict reader above. */
+export function extractManagedBlock(
+  text: string,
+): { before: string; rows: ToggleRow[]; after: string } | undefined {
+  try {
+    return readManagedBlock(text)
+  } catch {
+    const begin = text.indexOf(TOGGLE_BLOCK_BEGIN)
+    const end = text.indexOf(TOGGLE_BLOCK_END, begin)
+    if (begin < 0 || end < 0) return undefined
+    return { before: text.slice(0, begin), rows: [], after: text.slice(end + TOGGLE_BLOCK_END.length) }
   }
-  lines.push(TOGGLE_BLOCK_END)
-  return `${lines.join('\n')}`
 }
 
 /** Parse a patch text (missing/empty → empty array) and detect MCP rows + our block. */
@@ -162,46 +185,73 @@ export function validatePatchText(text: string): { ok: true } | { ok: false; err
 }
 
 /**
- * Add/remove our `disabled: true` override for one row id. `disabled=true` adds
- * (or keeps) the row; `false` removes it. Bytes outside the managed block are
- * preserved verbatim; the result is validated as YAML before being returned.
+ * Set the desired disabled state without editing the user's original row.
+ * A false override enables originally-disabled rows. Returning to the original
+ * state removes our override. Foreign items and bytes outside the block survive.
  */
 export function upsertManagedToggle(
   text: string,
   id: string,
   disabled: boolean,
 ): { ok: true; text: string; changed: boolean } | { ok: false; error: string } {
-  const existing = extractManagedBlock(text)
-  const current = existing?.rows ?? []
-  const has = current.some((row) => row.id === id)
-  if (disabled === has) return { ok: true, text, changed: false }
-
-  const rows = disabled
-    ? [...current.filter((row) => row.id !== id), { id, disabled: true }]
-    : current.filter((row) => row.id !== id)
-
-  let next: string
-  if (existing !== undefined) {
-    if (rows.length === 0) {
-      // Removing the last toggle: drop the separator newline we added at insert
-      // so a toggle on/off round-trip restores the exact original bytes.
-      const trimmed = existing.after.trim().length === 0 && existing.before.endsWith('\n')
-        ? existing.before.slice(0, -1)
-        : existing.before
-      next = `${trimmed}${existing.after}`
-    } else {
-      next = `${existing.before}${renderManagedBlock(rows)}${existing.after}`
+  try {
+    if (id.length === 0 || /[\r\n\0]/u.test(id)) throw new Error('MCP 行 id 非法')
+    const original = validatePatchText(text)
+    if (!original.ok) throw new Error('原 patch YAML 非法，未修改文件')
+    const existing = readManagedBlock(text)
+    const baseline = parsePatchText(existing === undefined ? text : `${existing.before}${existing.after}`)
+    let baselineDisabled: boolean | JsValue = false
+    for (const row of baseline.rows) {
+      if (row.id === id && row.disabled !== undefined) baselineDisabled = row.disabled
     }
-  } else if (rows.length > 0) {
-    const prefix = text.length === 0 ? '' : `${text}\n`
-    next = `${prefix}${renderManagedBlock(rows)}`
-  } else {
-    next = text
-  }
+    if (isJsValue(baselineDisabled)) throw new Error('disabled 由 !!js 表达式控制，请手工编辑')
+    const targets = existing?.items.filter((item) => item.id === id) ?? []
+    if (targets.length > 1 || targets.some((item) => !item.owned)) {
+      throw new Error('MCP 受管块中目标行重复或含外来字段，请手工修复')
+    }
+    const target = targets[0]
+    const needsOverride = disabled !== baselineDisabled
+    if ((!needsOverride && target === undefined) || (needsOverride && target?.disabled === disabled)) {
+      let currentDisabled: boolean | JsValue = false
+      for (const row of parsePatchText(text).rows) {
+        if (row.id === id && row.disabled !== undefined) currentDisabled = row.disabled
+      }
+      if (currentDisabled !== disabled) throw new Error('目标行被受管块之后的配置覆盖，请手工编辑或刷新')
+      return { ok: true, text, changed: false }
+    }
+    const eol = text.includes('\r\n') ? '\r\n' : '\n'
+    const rendered = `- id: ${JSON.stringify(id)}${eol}  disabled: ${disabled}${eol}`
+    let next: string
+    if (existing === undefined) {
+      next = `${text}${text.length === 0 ? '' : eol}${TOGGLE_BLOCK_BEGIN}${eol}${rendered}${TOGGLE_BLOCK_END}`
+    } else {
+      let body = existing.body
+      if (target !== undefined) {
+        body = `${body.slice(0, target.start)}${needsOverride ? rendered : ''}${body.slice(target.end)}`
+      } else {
+        body = `${body}${body.endsWith('\n') ? '' : eol}${rendered}`
+      }
+      if (body.trim().length === 0) {
+        const before = existing.after.length === 0 && existing.before.endsWith(eol)
+          ? existing.before.slice(0, -eol.length)
+          : existing.before
+        next = `${before}${existing.after}`
+      } else {
+        next = `${existing.before}${TOGGLE_BLOCK_BEGIN}${body}${TOGGLE_BLOCK_END}${existing.after}`
+      }
+    }
 
-  const validation = validatePatchText(next)
-  if (!validation.ok) return { ok: false, error: `写入后 YAML 校验失败：${validation.error}` }
-  return { ok: true, text: next, changed: true }
+    const validation = validatePatchText(next)
+    if (!validation.ok) throw new Error('写入后 YAML 校验失败，未修改文件')
+    let effectiveDisabled: boolean | JsValue = false
+    for (const row of parsePatchText(next).rows) {
+      if (row.id === id && row.disabled !== undefined) effectiveDisabled = row.disabled
+    }
+    if (effectiveDisabled !== disabled) throw new Error('目标行被受管块之后的配置覆盖，请手工编辑或刷新')
+    return { ok: true, text: next, changed: true }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) }
+  }
 }
 
 /** Read our managed toggles from a patch text (convenience for diagnostics/tests). */
@@ -237,6 +287,10 @@ function lastRowFor(rows: PatchRow[], id: string): PatchRow | undefined {
   return [...rows].reverse().find((row) => row.id === id)
 }
 
+function disabledFor(rows: PatchRow[], id: string): PatchRow['disabled'] {
+  return [...rows].reverse().find((row) => row.id === id && row.disabled !== undefined)?.disabled
+}
+
 /** Combine loader runtime rows with profile/home patches into the panel model. */
 export function buildMcpRows(input: {
   loaderRows: LoaderMcpRow[]
@@ -247,8 +301,8 @@ export function buildMcpRows(input: {
     const profileRow = lastRowFor(input.profileRows, loaderRow.id)
     const homeRow = lastRowFor(input.homeRows, loaderRow.id)
     const layer: McpRowView['layer'] = homeRow !== undefined ? 'home' : profileRow !== undefined ? 'profile' : 'bundle'
-    const config = loaderRow.config ?? profileRow?.config ?? homeRow?.config
-    const disabledValue = homeRow?.disabled ?? profileRow?.disabled
+    const config = loaderRow.config ?? homeRow?.config ?? profileRow?.config
+    const disabledValue = disabledFor(input.homeRows, loaderRow.id) ?? disabledFor(input.profileRows, loaderRow.id)
     const disabledExpression = isJsValue(disabledValue) ? disabledValue.__js : undefined
     const notes: string[] = []
     let readOnlyReason: string | undefined
@@ -336,23 +390,34 @@ export function maskSecretConfig(config: Record<string, unknown> | undefined): R
   return next
 }
 
-/** Backup a patch file before a write; returns the backup path (or undefined on failure). */
-export async function backupPatchFile(patchPath: string, backupDir: string): Promise<string | undefined> {
-  if (!existsSync(patchPath)) return undefined
+/** A failed backup is a failed write, never permission to continue without recovery. */
+export async function backupPatchFile(patchPath: string, backupDir: string): Promise<string> {
   const target = join(backupDir, 'cordis.patch.yml')
-  try {
-    await mkdir(backupDir, { recursive: true })
-    await copyFile(patchPath, target)
-    return target
-  } catch {
-    return undefined
-  }
+  await mkdir(backupDir, { recursive: true, mode: 0o700 })
+  await copyFile(patchPath, target)
+  await chmod(target, 0o600)
+  return target
 }
 
 /** Atomic patch write (same directory temp file + rename). */
-export async function writePatchFileAtomic(patchPath: string, text: string): Promise<void> {
+export async function writePatchFileAtomic(
+  patchPath: string,
+  text: string,
+  beforeCommit?: () => Promise<unknown>,
+): Promise<void> {
   await mkdir(dirname(patchPath), { recursive: true })
-  const tmp = `${patchPath}.tmp-${process.pid}-${Date.now()}`
-  await writeFile(tmp, text, 'utf8')
-  await rename(tmp, patchPath)
+  const info = await stat(patchPath).catch((error: NodeJS.ErrnoException) => {
+    if (error.code !== 'ENOENT') throw error
+    return undefined
+  })
+  const tmp = `${patchPath}.tmp-${randomUUID()}`
+  try {
+    await writeFile(tmp, text, { encoding: 'utf8', flag: 'wx', mode: info === undefined ? 0o600 : info.mode & 0o777 })
+    // chmod avoids narrowing an existing file's permissions through the process umask.
+    if (info !== undefined) await chmod(tmp, info.mode & 0o777)
+    await beforeCommit?.()
+    await rename(tmp, patchPath)
+  } finally {
+    await rm(tmp, { force: true })
+  }
 }
