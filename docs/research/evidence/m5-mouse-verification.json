@@ -1,0 +1,1444 @@
+{
+  "date": "2026-11-09",
+  "baseCommit": "752d992",
+  "version": "0.1.0-dev.0",
+  "fixes": [
+    "Narrow skill-row click stops legacy ancestor click handlers; clickable return",
+    "Preserve the selected source file through .disabled scan-ID changes; exact ID wins",
+    "Clickable cancellation for all selection modals"
+  ],
+  "environment": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "node": "v26.3.0",
+    "pnpm": "12.6.0",
+    "terminalDecoder": "@xterm/headless + @xterm/addon-unicode11@0.9.0"
+  },
+  "verification": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "nodeTests": 82,
+    "layoutAssertions": 176,
+    "mouseAssertions": 61,
+    "mouseCases": [
+      {
+        "viewport": "40x16",
+        "label": "row click selects the skill and opens narrow detail",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "narrow detail has mouse return",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "return restores list",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "list wheel advances selection",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "detail wheel scrolls text",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "toggle targets selected skill",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "toggle preserves the selected logical skill after scan ID changes",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "delete cancellation makes no delete call",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "delete confirmation targets selected skill",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "undo button invokes undo",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "picker wheel moves active item",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "picker row applies chosen group",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "help wheel advances page",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "help last page",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "MCP wheel advances row",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "info last page is readable and masked",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "input submit returns to field list",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "input cancellation keeps original field",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "field-list cancellation closes the form",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "group wheel advances selected row",
+        "pass": true
+      },
+      {
+        "viewport": "40x16",
+        "label": "input submit invokes group creation",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "row click selects the skill and opens narrow detail",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "narrow detail has mouse return",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "return restores list",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "list wheel advances selection",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "detail wheel scrolls text",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "toggle targets selected skill",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "toggle preserves the selected logical skill after scan ID changes",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "delete cancellation makes no delete call",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "delete confirmation targets selected skill",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "undo button invokes undo",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "picker wheel moves active item",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "picker row applies chosen group",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "help wheel advances page",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "help last page",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "MCP wheel advances row",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "info last page is readable and masked",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "input submit returns to field list",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "input cancellation keeps original field",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "field-list cancellation closes the form",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "group wheel advances selected row",
+        "pass": true
+      },
+      {
+        "viewport": "58x22",
+        "label": "input submit invokes group creation",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "row click selects the skill and opens narrow detail",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "list wheel advances selection",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "detail wheel scrolls text",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "toggle targets selected skill",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "toggle preserves the selected logical skill after scan ID changes",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "delete cancellation makes no delete call",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "delete confirmation targets selected skill",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "undo button invokes undo",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "picker wheel moves active item",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "picker row applies chosen group",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "help wheel advances page",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "help last page",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "MCP wheel advances row",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "info last page is readable and masked",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "input submit returns to field list",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "input cancellation keeps original field",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "field-list cancellation closes the form",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "group wheel advances selected row",
+        "pass": true
+      },
+      {
+        "viewport": "116x33",
+        "label": "input submit invokes group creation",
+        "pass": true
+      }
+    ],
+    "method": "SGR reports through stdin + host AlternateScreen/React/UI; no direct component handler invocation",
+    "testRuntime": "In-memory state and action recorder, including immutable scan-ID change; real filesystem results are separate below"
+  },
+  "trueTty": {
+    "viewports": [
+      {
+        "terminal": "62x24",
+        "scene": "58x22"
+      },
+      {
+        "terminal": "120x35",
+        "scene": "116x33"
+      }
+    ],
+    "before": {
+      "narrowClick": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 42 项",
+        "    作用域  全部(42)  工作区(41)  全局(1)",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 技能列表  全部 · 42项                                │",
+        "   │   mouse-000                     project/.dsh  停用   │",
+        "   │ ❯ mouse-001                     project/.dsh  生效   │",
+        "   │   mouse-002                     project/.dsh  生效   │",
+        "   │   mouse-003                     project/.dsh  生效   │",
+        "   │   mouse-004                     project/.dsh  生效   │",
+        "   │   mouse-005                     project/.dsh  生效   │",
+        "   │   mouse-006                     project/.dsh  生效   │",
+        "   │   mouse-007                     project/.dsh  生效   │",
+        "   │   mouse-008                     project/.dsh  生效   │",
+        "   │   mouse-009                     project/.dsh  生效   │",
+        "   │   mouse-010                     project/.dsh  生效   │",
+        "   │ 1-11 / 42                                            │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索]",
+        "   [x清除] [r刷新] [?]",
+        "   已写入 <before-probe>/dump.json",
+        "",
+        ""
+      ],
+      "toggleSelection": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 42 项",
+        "    作用域  全部(42)  工作区(41)  全局(1)",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 详情  mouse-000  ↕1/108                              │",
+        "   │ 状态 启用 · 来源 project/.dsh · rank 100 · 工作区    │",
+        "   │ 形态 目录束 · 内核可见                               │",
+        "   │ 文件 <intermediate-probe>/project/.dsh/sk… │",
+        "   │ 根 <intermediate-probe>/project/.dsh/skil… │",
+        "   │ description Mouse fixture 0                          │",
+        "   │ 正文 Body（只读）                                    │",
+        "   │   MOUSE-BODY-000 中文🧭                              │",
+        "   │   MOUSE-BODY-001 中文🧭                              │",
+        "   │   MOUSE-BODY-002 中文🧭                              │",
+        "   │   MOUSE-BODY-003 中文🧭                              │",
+        "   │   MOUSE-BODY-004 中文🧭                              │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索]",
+        "   [x清除] [r刷新] [?] [←返回]",
+        "   已切换 1 个技能（热加载中）",
+        "",
+        ""
+      ],
+      "deletePromptAfterDrift": [
+        "",
+        "   Skill / MCP manager                      skill-mcp-panel",
+        "",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 删除技能                                             │",
+        "   │ 将移入回收站（可撤销）：共 1 个                      │",
+        "   │ · mouse-000  [project/.dsh]                          │",
+        "   │ [首] [上页] [下页] [末] 1-2/2                        │",
+        "   │ [y 确认] [n / Esc 取消]                              │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "   已切换 1 个技能（热加载中）",
+        "",
+        ""
+      ],
+      "selectCancel": [
+        "",
+        "   Skill / MCP manager                      skill-mcp-panel",
+        "",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 新增 MCP                                             │",
+        "   │   serverName mouse-draft                             │",
+        "   │   transport stdio                                    │",
+        "   │ ❯ command (空)                                       │",
+        "   │   args []                                            │",
+        "   │   cwd (未设置)                                       │",
+        "   │   env (未设置)                                       │",
+        "   │   toolCallTimeoutMs (未设置)                         │",
+        "   │   failOnStartupError (未设置)                        │",
+        "   │   ✓ 保存配置…  校验并确认变更字段                    │",
+        "   │ ↑↓ ↵确认 Esc取消 · 3/9                               │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    "screens": {
+      "detail": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 42 项",
+        "    作用域  全部(42)  工作区(41)  全局(1)",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 详情  mouse-002  ↕1/108                              │",
+        "   │ 状态 启用 · 来源 project/.dsh · rank 100 · 工作区    │",
+        "   │ 形态 目录束 · 内核可见                               │",
+        "   │ 文件 <probe>/project/.dsh/sk… │",
+        "   │ 根 <probe>/project/.dsh/skil… │",
+        "   │ description Mouse fixture 2                          │",
+        "   │ 正文 Body（只读）                                    │",
+        "   │   MOUSE-BODY-000 中文🧭                              │",
+        "   │   MOUSE-BODY-001 中文🧭                              │",
+        "   │   MOUSE-BODY-002 中文🧭                              │",
+        "   │   MOUSE-BODY-003 中文🧭                              │",
+        "   │   MOUSE-BODY-004 中文🧭                              │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索]",
+        "   [x清除] [r刷新] [?] [←返回]",
+        "   已写入 <probe>/dump.json",
+        "",
+        ""
+      ],
+      "toggled": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 42 项",
+        "    作用域  全部(42)  工作区(41)  全局(1)",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 详情  mouse-002  ↕1/108                              │",
+        "   │ 状态 停用 · 来源 project/.dsh · rank 100 · 工作区    │",
+        "   │ 形态 目录束 · 内核不可见                             │",
+        "   │ 文件 <probe>/project/.dsh/sk… │",
+        "   │ 根 <probe>/project/.dsh/skil… │",
+        "   │ description Mouse fixture 2                          │",
+        "   │ 正文 Body（只读）                                    │",
+        "   │   MOUSE-BODY-000 中文🧭                              │",
+        "   │   MOUSE-BODY-001 中文🧭                              │",
+        "   │   MOUSE-BODY-002 中文🧭                              │",
+        "   │   MOUSE-BODY-003 中文🧭                              │",
+        "   │   MOUSE-BODY-004 中文🧭                              │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索]",
+        "   [x清除] [r刷新] [?] [←返回]",
+        "   已切换 1 个技能（热加载中）",
+        "",
+        ""
+      ],
+      "delete-cancel": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 42 项",
+        "    作用域  全部(42)  工作区(41)  全局(1)",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 详情  mouse-002  ↕1/108                              │",
+        "   │ 状态 停用 · 来源 project/.dsh · rank 100 · 工作区    │",
+        "   │ 形态 目录束 · 内核不可见                             │",
+        "   │ 文件 <probe>/project/.dsh/sk… │",
+        "   │ 根 <probe>/project/.dsh/skil… │",
+        "   │ description Mouse fixture 2                          │",
+        "   │ 正文 Body（只读）                                    │",
+        "   │   MOUSE-BODY-000 中文🧭                              │",
+        "   │   MOUSE-BODY-001 中文🧭                              │",
+        "   │   MOUSE-BODY-002 中文🧭                              │",
+        "   │   MOUSE-BODY-003 中文🧭                              │",
+        "   │   MOUSE-BODY-004 中文🧭                              │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索]",
+        "   [x清除] [r刷新] [?] [←返回]",
+        "   已切换 1 个技能（热加载中）",
+        "",
+        ""
+      ],
+      "delete-confirm": [
+        "",
+        "   Skill / MCP manager                      skill-mcp-panel",
+        "",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 删除技能                                             │",
+        "   │ 将移入回收站（可撤销）：共 1 个                      │",
+        "   │ · mouse-002  [project/.dsh]                          │",
+        "   │ [首] [上页] [下页] [末] 1-2/2                        │",
+        "   │ [y 确认] [n / Esc 取消]                              │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "   已切换 1 个技能（热加载中）",
+        "",
+        ""
+      ],
+      "deleted": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 41 项",
+        "    作用域  全部(41)  工作区(40)  全局(1)",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 详情  mouse-000  ↕1/108                              │",
+        "   │ 状态 启用 · 来源 project/.dsh · rank 100 · 工作区    │",
+        "   │ 形态 目录束 · 内核可见                               │",
+        "   │ 文件 <probe>/project/.dsh/sk… │",
+        "   │ 根 <probe>/project/.dsh/skil… │",
+        "   │ description Mouse fixture 0                          │",
+        "   │ 正文 Body（只读）                                    │",
+        "   │   MOUSE-BODY-000 中文🧭                              │",
+        "   │   MOUSE-BODY-001 中文🧭                              │",
+        "   │   MOUSE-BODY-002 中文🧭                              │",
+        "   │   MOUSE-BODY-003 中文🧭                              │",
+        "   │   MOUSE-BODY-004 中文🧭                              │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索]",
+        "   [x清除] [r刷新] [?] [←返回]",
+        "   已移入回收站 1 个技能，可按 u 撤销",
+        "",
+        ""
+      ],
+      "undo": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 42 项",
+        "    作用域  全部(42)  工作区(41)  全局(1)",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 详情  mouse-000  ↕1/108                              │",
+        "   │ 状态 启用 · 来源 project/.dsh · rank 100 · 工作区    │",
+        "   │ 形态 目录束 · 内核可见                               │",
+        "   │ 文件 <probe>/project/.dsh/sk… │",
+        "   │ 根 <probe>/project/.dsh/skil… │",
+        "   │ description Mouse fixture 0                          │",
+        "   │ 正文 Body（只读）                                    │",
+        "   │   MOUSE-BODY-000 中文🧭                              │",
+        "   │   MOUSE-BODY-001 中文🧭                              │",
+        "   │   MOUSE-BODY-002 中文🧭                              │",
+        "   │   MOUSE-BODY-003 中文🧭                              │",
+        "   │   MOUSE-BODY-004 中文🧭                              │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索]",
+        "   [x清除] [r刷新] [?] [←返回]",
+        "   已恢复 1 个",
+        "",
+        ""
+      ],
+      "group-applied": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 42 项",
+        "    作用域  全部(42)  工作区(41)  全局(1)",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 详情  mouse-002  ↕1/108                              │",
+        "   │ 状态 停用 · 来源 project/.dsh · rank 100 · 工作区    │",
+        "   │ 形态 目录束 · 内核不可见                             │",
+        "   │ 文件 <probe>/project/.dsh/sk… │",
+        "   │ 根 <probe>/project/.dsh/skil… │",
+        "   │ description Mouse fixture 2                          │",
+        "   │ 正文 Body（只读）                                    │",
+        "   │   MOUSE-BODY-000 中文🧭                              │",
+        "   │   MOUSE-BODY-001 中文🧭                              │",
+        "   │   MOUSE-BODY-002 中文🧭                              │",
+        "   │   MOUSE-BODY-003 中文🧭                              │",
+        "   │   MOUSE-BODY-004 中文🧭                              │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索]",
+        "   [x清除] [r刷新] [?] [←返回]",
+        "   已加入分组 \"Mouse group 002\"：1 个技能",
+        "",
+        ""
+      ],
+      "help-last": [
+        "",
+        "   Skill / MCP manager                    帮助 Help · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 42 项",
+        "",
+        "   鼠标（仅 fullscreen 布局下）",
+        "     点击页签/作用域/技能行切换与选择；滚轮滚动列表、详情与",
+        "   诊断页。",
+        "     底部动作条 [启停]/[删除]/[添加]/[分组]… 可直接点击；确",
+        "   认/输入模态的按钮也可点击，",
+        "     鼠标与键盘的操作范围一致（输入文字仍用键盘）。",
+        "   已知限制 Limits",
+        "     · MCP 没有工作区级配置：只有当前 profile + home 全局层",
+        "   。",
+        "     · 技能只发现一层：<root>/<name>/SKILL.md 或 <root>/<na",
+        "   me>.md。",
+        "     · 场景内不使用宿主对话框/toast（实测不可用），确认与输",
+        "   入均为自绘。",
+        "     · 迁移/复制、zip 导入为 P1；MCP 分组按 profile 隔离，",
+        "   只改显示层。",
+        "",
+        "   [首] [上页] [下页] [末] 39-54/54",
+        "   Esc/? 关闭帮助",
+        "",
+        ""
+      ],
+      "last-reenabled": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 42 项",
+        "    作用域  全部(42)  工作区(41)  全局(1)",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 详情  mouse-002  ↕1/108                              │",
+        "   │ 状态 启用 · 来源 project/.dsh · rank 100 · 工作区    │",
+        "   │ 形态 目录束 · 内核可见                               │",
+        "   │ 文件 <probe>/project/.dsh/sk… │",
+        "   │ 根 <probe>/project/.dsh/skil… │",
+        "   │ description Mouse fixture 2                          │",
+        "   │ 正文 Body（只读）                                    │",
+        "   │   MOUSE-BODY-000 中文🧭                              │",
+        "   │   MOUSE-BODY-001 中文🧭                              │",
+        "   │   MOUSE-BODY-002 中文🧭                              │",
+        "   │   MOUSE-BODY-003 中文🧭                              │",
+        "   │   MOUSE-BODY-004 中文🧭                              │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索]",
+        "   [x清除] [r刷新] [?] [←返回]",
+        "   已切换 1 个技能（热加载中）",
+        "",
+        ""
+      ],
+      "last-picker-cancel": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断                     全部 · 42 项",
+        "    作用域  全部(42)  工作区(41)  全局(1)",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 详情  mouse-002  ↕1/108                              │",
+        "   │ 状态 启用 · 来源 project/.dsh · rank 100 · 工作区    │",
+        "   │ 形态 目录束 · 内核可见                               │",
+        "   │ 文件 <probe>/project/.dsh/sk… │",
+        "   │ 根 <probe>/project/.dsh/skil… │",
+        "   │ description Mouse fixture 2                          │",
+        "   │ 正文 Body（只读）                                    │",
+        "   │   MOUSE-BODY-000 中文🧭                              │",
+        "   │   MOUSE-BODY-001 中文🧭                              │",
+        "   │   MOUSE-BODY-002 中文🧭                              │",
+        "   │   MOUSE-BODY-003 中文🧭                              │",
+        "   │   MOUSE-BODY-004 中文🧭                              │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索]",
+        "   [x清除] [r刷新] [?] [←返回]",
+        "   已切换 1 个技能（热加载中）",
+        "",
+        ""
+      ],
+      "last-info-end": [
+        "",
+        "   Skill / MCP manager                      skill-mcp-panel",
+        "",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ MCP 详情 · mcp-expr                                  │",
+        "   │ ENV_037, MOUSE_ENV_038, MOUSE_ENV_039, MOUSE_ENV_040 │",
+        "   │ , MOUSE_ENV_041, MOUSE_ENV_042, MOUSE_ENV_043, MOUSE │",
+        "   │ _ENV_044, MOUSE_ENV_045, MOUSE_ENV_046, MOUSE_ENV_04 │",
+        "   │ 7, MOUSE_ENV_048, MOUSE_ENV_049, MOUSE_ENV_050, MOUS │",
+        "   │ E_ENV_051, MOUSE_ENV_052, MOUSE_ENV_053, MOUSE_ENV_0 │",
+        "   │ 54, MOUSE_ENV_055, MOUSE_ENV_056, MOUSE_ENV_057, MOU │",
+        "   │ SE_ENV_058, MOUSE_ENV_059, MOUSE_ENV_060, MOUSE_ENV_ │",
+        "   │ 061, MOUSE_ENV_062, MOUSE_ENV_063, MOUSE_ENV_064, MO │",
+        "   │ USE_ENV_065, MOUSE_ENV_066, MOUSE_ENV_067, MOUSE_ENV │",
+        "   │ _068, MOUSE_ENV_069, MOUSE_ENV_070, MOUSE_ENV_071, M │",
+        "   │ OUSE_ENV_072, MOUSE_ENV_073, MOUSE_ENV_074, MOUSE_EN │",
+        "   │ V_075, MOUSE_ENV_076, MOUSE_ENV_077, MOUSE_ENV_078,  │",
+        "   │ MOUSE_ENV_079, PANEL_TEST_TOKEN（值已隐藏）          │",
+        "   │ [首] [上页] [下页] [末] 25-37/37                     │",
+        "   │ [Enter/Esc 关闭]                                     │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   已切换 1 个技能（热加载中）",
+        "",
+        ""
+      ],
+      "last-readonly-edit": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ MCP servers  33 行 · 启用 0 · 停用 33                │",
+        "   │ 无工作区 · profile写 · home只读                      │",
+        "   │ 筛选: 全部 · 分组:全部 · 33/33 行                    │",
+        "   │ ❯ mcp-expr        stdio  停用 · profile · 只读       │",
+        "   │   mcp-home        stdio  停用 · home · 只读          │",
+        "   │   mcp-probe       stdio  停用 · profile · 仅启停     │",
+        "   │   mouse-mcp-000   stdio  停用 · profile · 仅启停     │",
+        "   │   mouse-mcp-001   stdio  停用 · profile · 仅启停     │",
+        "   │   mouse-mcp-002   stdio  停用 · profile · 仅启停     │",
+        "   │   mouse-mcp-003   stdio  停用 · profile · 仅启停     │",
+        "   │ 1-7 / 33                                             │",
+        "   │ ──────────────────────────────────────────────────   │",
+        "   │ 分组：(未分组) · g 修改                              │",
+        "   │ id mcp-expr · entryId mcp-expr · 层 profile          │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选]",
+        "   [/搜索] [x清除] [i详情] [r刷新] [?]",
+        "   disabled 由 !!js 表达式控制，不提供布尔开关",
+        "",
+        ""
+      ],
+      "last-name-submitted": [
+        "",
+        "   Skill / MCP manager                      skill-mcp-panel",
+        "",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 新增 MCP                                             │",
+        "   │ ❯ serverName mouse-draft                             │",
+        "   │   transport stdio                                    │",
+        "   │   command (空)                                       │",
+        "   │   args []                                            │",
+        "   │   cwd (未设置)                                       │",
+        "   │   env (未设置)                                       │",
+        "   │   toolCallTimeoutMs (未设置)                         │",
+        "   │   failOnStartupError (未设置)                        │",
+        "   │   ✓ 保存配置…  校验并确认变更字段                    │",
+        "   │ ↑↓ ↵确认 · 1/9 [Esc 取消]                            │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "   disabled 由 !!js 表达式控制，不提供布尔开关",
+        "",
+        ""
+      ],
+      "last-field-cancel": [
+        "",
+        "   Skill / MCP manager                      skill-mcp-panel",
+        "",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 新增 MCP                                             │",
+        "   │   serverName mouse-draft                             │",
+        "   │   transport stdio                                    │",
+        "   │ ❯ command (空)                                       │",
+        "   │   args []                                            │",
+        "   │   cwd (未设置)                                       │",
+        "   │   env (未设置)                                       │",
+        "   │   toolCallTimeoutMs (未设置)                         │",
+        "   │   failOnStartupError (未设置)                        │",
+        "   │   ✓ 保存配置…  校验并确认变更字段                    │",
+        "   │ ↑↓ ↵确认 · 3/9 [Esc 取消]                            │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "   disabled 由 !!js 表达式控制，不提供布尔开关",
+        "",
+        ""
+      ],
+      "last-form-cancel": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ MCP servers  33 行 · 启用 0 · 停用 33                │",
+        "   │ 无工作区 · profile写 · home只读                      │",
+        "   │ 筛选: 全部 · 分组:全部 · 33/33 行                    │",
+        "   │ ❯ mcp-expr        stdio  停用 · profile · 只读       │",
+        "   │   mcp-home        stdio  停用 · home · 只读          │",
+        "   │   mcp-probe       stdio  停用 · profile · 仅启停     │",
+        "   │   mouse-mcp-000   stdio  停用 · profile · 仅启停     │",
+        "   │   mouse-mcp-001   stdio  停用 · profile · 仅启停     │",
+        "   │   mouse-mcp-002   stdio  停用 · profile · 仅启停     │",
+        "   │   mouse-mcp-003   stdio  停用 · profile · 仅启停     │",
+        "   │ 1-7 / 33                                             │",
+        "   │ ──────────────────────────────────────────────────   │",
+        "   │ 分组：(未分组) · g 修改                              │",
+        "   │ id mcp-expr · entryId mcp-expr · 层 profile          │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选]",
+        "   [/搜索] [x清除] [i详情] [r刷新] [?]",
+        "   disabled 由 !!js 表达式控制，不提供布尔开关",
+        "",
+        ""
+      ],
+      "last-groups-selected": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 分组 Groups  技能 · 40 组                            │",
+        "   │ [技能] [MCP] t 切换 · 可见/总数                      │",
+        "   │   Mouse group 000                           0/0项    │",
+        "   │   Mouse group 001                           0/0项    │",
+        "   │   Mouse group 002                           1/1项    │",
+        "   │   Mouse group 003                           0/0项    │",
+        "   │   Mouse group 004                           0/0项    │",
+        "   │ ❯ Mouse group 005                           0/0项    │",
+        "   │   Mouse group 006                           0/0项    │",
+        "   │   Mouse group 007                           0/0项    │",
+        "   │   Mouse group 008                           0/0项    │",
+        "   │   Mouse group 009                           0/0项    │",
+        "   │   Mouse group 010                           0/0项    │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [a新建] [r改名] [d删除] [↵过滤] [x清除] [t切换] [R刷新]",
+        "   [?]",
+        "   已写入 <probe>/dump.json",
+        "",
+        ""
+      ],
+      "last-diag": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 诊断 Diagnostics  扫描 2026-11-09T11:34:29.672Z      │",
+        "   │ 宿主能力 Host seams                                  │",
+        "   │   present: tuiScenes, tuiDialogs, tuiToast, tuiPane… │",
+        "   │   missing: (none)                                    │",
+        "   │ 路径 Paths                                           │",
+        "   │   cwd: <probe>/project        │",
+        "   │   DSH_HOME: <probe>/dsh       │",
+        "   │   AGENTS_HOME: <probe>/agents │",
+        "   │   projectRoot: <probe>/proje… │",
+        "   │   settings patch: <probe>/ds… │",
+        "   │   configEditor patch: /tmp/skill-mcp-real-tui-HV6jD… │",
+        "   │   home patch: <probe>/dsh/co… │",
+        "   │   dump: <probe>/dump.json     │",
+        "   │   dump message: 已写入 /tmp/skill-mcp-real-tui-HV6j… │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [r刷新] [?]",
+        "   已写入 <probe>/dump.json",
+        "",
+        ""
+      ],
+      "last-diag-wheel": [
+        "",
+        "   Skill / MCP manager              skill-mcp-panel · 58x22",
+        "     技能  MCP  分组  诊断",
+        "   ╭──────────────────────────────────────────────────────╮",
+        "   │ 诊断 Diagnostics  扫描 2026-11-09T11:34:29.672Z      │",
+        "   │   present: tuiScenes, tuiDialogs, tuiToast, tuiPane… │",
+        "   │   missing: (none)                                    │",
+        "   │ 路径 Paths                                           │",
+        "   │   cwd: <probe>/project        │",
+        "   │   DSH_HOME: <probe>/dsh       │",
+        "   │   AGENTS_HOME: <probe>/agents │",
+        "   │   projectRoot: <probe>/proje… │",
+        "   │   settings patch: <probe>/ds… │",
+        "   │   configEditor patch: /tmp/skill-mcp-real-tui-HV6jD… │",
+        "   │   home patch: <probe>/dsh/co… │",
+        "   │   dump: <probe>/dump.json     │",
+        "   │   dump message: 已写入 /tmp/skill-mcp-real-tui-HV6j… │",
+        "   │                                                      │",
+        "   │                                                      │",
+        "   ╰──────────────────────────────────────────────────────╯",
+        "   [r刷新] [?]",
+        "   已写入 <probe>/dump.json",
+        "",
+        ""
+      ],
+      "wide-global": [
+        "",
+        "   Skill / MCP manager                                                                       skill-mcp-panel · 116x33",
+        "     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                                      全局 · 1 项",
+        "   ╭────────────────────╮ ╭───────────────────────────────────────────╮ ╭───────────────────────────────────────────╮",
+        "   │ 作用域             │ │ 技能列表  全局 · 1项                      │ │ 详情  mouse-global                        │",
+        "   │   全部 (42)        │ │ ❯ mouse-global       user/~/.dsh  生效    │ │ 状态 启用 · 来源 user/~/.dsh · rank 400 … │",
+        "   │   工作区 (41)      │ │                                           │ │ 形态 目录束 · 内核可见                    │",
+        "   │ ❯ 全局 (1)         │ │                                           │ │ 文件 <probe>/dsh/… │",
+        "   │                    │ │                                           │ │ 根 <probe>/dsh/sk… │",
+        "   │                    │ │                                           │ │ description Global fixture                │",
+        "   │                    │ │                                           │ │ 正文 Body（只读）                         │",
+        "   │                    │ │                                           │ │   Global fixture.                         │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   │                    │ │                                           │ │                                           │",
+        "   ╰────────────────────╯ ╰───────────────────────────────────────────╯ ╰───────────────────────────────────────────╯",
+        "   [空格 启停] [v 标记] [d 删除] [u 撤销] [a 添加] [g 分组] [/ 搜索] [x 清除] [r 刷新] [? 帮助] 共 42 · 生效 42 · 停…",
+        "   已写入 <probe>/dump.json",
+        "",
+        ""
+      ],
+      "wide-detail-wheel": [
+        "",
+        "   Skill / MCP manager                                                                       skill-mcp-panel · 116x33",
+        "     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                                     全部 · 42 项",
+        "   ╭────────────────────╮ ╭───────────────────────────────────────────╮ ╭───────────────────────────────────────────╮",
+        "   │ 作用域             │ │ 技能列表  全部 · 42项                     │ │ 详情  mouse-019  ↕2/108                   │",
+        "   │ ❯ 全部 (42)        │ │   mouse-007          project/.dsh  生效   │ │ 形态 目录束 · 内核可见                    │",
+        "   │   工作区 (41)      │ │   mouse-008          project/.dsh  生效   │ │ 文件 <probe>/proj… │",
+        "   │   全局 (1)         │ │   mouse-009          project/.dsh  生效   │ │ 根 <probe>/projec… │",
+        "   │                    │ │   mouse-010          project/.dsh  生效   │ │ description Mouse fixture 19              │",
+        "   │                    │ │   mouse-011          project/.dsh  生效   │ │ 正文 Body（只读）                         │",
+        "   │                    │ │   mouse-012          project/.dsh  生效   │ │   MOUSE-BODY-000 中文🧭                   │",
+        "   │                    │ │   mouse-013          project/.dsh  生效   │ │   MOUSE-BODY-001 中文🧭                   │",
+        "   │                    │ │   mouse-014          project/.dsh  生效   │ │   MOUSE-BODY-002 中文🧭                   │",
+        "   │                    │ │   mouse-015          project/.dsh  生效   │ │   MOUSE-BODY-003 中文🧭                   │",
+        "   │                    │ │   mouse-016          project/.dsh  生效   │ │   MOUSE-BODY-004 中文🧭                   │",
+        "   │                    │ │   mouse-017          project/.dsh  生效   │ │   MOUSE-BODY-005 中文🧭                   │",
+        "   │                    │ │   mouse-018          project/.dsh  生效   │ │   MOUSE-BODY-006 中文🧭                   │",
+        "   │                    │ │ ❯ mouse-019          project/.dsh  生效   │ │   MOUSE-BODY-007 中文🧭                   │",
+        "   │                    │ │   mouse-020          project/.dsh  生效   │ │   MOUSE-BODY-008 中文🧭                   │",
+        "   │                    │ │   mouse-021          project/.dsh  生效   │ │   MOUSE-BODY-009 中文🧭                   │",
+        "   │                    │ │   mouse-022          project/.dsh  生效   │ │   MOUSE-BODY-010 中文🧭                   │",
+        "   │                    │ │   mouse-023          project/.dsh  生效   │ │   MOUSE-BODY-011 中文🧭                   │",
+        "   │                    │ │   mouse-024          project/.dsh  生效   │ │   MOUSE-BODY-012 中文🧭                   │",
+        "   │                    │ │   mouse-025          project/.dsh  生效   │ │   MOUSE-BODY-013 中文🧭                   │",
+        "   │                    │ │   mouse-026          project/.dsh  生效   │ │   MOUSE-BODY-014 中文🧭                   │",
+        "   │                    │ │   mouse-027          project/.dsh  生效   │ │   MOUSE-BODY-015 中文🧭                   │",
+        "   │                    │ │   mouse-028          project/.dsh  生效   │ │   MOUSE-BODY-016 中文🧭                   │",
+        "   │                    │ │   mouse-029          project/.dsh  生效   │ │   MOUSE-BODY-017 中文🧭                   │",
+        "   │                    │ │   mouse-030          project/.dsh  生效   │ │   MOUSE-BODY-018 中文🧭                   │",
+        "   │                    │ │ 8-31 / 42                                 │ │                                           │",
+        "   ╰────────────────────╯ ╰───────────────────────────────────────────╯ ╰───────────────────────────────────────────╯",
+        "   [空格 启停] [v 标记] [d 删除] [u 撤销] [a 添加] [g 分组] [/ 搜索] [x 清除] [r 刷新] [? 帮助] 共 42 · 生效 42 · 停…",
+        "   已写入 <probe>/dump.json",
+        "",
+        ""
+      ]
+    },
+    "actions": {
+      "phase1": [
+        {
+          "target": "mouse-002",
+          "button": 0,
+          "x": 8,
+          "y": 9,
+          "viewport": "62x24"
+        },
+        {
+          "target": "␣启停",
+          "button": 0,
+          "x": 5,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "d删除",
+          "button": 0,
+          "x": 21,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "n / Esc 取消",
+          "button": 0,
+          "x": 16,
+          "y": 9,
+          "viewport": "62x24"
+        },
+        {
+          "target": "d删除",
+          "button": 0,
+          "x": 21,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "y 确认",
+          "button": 0,
+          "x": 7,
+          "y": 9,
+          "viewport": "62x24"
+        },
+        {
+          "target": "u撤销",
+          "button": 0,
+          "x": 29,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "←返回",
+          "button": 0,
+          "x": 25,
+          "y": 21,
+          "viewport": "62x24"
+        },
+        {
+          "target": "mouse-002",
+          "button": 0,
+          "x": 8,
+          "y": 9,
+          "viewport": "62x24"
+        },
+        {
+          "target": "g分组",
+          "button": 0,
+          "x": 45,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Mouse group 000",
+          "button": 65,
+          "x": 8,
+          "y": 6,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Mouse group 002",
+          "button": 0,
+          "x": 8,
+          "y": 8,
+          "viewport": "62x24"
+        },
+        {
+          "target": "[?]",
+          "button": 0,
+          "x": 20,
+          "y": 21,
+          "viewport": "62x24"
+        },
+        {
+          "target": "快捷键",
+          "button": 65,
+          "x": 4,
+          "y": 5,
+          "viewport": "62x24"
+        },
+        {
+          "target": "[末]",
+          "button": 0,
+          "x": 23,
+          "y": 21,
+          "viewport": "62x24"
+        },
+        {
+          "target": "关闭帮助",
+          "button": 0,
+          "x": 10,
+          "y": 22,
+          "viewport": "62x24"
+        },
+        {
+          "target": "MCP",
+          "button": 0,
+          "x": 12,
+          "y": 3,
+          "viewport": "62x24"
+        },
+        {
+          "target": "筛选:",
+          "button": 65,
+          "x": 6,
+          "y": 7,
+          "viewport": "62x24"
+        },
+        {
+          "target": "i详情",
+          "button": 0,
+          "x": 21,
+          "y": 21,
+          "viewport": "62x24"
+        },
+        {
+          "target": "MCP 详情",
+          "button": 65,
+          "x": 6,
+          "y": 5,
+          "viewport": "62x24"
+        },
+        {
+          "target": "[末]",
+          "button": 0,
+          "x": 25,
+          "y": 18,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Enter/Esc 关闭",
+          "button": 0,
+          "x": 7,
+          "y": 19,
+          "viewport": "62x24"
+        },
+        {
+          "target": "a新增",
+          "button": 0,
+          "x": 13,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "serverName",
+          "button": 0,
+          "x": 8,
+          "y": 6,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Enter 提交",
+          "button": 0,
+          "x": 7,
+          "y": 9,
+          "viewport": "62x24"
+        },
+        {
+          "target": "command",
+          "button": 0,
+          "x": 8,
+          "y": 8,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Esc 取消",
+          "button": 0,
+          "x": 20,
+          "y": 9,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Esc取消",
+          "button": 0,
+          "x": 15,
+          "y": 15,
+          "viewport": "62x24"
+        }
+      ],
+      "phase2": [
+        {
+          "target": "mouse-002",
+          "button": 0,
+          "x": 8,
+          "y": 9,
+          "viewport": "62x24"
+        },
+        {
+          "target": "␣启停",
+          "button": 0,
+          "x": 5,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "g分组",
+          "button": 0,
+          "x": 45,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Esc 取消",
+          "button": 0,
+          "x": 23,
+          "y": 16,
+          "viewport": "62x24"
+        },
+        {
+          "target": "←返回",
+          "button": 0,
+          "x": 25,
+          "y": 21,
+          "viewport": "62x24"
+        },
+        {
+          "target": "MCP",
+          "button": 0,
+          "x": 12,
+          "y": 3,
+          "viewport": "62x24"
+        },
+        {
+          "target": "i详情",
+          "button": 0,
+          "x": 21,
+          "y": 21,
+          "viewport": "62x24"
+        },
+        {
+          "target": "MCP 详情",
+          "button": 65,
+          "x": 6,
+          "y": 5,
+          "viewport": "62x24"
+        },
+        {
+          "target": "[末]",
+          "button": 0,
+          "x": 25,
+          "y": 18,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Enter/Esc 关闭",
+          "button": 0,
+          "x": 7,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "↵编辑",
+          "button": 0,
+          "x": 21,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "a新增",
+          "button": 0,
+          "x": 13,
+          "y": 20,
+          "viewport": "62x24"
+        },
+        {
+          "target": "serverName",
+          "button": 0,
+          "x": 8,
+          "y": 6,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Enter 提交",
+          "button": 0,
+          "x": 7,
+          "y": 9,
+          "viewport": "62x24"
+        },
+        {
+          "target": "command",
+          "button": 0,
+          "x": 8,
+          "y": 8,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Esc 取消",
+          "button": 0,
+          "x": 20,
+          "y": 9,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Esc 取消",
+          "button": 0,
+          "x": 22,
+          "y": 15,
+          "viewport": "62x24"
+        },
+        {
+          "target": "分组",
+          "button": 0,
+          "x": 17,
+          "y": 3,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Mouse group 000",
+          "button": 65,
+          "x": 8,
+          "y": 7,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Mouse group 005",
+          "button": 0,
+          "x": 8,
+          "y": 12,
+          "viewport": "62x24"
+        },
+        {
+          "target": "诊断",
+          "button": 0,
+          "x": 23,
+          "y": 3,
+          "viewport": "62x24"
+        },
+        {
+          "target": "宿主能力",
+          "button": 65,
+          "x": 6,
+          "y": 6,
+          "viewport": "62x24"
+        },
+        {
+          "target": "诊断 Diagnostics",
+          "button": 64,
+          "x": 6,
+          "y": 5,
+          "viewport": "62x24"
+        },
+        {
+          "target": "Skills 技能",
+          "button": 0,
+          "x": 6,
+          "y": 3,
+          "viewport": "120x35"
+        },
+        {
+          "target": "全局 (1)",
+          "button": 0,
+          "x": 8,
+          "y": 8,
+          "viewport": "120x35"
+        },
+        {
+          "target": "全部 (42)",
+          "button": 0,
+          "x": 8,
+          "y": 6,
+          "viewport": "120x35"
+        },
+        {
+          "target": "mouse-018",
+          "button": 0,
+          "x": 31,
+          "y": 6,
+          "viewport": "120x35"
+        },
+        {
+          "target": "技能列表",
+          "button": 65,
+          "x": 29,
+          "y": 5,
+          "viewport": "120x35"
+        },
+        {
+          "target": "详情",
+          "button": 65,
+          "x": 75,
+          "y": 5,
+          "viewport": "120x35"
+        }
+      ]
+    },
+    "filesystem": {
+      "toggleOff": "mouse-002/SKILL.md.disabled exists; selected mouse-002",
+      "deleteCancelled": "same skill retained, next delete confirmation still names mouse-002",
+      "deleteConfirmed": "mouse-002 disabled file gone; matching file found in trash; mouse-000 unchanged",
+      "undo": "mouse-002 disabled file restored",
+      "toggleOn": "mouse-002/SKILL.md exists; selected mouse-002",
+      "groupMembership": {
+        "group": "group-2",
+        "member": "mouse-002",
+        "persisted": true
+      },
+      "readonlyEditAndDraftCancellation": {
+        "profilePatchSha256": "de31f8168d423e2d9391d053014977343269fde8d38716e1a56b6c2af7a61de1",
+        "beforeEqualsAfter": true
+      }
+    },
+    "processExitCodes": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "modelRequests": 0,
+    "realUserConfigWrites": 0
+  },
+  "limits": [
+    "SGR injection, not a physical mouse/driver or all-terminal test",
+    "No rapid wheel, selection/drag/copy, inline mouse or remote attach coverage",
+    "Original layout breakpoint mismatch and complete user acceptance remain pending",
+    "Final tgz digest differs from previous install-lifecycle evidence; lifecycle evidence remains pinned to its original artifact"
+  ],
+  "published": false,
+  "userAcceptance": false,
+  "artifact": {
+    "name": "dsh-tui-skill-mcp-panel",
+    "version": "0.1.0-dev.0",
+    "fileCount": 62,
+    "bytes": 85808,
+    "sha256": "6f71b3cc0443970629f7256ffe79fa10bbf3000c3aff5494cbd7d58717cc37a4",
+    "npmIntegrity": "sha512-Ny+cvQDyQU5reyNCnoKJ1C3MDGeoJS2n0AUuQezgFM92sEqqarIEXeqzg0XVr4CRBQawlDM6S3oo8mFkK0ozLg==",
+    "dryRunFileCount": 62,
+    "manifestId": "com.dsh-tui.skill-mcp-panel",
+    "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+    "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+  }
+}

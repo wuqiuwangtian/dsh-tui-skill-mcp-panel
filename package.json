@@ -37,8 +37,9 @@
     "check:tarball": "pnpm build && node scripts/check-tarball.mjs",
     "test:release": "pnpm build && node --test test/release/*.test.js",
     "prepack": "pnpm build && node scripts/check-manifest.mjs --quiet",
-    "check:release": "pnpm typecheck && pnpm build && node --test test/domain/*.test.js test/release/*.test.js && node scripts/check-manifest.mjs && node scripts/check-tarball.mjs && node scripts/ui-render-smoke.mjs && node scripts/ui-layout-smoke.mjs && node scripts/ui-interaction-smoke.mjs && node scripts/mcp-smoke.mjs && node scripts/mcp-crud-smoke.mjs 120 && node scripts/mcp-crud-smoke.mjs 58 && node scripts/mcp-groups-smoke.mjs 120 && node scripts/mcp-groups-smoke.mjs 58",
-    "test:ui:layout": "pnpm build && node scripts/ui-layout-smoke.mjs"
+    "check:release": "pnpm typecheck && pnpm build && node --test test/domain/*.test.js test/release/*.test.js && node scripts/check-manifest.mjs && node scripts/check-tarball.mjs && node scripts/ui-render-smoke.mjs && node scripts/ui-layout-smoke.mjs && node scripts/ui-mouse-smoke.mjs && node scripts/ui-interaction-smoke.mjs && node scripts/mcp-smoke.mjs && node scripts/mcp-crud-smoke.mjs 120 && node scripts/mcp-crud-smoke.mjs 58 && node scripts/mcp-groups-smoke.mjs 120 && node scripts/mcp-groups-smoke.mjs 58",
+    "test:ui:layout": "pnpm build && node scripts/ui-layout-smoke.mjs",
+    "test:ui:mouse": "pnpm build && node scripts/ui-mouse-smoke.mjs"
   },
   "license": "MIT",
   "dsh": {

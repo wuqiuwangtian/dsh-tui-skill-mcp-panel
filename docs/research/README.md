@@ -79,6 +79,8 @@
 
 - **M5 实际包生命周期**：tgz 经 CLI 独立安装面板依赖、真实 TUI 信任确认/取消、停用/再启用/卸载与卸载后启动、9 文件哈希保留见 [发布准备 §8](../release-readiness.md#8-实际-tgz-安装停用与卸载)；复用已装宿主/内核，不代表全新 registry 环境或用户完整验收。
 
+- **M5 鼠标与选中项保持**：SGR 命中检测的 61 项断言、真实 TTY 文件写入与确认/取消、窄屏点击冒泡及启停 ID 变化修复见 [发布准备 §9](../release-readiness.md#9-鼠标交互与选中项保持)；用户完整验收仍待执行。
+
 ## 5. 证据基线与复核方式
 
 - **类型面基线**：已安装 `@deepseek-harness-tui/dsh-tui@0.19.0` 的 `lib/types/*.d.ts`（`~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui`）。

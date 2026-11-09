@@ -175,6 +175,10 @@ interface WheelLike {
   deltaY: number
 }
 
+interface ClickLike {
+  stopImmediatePropagation(): void
+}
+
 function statusFlags(instance: SkillInstance): string {
   const flags: string[] = []
   if (instance.status === 'disabled') flags.push('停用')
@@ -397,6 +401,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const [query, setQuery] = React.useState('')
     const [searchMode, setSearchMode] = React.useState(false)
     const [selectedId, setSelectedId] = React.useState<string | undefined>(undefined)
+    const previousSelected = React.useRef<SkillInstance | undefined>(undefined)
     const [helpOpen, setHelpOpen] = React.useState(false)
     const [helpOffset, setHelpOffset] = React.useState(0)
     const [modalOffset, setModalOffset] = React.useState(0)
@@ -437,7 +442,14 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
             if (group === undefined) return false
             return (group.scopes[scopeKeyOf(instance)] ?? []).includes(instance.name)
           })
-    const selected = filtered.find((instance) => instance.id === selectedId) ?? filtered[0]
+    const previous = previousSelected.current
+    const toggledPath = previous === undefined ? undefined
+      : previous.path.endsWith('.disabled') ? previous.path.slice(0, -'.disabled'.length) : `${previous.path}.disabled`
+    // Scan IDs include the physical path. A toggle renames that path, while
+    // this remains the same selected source file; exact IDs still win if both exist.
+    const selected = filtered.find((instance) => instance.id === selectedId)
+      ?? (previous !== undefined && previous.id === selectedId ? filtered.find((instance) => instance.source === previous.source && instance.path === toggledPath) : undefined)
+      ?? filtered[0]
     const selectedIndex = Math.max(
       0,
       filtered.findIndex((instance) => instance.id === selected?.id),
@@ -463,6 +475,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     )
 
     React.useEffect(() => {
+      previousSelected.current = selected
       if (selected === undefined) {
         if (selectedId !== undefined) setSelectedId(undefined)
         return
@@ -489,7 +502,9 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const twoPane = columns >= 72
     const narrow = !twoPane
     const fullActions = columns >= 110
-    const actionDefinitions = tab === 'skills' ? SKILL_ACTIONS : tab === 'mcp' ? MCP_ACTIONS : tab === 'groups' ? GROUP_ACTIONS : DIAG_ACTIONS
+    const skillActions = narrow && focus === 'detail'
+      ? [...SKILL_ACTIONS, ['back', 'Esc 返回', '←返回'] as const] : SKILL_ACTIONS
+    const actionDefinitions = tab === 'skills' ? skillActions : tab === 'mcp' ? MCP_ACTIONS : tab === 'groups' ? GROUP_ACTIONS : DIAG_ACTIONS
     const actionLabels = actionDefinitions.map(([, full, short]) => ({ label: fullActions ? full : short }))
     const extraFooterRows = packActions(actionLabels, contentWidth).length - 1
     const statusText =
@@ -1220,7 +1235,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const rowNode = (
       key: string,
       content: string,
-      options: { selected: boolean; dim?: boolean; onClick?: () => void },
+      options: { selected: boolean; dim?: boolean; onClick?: (event: ClickLike) => void },
     ): ReactNode => (
       <Box
         key={key}
@@ -1365,7 +1380,10 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                   </Box>
                 )
               })}
-              <Text dimColor wrap="truncate">{`↑↓ ↵确认 Esc取消 · ${modal.index + 1}/${modal.options.length}`}</Text>
+              <Box flexDirection="row" height={1}>
+                <Text dimColor wrap="truncate">{`↑↓ ↵确认 · ${modal.index + 1}/${modal.options.length} `}</Text>
+                <Box flexShrink={0} onClick={cancelModal}><Text color="accent">[Esc 取消]</Text></Box>
+              </Box>
             </>
           )
         }
@@ -1515,7 +1533,9 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
             return rowNode(instance.id, content, {
               selected: isSelected,
               dim: !instance.effective,
-              onClick: () => {
+              onClick: (event) => {
+                // This row's navigation wins over the containing card's focus handler.
+                event.stopImmediatePropagation()
                 setSelectedId(instance.id)
                 setFocus(narrow ? 'detail' : 'list')
               },
@@ -1744,7 +1764,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (id === 'refresh') { if (tab === 'mcp') void runtime.refreshMcp(); else void runtime.refresh('manual'); return }
       if (id === 'clear') { clearFilters(); return }
       if (tab === 'skills') {
-        if (id === 'toggle') runToggle()
+        if (id === 'back') setFocus('list')
+        else if (id === 'toggle') runToggle()
         else if (id === 'mark') pressMark()
         else if (id === 'delete') askDelete()
         else if (id === 'undo') void runtime.undoLastDelete()
