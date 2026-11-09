@@ -77,6 +77,8 @@
 
 - **M5 布局与异常交互**：8 种场景尺寸、176 项断言与真实 TTY 局部走查见 [发布准备 §7](../release-readiness.md#7-布局与异常交互回归)；布局断点设计差异与完整鼠标验收仍待核对。
 
+- **M5 实际包生命周期**：tgz 经 CLI 独立安装面板依赖、真实 TUI 信任确认/取消、停用/再启用/卸载与卸载后启动、9 文件哈希保留见 [发布准备 §8](../release-readiness.md#8-实际-tgz-安装停用与卸载)；复用已装宿主/内核，不代表全新 registry 环境或用户完整验收。
+
 ## 5. 证据基线与复核方式
 
 - **类型面基线**：已安装 `@deepseek-harness-tui/dsh-tui@0.19.0` 的 `lib/types/*.d.ts`（`~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui`）。

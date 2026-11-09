@@ -1,0 +1,770 @@
+{
+  "date": "2026-11-09",
+  "productCommit": "1b53ccf",
+  "version": "0.1.0-dev.0",
+  "runtimeChanges": false,
+  "environment": {
+    "node": "v26.3.0",
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "cordis": "4.1.0",
+    "pnpm": "12.6.0",
+    "isolatedHomeAndProfile": true,
+    "hostAndKernel": "Reused installed packages via link, read-only"
+  },
+  "artifact": {
+    "fileCount": 62,
+    "bytes": 85332,
+    "sha256": "94acdd05f582ccc6a5f3f71460624d1b5f1415d568cb956db8f8eb4499a1551c",
+    "installSpec": "file:<isolated-probe>/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+    "installed": {
+      "entry": "<isolated-probe>/dsh/profiles/panel-verification/node_modules/.pnpm/dsh-tui-skill-mcp-panel@file+..+..+..+dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz_@deepseek_d8d25ef66f8ecef0734fcf0a7e4914f8/node_modules/dsh-tui-skill-mcp-panel",
+      "deps": {
+        "@deepseek-ai/schemastery": {
+          "resolved": "<isolated-probe>/dsh/profiles/panel-verification/node_modules/.pnpm/@deepseek-ai+schemastery@3.19.0/node_modules/@deepseek-ai/schemastery/package.json",
+          "version": "3.19.0"
+        },
+        "get-east-asian-width": {
+          "resolved": "<isolated-probe>/dsh/profiles/panel-verification/node_modules/.pnpm/get-east-asian-width@1.7.0/node_modules/get-east-asian-width/index.js",
+          "version": "1.7.0"
+        },
+        "yaml": {
+          "resolved": "<isolated-probe>/dsh/profiles/panel-verification/node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/package.json",
+          "version": "2.9.1"
+        },
+        "@deepseek-ai/cordis": {
+          "resolved": "<installed-cli>/node_modules/@deepseek-ai/cordis/package.json",
+          "version": "4.1.0"
+        },
+        "@deepseek-harness-tui/dsh-tui": {
+          "resolved": "<installed-host>/package.json",
+          "version": "0.19.0"
+        }
+      }
+    }
+  },
+  "install": {
+    "cli": "dsh plugin --profile panel-verification add <tgz> --ignore-scripts",
+    "cliExitCode": 0,
+    "independentPanelDependencies": true,
+    "sourceLinkedPanel": false,
+    "peerWarning": "Issues with peer dependencies found\n\n✕ unmet peer @deepseek-ai/cordis\n  Installed: link:../../../../..<installed-cli>/node_modules/@deepseek-ai/cordis\n  Wanted:\n    \"^4.0.1 || 4.0.5-alpha.2\":\n      dsh-tui-skill-mcp-panel@0.1.0-dev.0\n\n✕ unmet peer @deepseek-harness-tui/dsh-tui\n  Installed: link:../../../../..<installed-host>\n  Wanted:\n    \">=0.19.0 <0.20.0\":\n      dsh-tui-skill-mcp-panel@0.1.0-dev.0\nCommand failed with exit code 1: pnpm peers checkdsh: plugin command failed; diagnostics: <isolated-probe>/dsh/profiles/panel-verification/.plugin-manager/logs/operation-gDG7d8/pnpm.log\n",
+    "tuiReinstall": "Host /plugin install <tgz>, confirmed after disclosure; package loaded and scene reopened",
+    "tuiInstallGate": [
+      "安装插件",
+      "要安装：（服务未给出包名） · tarball · bundle=unknown",
+      "信任确认：插件与本应用同进程运行 —— 进程内全信任、无沙箱；装上后不会自动更新；它的行为受声明的 grants",
+      "约束（授权是行为约束，不是安全隔离）。",
+      "提醒：注册表里的包在装上之前无法判定是否声明了 TUI 贡献；若未声明，它不会作为后端/贡献出现，并会在 /plugin",
+      "列表里带常驻标签。",
+      "⏎ 安装 · esc 取消"
+    ],
+    "tuiEnableGate": [
+      "插件生命周期",
+      "要启用：dsh-tui-skill-mcp-panel@0.1.0-dev.0",
+      "无法验证已装代码的来源：启用后它在本进程内运行、无沙箱。本页列出的权限就是要授予的内容；授权是行为约束，不是安全",
+      "隔离。",
+      "⏎ 执行 · esc 关闭"
+    ],
+    "uninstallConfirmation": [
+      "插件生命周期",
+      "要卸载：dsh-tui-skill-mcp-panel@0.1.0-dev.0",
+      "这是破坏性操作：它会改 profile 的 package.json 与 lockfile（服务失败时回滚），并移除它的 1 行 / 0",
+      "项覆盖；它留下的你自己的数据不会被删（有残留会另行提示）。",
+      "该组件的授权与 deny 条目会被删除（不可恢复）；重新安装后需要再授权一次。",
+      "⏎ 执行 · esc 关闭"
+    ]
+  },
+  "dataProtection": {
+    "protectedFiles": 9,
+    "comparison": "Exact bytes (size + SHA-256), including profile/home patches; baseline established after real UI data edits and first disable, then verified on re-enable, second disable, remove, restart, install cancellation, reinstall and final removal/restart",
+    "snapshots": [
+      {
+        "phase": "disabled-baseline",
+        "expected": "off",
+        "lifecycle": {
+          "at": "2026-11-09T10:02:25.276Z",
+          "pid": 392638,
+          "command": false,
+          "scenes": [],
+          "rows": []
+        },
+        "installedPath": "<isolated-probe>/dsh/profiles/panel-verification/node_modules/.pnpm/dsh-tui-skill-mcp-panel@file+..+..+..+dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz_@deepseek_d8d25ef66f8ecef0734fcf0a7e4914f8/node_modules/dsh-tui-skill-mcp-panel",
+        "installSpec": "file:<isolated-probe>/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-harness-tui/dsh-tui"
+        ],
+        "files": {
+          "panel/backups/1794218529530-7584aa26-9715-42e1-945a-2750efbbfc02/cordis.patch.yml": {
+            "bytes": 978,
+            "sha256": "8ee78545569ec8bcfb06feb5a58683a73d3b80ebc4c9fa1a52fbeb48c7ae6743"
+          },
+          "panel/backups/skill-groups/22ed664e-21f0-4c6b-aef9-99b8444a34dd/groups.json": {
+            "bytes": 141,
+            "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+          },
+          "panel/config.json": {
+            "bytes": 306,
+            "sha256": "9c89d74c113d191bc8fd06ade31f1fc357191b8847bb5cb604572af17a5374b9"
+          },
+          "panel/trash/20261109T100208Z-auugq8/manifest.json": {
+            "bytes": 681,
+            "sha256": "c26f1dc6e37ec2feff2331dc87feec018edadee6c0df3f64889924b1393d4ee4"
+          },
+          "panel/trash/20261109T100208Z-auugq8/workspace/probe-skill/SKILL.md": {
+            "bytes": 104,
+            "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+          },
+          "project-skills/retained-disabled/SKILL.md.disabled": {
+            "bytes": 109,
+            "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+          },
+          "shared-skill-groups": {
+            "bytes": 228,
+            "sha256": "ea7de7188266327e0b076c6478a4bf09fa18e63bb77fb4262b6e43d0c5e004ef"
+          },
+          "home-patch": {
+            "bytes": 381,
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+          },
+          "profile-patch": {
+            "bytes": 1106,
+            "sha256": "3ce982ea1bb9ce3b4392a1163f79e7e6acd23eaa36564ed24430cbf32692cf8a"
+          }
+        },
+        "comparedWith": null
+      },
+      {
+        "phase": "reenabled",
+        "expected": "on",
+        "lifecycle": {
+          "at": "2026-11-09T10:04:30.023Z",
+          "pid": 392638,
+          "command": true,
+          "scenes": [
+            "skill-mcp-panel"
+          ],
+          "rows": [
+            {
+              "id": "skill-mcp-panel",
+              "disabled": false,
+              "state": 2
+            }
+          ]
+        },
+        "installedPath": "<isolated-probe>/dsh/profiles/panel-verification/node_modules/.pnpm/dsh-tui-skill-mcp-panel@file+..+..+..+dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz_@deepseek_d8d25ef66f8ecef0734fcf0a7e4914f8/node_modules/dsh-tui-skill-mcp-panel",
+        "installSpec": "file:<isolated-probe>/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-harness-tui/dsh-tui",
+          "dsh-tui-skill-mcp-panel"
+        ],
+        "files": {
+          "panel/backups/1794218529530-7584aa26-9715-42e1-945a-2750efbbfc02/cordis.patch.yml": {
+            "bytes": 978,
+            "sha256": "8ee78545569ec8bcfb06feb5a58683a73d3b80ebc4c9fa1a52fbeb48c7ae6743"
+          },
+          "panel/backups/skill-groups/22ed664e-21f0-4c6b-aef9-99b8444a34dd/groups.json": {
+            "bytes": 141,
+            "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+          },
+          "panel/config.json": {
+            "bytes": 306,
+            "sha256": "9c89d74c113d191bc8fd06ade31f1fc357191b8847bb5cb604572af17a5374b9"
+          },
+          "panel/trash/20261109T100208Z-auugq8/manifest.json": {
+            "bytes": 681,
+            "sha256": "c26f1dc6e37ec2feff2331dc87feec018edadee6c0df3f64889924b1393d4ee4"
+          },
+          "panel/trash/20261109T100208Z-auugq8/workspace/probe-skill/SKILL.md": {
+            "bytes": 104,
+            "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+          },
+          "project-skills/retained-disabled/SKILL.md.disabled": {
+            "bytes": 109,
+            "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+          },
+          "shared-skill-groups": {
+            "bytes": 228,
+            "sha256": "ea7de7188266327e0b076c6478a4bf09fa18e63bb77fb4262b6e43d0c5e004ef"
+          },
+          "home-patch": {
+            "bytes": 381,
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+          },
+          "profile-patch": {
+            "bytes": 1106,
+            "sha256": "3ce982ea1bb9ce3b4392a1163f79e7e6acd23eaa36564ed24430cbf32692cf8a"
+          }
+        },
+        "comparedWith": "disabled-baseline"
+      },
+      {
+        "phase": "disabled-verified",
+        "expected": "off",
+        "lifecycle": {
+          "at": "2026-11-09T10:04:58.423Z",
+          "pid": 392638,
+          "command": false,
+          "scenes": [],
+          "rows": []
+        },
+        "installedPath": "<isolated-probe>/dsh/profiles/panel-verification/node_modules/.pnpm/dsh-tui-skill-mcp-panel@file+..+..+..+dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz_@deepseek_d8d25ef66f8ecef0734fcf0a7e4914f8/node_modules/dsh-tui-skill-mcp-panel",
+        "installSpec": "file:<isolated-probe>/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-harness-tui/dsh-tui"
+        ],
+        "files": {
+          "panel/backups/1794218529530-7584aa26-9715-42e1-945a-2750efbbfc02/cordis.patch.yml": {
+            "bytes": 978,
+            "sha256": "8ee78545569ec8bcfb06feb5a58683a73d3b80ebc4c9fa1a52fbeb48c7ae6743"
+          },
+          "panel/backups/skill-groups/22ed664e-21f0-4c6b-aef9-99b8444a34dd/groups.json": {
+            "bytes": 141,
+            "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+          },
+          "panel/config.json": {
+            "bytes": 306,
+            "sha256": "9c89d74c113d191bc8fd06ade31f1fc357191b8847bb5cb604572af17a5374b9"
+          },
+          "panel/trash/20261109T100208Z-auugq8/manifest.json": {
+            "bytes": 681,
+            "sha256": "c26f1dc6e37ec2feff2331dc87feec018edadee6c0df3f64889924b1393d4ee4"
+          },
+          "panel/trash/20261109T100208Z-auugq8/workspace/probe-skill/SKILL.md": {
+            "bytes": 104,
+            "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+          },
+          "project-skills/retained-disabled/SKILL.md.disabled": {
+            "bytes": 109,
+            "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+          },
+          "shared-skill-groups": {
+            "bytes": 228,
+            "sha256": "ea7de7188266327e0b076c6478a4bf09fa18e63bb77fb4262b6e43d0c5e004ef"
+          },
+          "home-patch": {
+            "bytes": 381,
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+          },
+          "profile-patch": {
+            "bytes": 1106,
+            "sha256": "3ce982ea1bb9ce3b4392a1163f79e7e6acd23eaa36564ed24430cbf32692cf8a"
+          }
+        },
+        "comparedWith": "disabled-baseline"
+      },
+      {
+        "phase": "removed",
+        "expected": "removed",
+        "lifecycle": {
+          "at": "2026-11-09T10:04:58.423Z",
+          "pid": 392638,
+          "command": false,
+          "scenes": [],
+          "rows": []
+        },
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-harness-tui/dsh-tui"
+        ],
+        "files": {
+          "panel/backups/1794218529530-7584aa26-9715-42e1-945a-2750efbbfc02/cordis.patch.yml": {
+            "bytes": 978,
+            "sha256": "8ee78545569ec8bcfb06feb5a58683a73d3b80ebc4c9fa1a52fbeb48c7ae6743"
+          },
+          "panel/backups/skill-groups/22ed664e-21f0-4c6b-aef9-99b8444a34dd/groups.json": {
+            "bytes": 141,
+            "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+          },
+          "panel/config.json": {
+            "bytes": 306,
+            "sha256": "9c89d74c113d191bc8fd06ade31f1fc357191b8847bb5cb604572af17a5374b9"
+          },
+          "panel/trash/20261109T100208Z-auugq8/manifest.json": {
+            "bytes": 681,
+            "sha256": "c26f1dc6e37ec2feff2331dc87feec018edadee6c0df3f64889924b1393d4ee4"
+          },
+          "panel/trash/20261109T100208Z-auugq8/workspace/probe-skill/SKILL.md": {
+            "bytes": 104,
+            "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+          },
+          "project-skills/retained-disabled/SKILL.md.disabled": {
+            "bytes": 109,
+            "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+          },
+          "shared-skill-groups": {
+            "bytes": 228,
+            "sha256": "ea7de7188266327e0b076c6478a4bf09fa18e63bb77fb4262b6e43d0c5e004ef"
+          },
+          "home-patch": {
+            "bytes": 381,
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+          },
+          "profile-patch": {
+            "bytes": 1106,
+            "sha256": "3ce982ea1bb9ce3b4392a1163f79e7e6acd23eaa36564ed24430cbf32692cf8a"
+          }
+        },
+        "comparedWith": "disabled-baseline"
+      },
+      {
+        "phase": "removed-restart",
+        "expected": "removed",
+        "lifecycle": {
+          "at": "2026-11-09T10:05:36.913Z",
+          "pid": 398359,
+          "command": false,
+          "scenes": [],
+          "rows": []
+        },
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-harness-tui/dsh-tui"
+        ],
+        "files": {
+          "panel/backups/1794218529530-7584aa26-9715-42e1-945a-2750efbbfc02/cordis.patch.yml": {
+            "bytes": 978,
+            "sha256": "8ee78545569ec8bcfb06feb5a58683a73d3b80ebc4c9fa1a52fbeb48c7ae6743"
+          },
+          "panel/backups/skill-groups/22ed664e-21f0-4c6b-aef9-99b8444a34dd/groups.json": {
+            "bytes": 141,
+            "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+          },
+          "panel/config.json": {
+            "bytes": 306,
+            "sha256": "9c89d74c113d191bc8fd06ade31f1fc357191b8847bb5cb604572af17a5374b9"
+          },
+          "panel/trash/20261109T100208Z-auugq8/manifest.json": {
+            "bytes": 681,
+            "sha256": "c26f1dc6e37ec2feff2331dc87feec018edadee6c0df3f64889924b1393d4ee4"
+          },
+          "panel/trash/20261109T100208Z-auugq8/workspace/probe-skill/SKILL.md": {
+            "bytes": 104,
+            "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+          },
+          "project-skills/retained-disabled/SKILL.md.disabled": {
+            "bytes": 109,
+            "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+          },
+          "shared-skill-groups": {
+            "bytes": 228,
+            "sha256": "ea7de7188266327e0b076c6478a4bf09fa18e63bb77fb4262b6e43d0c5e004ef"
+          },
+          "home-patch": {
+            "bytes": 381,
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+          },
+          "profile-patch": {
+            "bytes": 1106,
+            "sha256": "3ce982ea1bb9ce3b4392a1163f79e7e6acd23eaa36564ed24430cbf32692cf8a"
+          }
+        },
+        "comparedWith": "disabled-baseline"
+      },
+      {
+        "phase": "before-install-confirm",
+        "expected": "removed",
+        "lifecycle": {
+          "at": "2026-11-09T10:05:36.913Z",
+          "pid": 398359,
+          "command": false,
+          "scenes": [],
+          "rows": []
+        },
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-harness-tui/dsh-tui"
+        ],
+        "files": {
+          "panel/backups/1794218529530-7584aa26-9715-42e1-945a-2750efbbfc02/cordis.patch.yml": {
+            "bytes": 978,
+            "sha256": "8ee78545569ec8bcfb06feb5a58683a73d3b80ebc4c9fa1a52fbeb48c7ae6743"
+          },
+          "panel/backups/skill-groups/22ed664e-21f0-4c6b-aef9-99b8444a34dd/groups.json": {
+            "bytes": 141,
+            "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+          },
+          "panel/config.json": {
+            "bytes": 306,
+            "sha256": "9c89d74c113d191bc8fd06ade31f1fc357191b8847bb5cb604572af17a5374b9"
+          },
+          "panel/trash/20261109T100208Z-auugq8/manifest.json": {
+            "bytes": 681,
+            "sha256": "c26f1dc6e37ec2feff2331dc87feec018edadee6c0df3f64889924b1393d4ee4"
+          },
+          "panel/trash/20261109T100208Z-auugq8/workspace/probe-skill/SKILL.md": {
+            "bytes": 104,
+            "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+          },
+          "project-skills/retained-disabled/SKILL.md.disabled": {
+            "bytes": 109,
+            "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+          },
+          "shared-skill-groups": {
+            "bytes": 228,
+            "sha256": "ea7de7188266327e0b076c6478a4bf09fa18e63bb77fb4262b6e43d0c5e004ef"
+          },
+          "home-patch": {
+            "bytes": 381,
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+          },
+          "profile-patch": {
+            "bytes": 1106,
+            "sha256": "3ce982ea1bb9ce3b4392a1163f79e7e6acd23eaa36564ed24430cbf32692cf8a"
+          }
+        },
+        "comparedWith": "disabled-baseline"
+      },
+      {
+        "phase": "install-cancelled",
+        "expected": "removed",
+        "lifecycle": {
+          "at": "2026-11-09T10:05:36.913Z",
+          "pid": 398359,
+          "command": false,
+          "scenes": [],
+          "rows": []
+        },
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-harness-tui/dsh-tui"
+        ],
+        "files": {
+          "panel/backups/1794218529530-7584aa26-9715-42e1-945a-2750efbbfc02/cordis.patch.yml": {
+            "bytes": 978,
+            "sha256": "8ee78545569ec8bcfb06feb5a58683a73d3b80ebc4c9fa1a52fbeb48c7ae6743"
+          },
+          "panel/backups/skill-groups/22ed664e-21f0-4c6b-aef9-99b8444a34dd/groups.json": {
+            "bytes": 141,
+            "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+          },
+          "panel/config.json": {
+            "bytes": 306,
+            "sha256": "9c89d74c113d191bc8fd06ade31f1fc357191b8847bb5cb604572af17a5374b9"
+          },
+          "panel/trash/20261109T100208Z-auugq8/manifest.json": {
+            "bytes": 681,
+            "sha256": "c26f1dc6e37ec2feff2331dc87feec018edadee6c0df3f64889924b1393d4ee4"
+          },
+          "panel/trash/20261109T100208Z-auugq8/workspace/probe-skill/SKILL.md": {
+            "bytes": 104,
+            "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+          },
+          "project-skills/retained-disabled/SKILL.md.disabled": {
+            "bytes": 109,
+            "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+          },
+          "shared-skill-groups": {
+            "bytes": 228,
+            "sha256": "ea7de7188266327e0b076c6478a4bf09fa18e63bb77fb4262b6e43d0c5e004ef"
+          },
+          "home-patch": {
+            "bytes": 381,
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+          },
+          "profile-patch": {
+            "bytes": 1106,
+            "sha256": "3ce982ea1bb9ce3b4392a1163f79e7e6acd23eaa36564ed24430cbf32692cf8a"
+          }
+        },
+        "comparedWith": "disabled-baseline"
+      },
+      {
+        "phase": "tui-reinstalled",
+        "expected": "on",
+        "lifecycle": {
+          "at": "2026-11-09T10:07:09.072Z",
+          "pid": 398359,
+          "command": true,
+          "scenes": [
+            "skill-mcp-panel"
+          ],
+          "rows": [
+            {
+              "id": "skill-mcp-panel",
+              "disabled": false,
+              "state": 2
+            }
+          ]
+        },
+        "installedPath": "<isolated-probe>/dsh/profiles/panel-verification/node_modules/.pnpm/dsh-tui-skill-mcp-panel@file+..+..+..+dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz_@deepseek_d8d25ef66f8ecef0734fcf0a7e4914f8/node_modules/dsh-tui-skill-mcp-panel",
+        "installSpec": "file:<isolated-probe>/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-harness-tui/dsh-tui",
+          "dsh-tui-skill-mcp-panel"
+        ],
+        "files": {
+          "panel/backups/1794218529530-7584aa26-9715-42e1-945a-2750efbbfc02/cordis.patch.yml": {
+            "bytes": 978,
+            "sha256": "8ee78545569ec8bcfb06feb5a58683a73d3b80ebc4c9fa1a52fbeb48c7ae6743"
+          },
+          "panel/backups/skill-groups/22ed664e-21f0-4c6b-aef9-99b8444a34dd/groups.json": {
+            "bytes": 141,
+            "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+          },
+          "panel/config.json": {
+            "bytes": 306,
+            "sha256": "9c89d74c113d191bc8fd06ade31f1fc357191b8847bb5cb604572af17a5374b9"
+          },
+          "panel/trash/20261109T100208Z-auugq8/manifest.json": {
+            "bytes": 681,
+            "sha256": "c26f1dc6e37ec2feff2331dc87feec018edadee6c0df3f64889924b1393d4ee4"
+          },
+          "panel/trash/20261109T100208Z-auugq8/workspace/probe-skill/SKILL.md": {
+            "bytes": 104,
+            "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+          },
+          "project-skills/retained-disabled/SKILL.md.disabled": {
+            "bytes": 109,
+            "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+          },
+          "shared-skill-groups": {
+            "bytes": 228,
+            "sha256": "ea7de7188266327e0b076c6478a4bf09fa18e63bb77fb4262b6e43d0c5e004ef"
+          },
+          "home-patch": {
+            "bytes": 381,
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+          },
+          "profile-patch": {
+            "bytes": 1106,
+            "sha256": "3ce982ea1bb9ce3b4392a1163f79e7e6acd23eaa36564ed24430cbf32692cf8a"
+          }
+        },
+        "comparedWith": "disabled-baseline"
+      },
+      {
+        "phase": "final-removed",
+        "expected": "removed",
+        "lifecycle": {
+          "at": "2026-11-09T10:07:22.514Z",
+          "pid": 398359,
+          "command": false,
+          "scenes": [],
+          "rows": []
+        },
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-harness-tui/dsh-tui"
+        ],
+        "files": {
+          "panel/backups/1794218529530-7584aa26-9715-42e1-945a-2750efbbfc02/cordis.patch.yml": {
+            "bytes": 978,
+            "sha256": "8ee78545569ec8bcfb06feb5a58683a73d3b80ebc4c9fa1a52fbeb48c7ae6743"
+          },
+          "panel/backups/skill-groups/22ed664e-21f0-4c6b-aef9-99b8444a34dd/groups.json": {
+            "bytes": 141,
+            "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+          },
+          "panel/config.json": {
+            "bytes": 306,
+            "sha256": "9c89d74c113d191bc8fd06ade31f1fc357191b8847bb5cb604572af17a5374b9"
+          },
+          "panel/trash/20261109T100208Z-auugq8/manifest.json": {
+            "bytes": 681,
+            "sha256": "c26f1dc6e37ec2feff2331dc87feec018edadee6c0df3f64889924b1393d4ee4"
+          },
+          "panel/trash/20261109T100208Z-auugq8/workspace/probe-skill/SKILL.md": {
+            "bytes": 104,
+            "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+          },
+          "project-skills/retained-disabled/SKILL.md.disabled": {
+            "bytes": 109,
+            "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+          },
+          "shared-skill-groups": {
+            "bytes": 228,
+            "sha256": "ea7de7188266327e0b076c6478a4bf09fa18e63bb77fb4262b6e43d0c5e004ef"
+          },
+          "home-patch": {
+            "bytes": 381,
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+          },
+          "profile-patch": {
+            "bytes": 1106,
+            "sha256": "3ce982ea1bb9ce3b4392a1163f79e7e6acd23eaa36564ed24430cbf32692cf8a"
+          }
+        },
+        "comparedWith": "disabled-baseline"
+      },
+      {
+        "phase": "final-removed-restart",
+        "expected": "removed",
+        "lifecycle": {
+          "at": "2026-11-09T10:08:27.852Z",
+          "pid": 401998,
+          "servicesReady": true,
+          "command": false,
+          "scenes": [],
+          "rows": []
+        },
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-harness-tui/dsh-tui"
+        ],
+        "files": {
+          "panel/backups/1794218529530-7584aa26-9715-42e1-945a-2750efbbfc02/cordis.patch.yml": {
+            "bytes": 978,
+            "sha256": "8ee78545569ec8bcfb06feb5a58683a73d3b80ebc4c9fa1a52fbeb48c7ae6743"
+          },
+          "panel/backups/skill-groups/22ed664e-21f0-4c6b-aef9-99b8444a34dd/groups.json": {
+            "bytes": 141,
+            "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+          },
+          "panel/config.json": {
+            "bytes": 306,
+            "sha256": "9c89d74c113d191bc8fd06ade31f1fc357191b8847bb5cb604572af17a5374b9"
+          },
+          "panel/trash/20261109T100208Z-auugq8/manifest.json": {
+            "bytes": 681,
+            "sha256": "c26f1dc6e37ec2feff2331dc87feec018edadee6c0df3f64889924b1393d4ee4"
+          },
+          "panel/trash/20261109T100208Z-auugq8/workspace/probe-skill/SKILL.md": {
+            "bytes": 104,
+            "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+          },
+          "project-skills/retained-disabled/SKILL.md.disabled": {
+            "bytes": 109,
+            "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+          },
+          "shared-skill-groups": {
+            "bytes": 228,
+            "sha256": "ea7de7188266327e0b076c6478a4bf09fa18e63bb77fb4262b6e43d0c5e004ef"
+          },
+          "home-patch": {
+            "bytes": 381,
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+          },
+          "profile-patch": {
+            "bytes": 1106,
+            "sha256": "3ce982ea1bb9ce3b4392a1163f79e7e6acd23eaa36564ed24430cbf32692cf8a"
+          }
+        },
+        "comparedWith": "disabled-baseline"
+      }
+    ]
+  },
+  "lifecycleHistory": [
+    {
+      "at": "2026-11-09T10:01:19.506Z",
+      "pid": 392638,
+      "command": true,
+      "scenes": [
+        "skill-mcp-panel"
+      ],
+      "rows": [
+        {
+          "id": "skill-mcp-panel",
+          "disabled": false,
+          "state": 2
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:02:25.276Z",
+      "pid": 392638,
+      "command": false,
+      "scenes": [],
+      "rows": []
+    },
+    {
+      "at": "2026-11-09T10:04:30.023Z",
+      "pid": 392638,
+      "command": true,
+      "scenes": [
+        "skill-mcp-panel"
+      ],
+      "rows": [
+        {
+          "id": "skill-mcp-panel",
+          "disabled": false,
+          "state": 2
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:04:58.424Z",
+      "pid": 392638,
+      "command": false,
+      "scenes": [],
+      "rows": []
+    },
+    {
+      "at": "2026-11-09T10:05:36.913Z",
+      "pid": 398359,
+      "command": false,
+      "scenes": [],
+      "rows": []
+    },
+    {
+      "at": "2026-11-09T10:07:09.073Z",
+      "pid": 398359,
+      "command": true,
+      "scenes": [
+        "skill-mcp-panel"
+      ],
+      "rows": [
+        {
+          "id": "skill-mcp-panel",
+          "disabled": false,
+          "state": 2
+        }
+      ]
+    },
+    {
+      "at": "2026-11-09T10:07:22.514Z",
+      "pid": 398359,
+      "command": false,
+      "scenes": [],
+      "rows": []
+    },
+    {
+      "at": "2026-11-09T10:08:27.852Z",
+      "pid": 401998,
+      "servicesReady": true,
+      "command": false,
+      "scenes": [],
+      "rows": []
+    }
+  ],
+  "postRemove": {
+    "tuiReady": true,
+    "mcp": "mcp-probe（1 个工具）: ping",
+    "hostBoots": [
+      "2026-11-09T10:01:20.416Z pid=392638 boot: UI mounted {\"fullscreen\":true,\"isRecompose\":false}",
+      "2026-11-09T10:05:37.443Z pid=398359 boot: UI mounted {\"fullscreen\":true,\"isRecompose\":false}",
+      "2026-11-09T10:08:28.372Z pid=401998 boot: UI mounted {\"fullscreen\":true,\"isRecompose\":false}"
+    ],
+    "ttyExitCodes": [
+      0,
+      0,
+      0
+    ]
+  },
+  "probeChecks": {
+    "finalPreparation": "prepare-install-probe rerun; seeds and servicesReady observer checked; artifact digest identical",
+    "finalSnapshot": "final-removed-restart with live PID/servicesReady check passed",
+    "exitedHostSnapshot": {
+      "exitCode": 1,
+      "error": "ESRCH (expected rejection)"
+    },
+    "syntaxChecks": "node --check on both probe scripts"
+  },
+  "boundaries": {
+    "modelRequests": 0,
+    "realUserConfigWrites": 0,
+    "published": false,
+    "userAcceptance": false,
+    "limits": [
+      "Installed host/kernel reused; not a fresh full-host registry install",
+      "CLI add does not show TUI trust confirmation; installation disclosure separately verified in real /plugin install",
+      "No install failure rollback, cross-platform or ecosystem approval test",
+      "No runtime timers/connections leak proof beyond registration removal and clean process exit",
+      "Full user acceptance remains pending"
+    ]
+  }
+}

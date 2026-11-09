@@ -37,8 +37,8 @@ pnpm check:release     # 类型、域层/发布检查、打包、全部现有 UI
 | B 声明完整性 / TUI-PKG-002 | Command 契约、Scene 贡献、空 permissions/subscriptions/panels；无 provides / requires.services。官方 parser、profile 定义验证、声明漂移拒绝测试通过。命令名不使用内置 `/skills` / `/mcp`。可配置命令/场景名是本插件配置能力，manifest 描述默认值。 |
 | C TUI 兼容 / TUI-HOST-001、TUI-RUN-001 | 示例 descriptor 协商通过；实际 0.19.0 真实 TTY 打开/关闭/重开场景通过。TUI-only，不依赖 GUI/浏览器、不声明 remote attach 或 Backend 贡献；无场景服务时命令返回可读错误，全部接缝缺失时等待注入，服务缺失不阻塞宿主。所有布局与远程环境未全面验收。 |
 | D 运行时 / TUI-OBS-001 | `ctx.inject` 等待服务；注册清理归属注入作用域，服务移除立即撤销，恢复/重复 activation 只保留一份注册。真实 Cordis lifecycle 测试覆盖场景/命令服务分别移除、恢复、停用/再启用；runtime 的 timer/listener 随面板 dispose。实际宿主 HMR/生命周期面板仍需人工复核。 |
-| E 清理恢复 / TUI-OBS-002 | 插件停用释放自己的运行期资源；卸载包不删除技能、MCP 配置、共享分组或私有备份/回收站；不提供 purge。停用管理器不会自动停用已保存的 MCP，也不会恢复被用户停用的技能。真实包卸载后启动验证待执行。 |
-| F 信任 / TUI-RUN-002、TUI-DEP-001、TUI-CLAIM-001 | README 安装前披露 trusted-in-process、非沙箱；安装/启用确认由宿主负责，人工复核该提示。依赖在 pnpm-lock.yaml，artifact SHA-256 随检查输出；未证明跨环境可重现或 provenance，不声明 Reproducible/Attested/Verified。UI/dump 脱敏测试通过，备份仍含原值并有私有权限。 |
+| E 清理恢复 / TUI-OBS-002 | 插件停用释放自己的运行期资源；卸载包不删除技能、MCP 配置、共享分组或私有备份/回收站；不提供 purge。停用管理器不会自动停用已保存的 MCP，也不会恢复被用户停用的技能。实际 tgz 的 CLI 安装、TUI 停用/再启用/卸载与卸载后两次启动已验证，9 个数据文件逐字节保留；见 §8，用户完整验收仍待执行。 |
+| F 信任 / TUI-RUN-002、TUI-DEP-001、TUI-CLAIM-001 | README 安装前披露 trusted-in-process、非沙箱；安装/启用确认由宿主负责；真实 TTY 的 `/plugin install` 与 enable 信任提示及安装取消已验证（§8），完整人工复核仍待执行。依赖在 pnpm-lock.yaml，artifact SHA-256 随检查输出；未证明跨环境可重现或 provenance，不声明 Reproducible/Attested/Verified。UI/dump 脱敏测试通过，备份仍含原值并有私有权限。 |
 | G 展示 | README 分列能力、兼容范围、权限、限制与开发状态；无“官方认证”“安全插件”等宣称。未来生态收录提交需作者本人操作与发布包版本/来源核对，目前未提交。 |
 
 以上是自查记录，不表示 A–G 的全部人工/生态要求均已通过。
@@ -51,7 +51,7 @@ pnpm check:release     # 类型、域层/发布检查、打包、全部现有 UI
 
 | 状态 | 项目 / 最短操作与预期 |
 | --- | --- |
-| 待测 | AC-9 安装/卸载：从构建源码或明确版本 tgz 安装 → `/skill-mcp` 打开 → 宿主停用管理器 → 命令/场景消失 → 再启用恢复 → 卸载 → TUI 正常启动；用户配置与数据保留。记录实际安装 spec 与包版本。 |
+| 用户待测；agent 隔离验证见 §8 | AC-9 安装/卸载：从构建源码或明确版本 tgz 安装 → `/skill-mcp` 打开 → 宿主停用管理器 → 命令/场景消失 → 再启用恢复 → 卸载 → TUI 正常启动；用户配置与数据保留。记录实际安装 spec 与包版本。 |
 | 待测 | AC-10 技能与模型同步：工作区/全局同名技能切换作用域；空格停用/启用，`/skills` 与下一步模型技能列表同步；非法 frontmatter 有原因，bundled 不可写。 |
 | 待测 | AC-11 MCP：新增本地 stdio、修改参数、停用/启用/删除；观察热加载中→已生效、`/mcp` 工具出现/消失，模型侧同步；服务异常给出失败或超时。 |
 | 待测 | AC-12 表达式/脱敏：stdio env 与 HTTP headers 用测试 `${ENV}`；重开/重载仍是表达式，其他字段不丢；UI、诊断、dump 不出现测试密钥明文。HTTP 若连接远端，使用自己控制的测试端点。 |
@@ -106,4 +106,46 @@ node scripts/skill-groups-interop.mjs ~/.dsh/profiles/web/node_modules/dsh-skill
 
 复核时先按 AGENT.md §7 准备隔离探针：调整窗口，使场景显示目标可用尺寸；`?` → `End` 应看见限制段与关闭提示；技能 `Enter` → `End` 应显示正文末尾；MCP `i` → `End` 应显示脱敏末页；编辑长字段应能看到末尾，缩小窗口后操作暂停，放大恢复草稿。输入和确认都用 `Esc` 取消即可。
 
-**仍待完整验收**：鼠标点击/滚轮、不同终端渲染器与连续 resize、安装/卸载、模型侧同步、web/TUI 完整 UI 共存。当前布局为 <72 单栏、72–109 双栏、≥110 三栏，与需求 §6.1 的初始分档/可选帮助栏有差异；原设计与 AC-14 不改为“已通过”，由发布前完整验收核对。
+**仍待完整验收**：鼠标点击/滚轮、不同终端渲染器与连续 resize、模型侧同步、web/TUI 完整 UI 共存；安装/卸载的隔离 agent 证据已补于 §8，用户完整验收仍待执行。当前布局为 <72 单栏、72–109 双栏、≥110 三栏，与需求 §6.1 的初始分档/可选帮助栏有差异；原设计与 AC-14 不改为“已通过”，由发布前完整验收核对。
+
+
+## 8. 实际 tgz 安装、停用与卸载
+
+2026-11-09，产品源码基线 `1b53ccf`，开发包 `0.1.0-dev.0`；[结构化证据](research/evidence/m5-install-lifecycle.json)记录 artifact SHA-256、独立安装依赖、宿主注册变化、各阶段数据哈希与信任确认文本。实际 archive 为 62 文件，SHA-256 为 `94acdd05f582ccc6a5f3f71460624d1b5f1415d568cb956db8f8eb4499a1551c`，与 §7 的产物相同；本轮只增加开发验证脚本/文档，不改运行时代码。
+
+安装经真正的 `dsh plugin --profile panel-verification add <tgz> --ignore-scripts`，包在临时 profile 的 `.pnpm` 中解包；面板及其运行时依赖都不链接源码 checkout。实际解析为 schemastery 3.19.0、get-east-asian-width 1.7.0、yaml 2.9.1。宿主 0.19.0、Cordis 4.1.0 和内核 0.2.2-rc.1 复用本机安装，仅以 `link:` 引用；pnpm 12.6.0 对这些 link peer 报未满足，实际解析版本满足面板声明。该警告保留在证据中，不据此声称全新宿主 registry 安装通过。该 tgz 及新装的纯 JS 依赖无需安装脚本；CLI 首次安装使用 `--ignore-scripts`，随后实际 `/plugin install` 重装使用宿主默认安装流程，也成功打开面板。
+
+真实 TTY 操作与结果：
+
+1. CLI 安装后 `/skill-mcp` 打开；实际将技能加入既有组、删除进回收站、启用本地 MCP、创建 MCP 分组，产生可核对的私有配置、两类备份、回收站。另有预置停用技能作为保留对象。
+2. `/plugin disable dsh-tui-skill-mcp-panel` 后，观察探针记录全局命令不存在、场景注册 0 个、对应 loader 行 0 个；依赖仍安装。该宿主的 bundle 停用是从 composition 的 bundles 列表撤下，不能只找 `disabled:true` 的行来判断。
+3. `/plugin enable dsh-tui-skill-mcp-panel` 的确认框出现“本进程内运行、无沙箱”“授权是行为约束，不是安全隔离”；确认前未启用，确认后命令与场景各恢复一份，重新打开正常。随后再停用，数据完全一致。
+4. `/plugin remove dsh-tui-skill-mcp-panel` 显示卸载确认；执行后 package 依赖、bundles 项和顶层安装链接均移除。停用技能、共享技能组、私有 MCP 组、备份、回收站、profile/home patch 共 9 文件哈希不变。完全退出再启动正常；`/mcp` 仍报告 `mcp-probe（1 个工具）: ping`，说明卸载管理器没有自动停用保存的 MCP。
+5. 在卸载后的 TUI 中 `/plugin install <tgz>`，安装前显示进程内全信任/无沙箱/不会自动更新，并提示安装前尚不能判定声明；此时服务显示包名未知，不伪称已验证来源。Esc 取消后包仍不存在、9 文件不变。再次确认安装后面板恢复，重新打开可读到原分组、停用技能和回收站。最后再卸载、重启，9 文件仍不变。三个 TTY 进程均正常退出；没有模型请求或真实 `~/.dsh` 写入。
+
+复核需要本机已装 CLI、宿主 0.19.0、npm/pnpm；脚本只准备 `/tmp` 数据，不自动安装或启动：
+
+```sh
+node scripts/prepare-install-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui
+# 将输出 root 填到下面；每次运行都会生成新的隔离目录。
+probe_root=/tmp/skill-mcp-real-tui-REPLACE
+"$probe_root/manage.sh" add "$probe_root/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz" --ignore-scripts
+"$probe_root/run.sh"
+```
+
+TUI 中先 `g` 将 `probe-skill` 加入 Retained group、`d/y` 删除它；MCP 页选 `mcp-probe` 启用，`g` 新建分组。生成这些真实数据后，在另一个终端执行下列基线检查。然后回到 TUI，关闭面板，依次运行上述 enable/disable/remove 操作；每次完成后再执行对应检查：
+
+```sh
+# 启用时记录基线（TUI 必须仍在运行，观察探针服务须就绪）。
+node scripts/install-probe-state.mjs "$probe_root" baseline on
+# 停用后：
+node scripts/install-probe-state.mjs "$probe_root" disabled off baseline
+# 再启用后：
+node scripts/install-probe-state.mjs "$probe_root" enabled on baseline
+# 卸载后，以及退出并重新启动 run.sh 后：
+node scripts/install-probe-state.mjs "$probe_root" removed removed baseline
+```
+
+预期命令输出 `OK`、保留文件哈希一致；违反期望、服务未就绪或旧宿主进程已退出均失败。探针从宿主内部只读查看全局命令和场景注册；不执行面板 handler、不请求模型、不进入发布包。真实 TUI 操作仍须人工/TTY 驱动，该检查脚本不会代替用户点击确认。脚本不纳入 `check:release`，以免要求所有开发机预装 CLI/完整宿主或自动下载依赖。
+
+**边界**：这是隔离目录中的 agent 验证，§4 的用户完整验收仍待执行；没有全新宿主/内核 registry 安装、跨平台、安装失败回滚、生态准入或发布验证。CLI 的 add 命令本身未展示宿主 TUI 的信任确认；上述安装信任证据来自真实 `/plugin install`，与 CLI 安装结果分别记录。
