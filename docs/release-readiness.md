@@ -52,7 +52,7 @@ pnpm check:release     # 类型、域层/发布检查、打包、全部现有 UI
 | 状态 | 项目 / 最短操作与预期 |
 | --- | --- |
 | 用户待测；agent 隔离验证见 §8 | AC-9 安装/卸载：从构建源码或明确版本 tgz 安装 → `/skill-mcp` 打开 → 宿主停用管理器 → 命令/场景消失 → 再启用恢复 → 卸载 → TUI 正常启动；用户配置与数据保留。记录实际安装 spec 与包版本。 |
-| 待测 | AC-10 技能与模型同步：工作区/全局同名技能切换作用域；空格停用/启用，`/skills` 与下一步模型技能列表同步；非法 frontmatter 有原因，bundled 不可写。 |
+| 用户待测；agent 目录/菜单验证见 §10 | AC-10 技能与模型同步：工作区/全局同名技能切换作用域；空格停用/启用，`/skills` 与下一步模型技能列表同步；非法 frontmatter 有原因，bundled 不可写。 |
 | 待测 | AC-11 MCP：新增本地 stdio、修改参数、停用/启用/删除；观察热加载中→已生效、`/mcp` 工具出现/消失，模型侧同步；服务异常给出失败或超时。 |
 | 待测 | AC-12 表达式/脱敏：stdio env 与 HTTP headers 用测试 `${ENV}`；重开/重载仍是表达式，其他字段不丢；UI、诊断、dump 不出现测试密钥明文。HTTP 若连接远端，使用自己控制的测试端点。 |
 | 待测 | AC-13 撤销：技能、受管 MCP 各删除后撤销；重开后仍能撤销；删除后外部修改目标文件，撤销拒绝覆盖。原始 profile MCP 行仅启停，home/表达式行不可编辑删除。 |
@@ -174,3 +174,44 @@ node scripts/prepare-mouse-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deeps
 夹具有 42 项技能、40 个技能分组、33 行初始停用 MCP，正文 100 行、测试 env 80 键。先用约 62×24 的终端：点击 `mouse-002` 应进入详情，点击启停后仍显示它，点击删除 → 取消应保留，确认后应减少一项，撤销恢复；点击 `[←返回]` 回到列表。点击分组选择与 `[Esc 取消]`，应关闭选择框；MCP 新增中点击字段、键入测试文字，再点击提交/取消与选择框取消，应回到相应上一层，未保存时 patch 不变。点击帮助/详情的 `[末]` 应显示末页；滚轮只作用于指针所在列表或详情。放大到约 120×35，作用域/列表/详情分别可点击和滚动。
 
 **验收边界**：SGR 序列证明当前宿主命中检测与路由，不保证所有终端模拟器、物理鼠标驱动、快速滚轮/拖拽/复制或 inline 的鼠标行为；用户 AC-14 完整验收仍待执行。原始布局断点设计差异继续保留；本轮不修改 profile MCP 的写入边界，也不据鼠标检查宣称模型同步/双端共存或发布通过。
+
+
+## 10. 技能启停与实际 agent 目录同步
+
+2026-11-11，产品基线 `02b7c7c`，本轮没有修改运行时代码或依赖。[结构化证据](research/evidence/m5-skill-sync-verification.json)记录 10 个阶段的实际 scoped 目录、面板有效集合、可调用策略、正文来源和真实 `/skills` 菜单文本；测试没有请求模型生成。
+
+观察器运行在真实宿主 0.19.0 / 内核 0.2.2-rc.1 中，使用与 TUI 相同的 `serviceForAgent` 取得实际已挂载 preset 的技能注册表，再调用 `snapshot({ scope: agent, cwd })`。同时记录宿主层快照：其 complete 为 true、数量为 0，而当前真实 agent 有 7 项 `sync-*` 技能；二者作用域不同，不能把 host 空目录当作 agent 无技能。
+
+为避免观察器干预缓存，只有在 snapshot 自己报告名称/路径等目录变化后才读取当前赢家正文，不反复 `get()` 已消失的旧文件；后者可能主动使缓存失效，掩盖 watcher 问题。观察器没有调用面板刷新、provider invalidate、agent dispatch 或 model generate。记录脚本等待正常变更传播，最多 8 秒；这不是精确的 watcher 延迟测量。
+
+| 阶段 | 真实面板操作与检查结果 |
+| --- | --- |
+| initial | 7 项 `sync-*` 有效技能与 agent 中立目录逐项同路径/来源；非法 frontmatter 明确标无效，`.system` 子树不进入目录。 |
+| local-off / local-on | 从面板停用/恢复工作区目录束 `sync-local`；物理文件改名、agent 目录与已注册 slash 命令移除/恢复，正文加载变为缺失/LOCAL-BODY；重开 `/skills` 同步为 6/7 项。 |
+| shared-off / shared-on | 停用/恢复**工作区**的 `sync-shared`；数量仍是 7，但当前赢家与正文从 Workspace winner/WORKSPACE-WINNER 切到 Global fallback/GLOBAL-FALLBACK，再切回；`/skills` 来源与简述同步。不能只以“名称是否消失”判断停用成功。 |
+| flat-off / flat-on | 平铺 `sync-flat.md` 改名为 `.md.disabled` 再恢复；菜单、agent 与命令集合移除/恢复，正文加载相符。 |
+| global-off / global-on | 全局目录束 `sync-global` 停用/恢复；同一 agent 与 `/skills` 菜单同步变化。 |
+| bundled-ro | 对受控 bundled 夹具尝试启停，面板提示只读；文件、agent 目录和菜单保持不变。这里使用显式测试 bundled 根，不代表已核对所有用户启动器的随包路径。 |
+
+调用策略需要分开核对：`disable-model-invocation:true` 的 sync-human-only 保留在菜单和用户命令中，却不进入 model-eligible 集合；`user-invocable:false` 的 sync-model-only 保留在中立目录/菜单中，但菜单不带 `/`、不注册直调命令，仍可进入 model-eligible 集合。每个阶段都比较了面板对应策略，未把菜单出现与可直调或模型可调用画等号。
+
+复验前提：已装 CLI 与宿主 0.19.0；先退出正在开发的 TUI 再构建。脚本只生成临时 home/profile，不启动、不修改真实配置：
+
+```sh
+pnpm build
+node scripts/prepare-skill-sync-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui
+# 在真实终端运行输出的 run.sh，然后 /skill-mcp。
+```
+
+在第二个终端，将输出 root 赋给 `probe_root`。面板首次打开后执行 `node scripts/record-skill-sync.mjs "$probe_root" initial`。在面板用 `/` 搜索目标 → Enter 结束搜索 → 空格启停 → 执行对应阶段检查，再退出面板打开 `/skills` 对照菜单。每对 off/on 阶段完成后再测下一对；对同名技能，确认选中的来源为工作区，恢复时工作区停用行可能排在全局赢家之后，需选中正确行。
+
+```sh
+probe_root=/tmp/skill-mcp-real-tui-REPLACE
+node scripts/record-skill-sync.mjs "$probe_root" local-off
+node scripts/record-skill-sync.mjs "$probe_root" local-on
+# 同理依次 shared-off/on、flat-off/on、global-off/on、bundled-ro。
+```
+
+预期每次输出 `OK`，snapshot complete、同一 idle agent 的目录与面板赢家一致，物理文件和策略、slash 注册一致。脚本不会替你启停或刷新；旧宿主已退出时会拒绝读取留存快照。此探针需要本机实际 CLI/宿主及 TTY 驱动，不纳入通用 `check:release`。10 个阶段始终为同一 PID/agent，实际 TUI 正常退出；另验证退出后快照被拒绝。
+
+**尚未验证**：本轮证明的是注册表、正文加载、用户菜单及模型可调用目录源的同步，没有执行 `agent/pre-step`、生成模型请求或检查实际请求消息中的 catalog 更新。因此 AC-10 的真实模型请求与行为仍待完整人工验收；没有据此将整个 AC-10 标记通过。自定义根、运行期注册技能、普通启动器 bundled 路径和跨 profile 会话不在本轮覆盖范围。

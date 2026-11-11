@@ -1,0 +1,1141 @@
+{
+  "date": "2026-11-11",
+  "productCommit": "02b7c7c",
+  "version": "0.1.0-dev.0",
+  "runtimeChanges": false,
+  "environment": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "node": "v26.3.0",
+    "pnpm": "12.6.0",
+    "isolatedHomeAndProfile": true,
+    "bundledRoot": "<probe>/bundled-skills"
+  },
+  "method": {
+    "agent": "One actual TUI-created preset agent; serviceForAgent + snapshot({scope:agent,cwd})",
+    "hostSnapshot": {
+      "complete": true,
+      "count": 0
+    },
+    "definitions": "get() only after the snapshot catalog signature changes; absent old locators are not probed",
+    "commands": "Actual commands.list(agent), policy-filtered",
+    "panel": "Same-process ManagerRuntime scan; enabled/effective winners compared by path, source and invocation flags",
+    "picker": "Real /skills command in the same TTY; all sync names, source/description fallback and invocation rendering checked",
+    "boundedWaitMs": 8000,
+    "explicitRefresh": false,
+    "providerInvalidate": false,
+    "agentDispatch": false,
+    "modelGeneration": false
+  },
+  "sameProcess": {
+    "pid": 82277,
+    "agentId": "2125be1b-e02f-4605-a74e-04010009ce4a"
+  },
+  "phaseCount": 10,
+  "phases": [
+    {
+      "phase": "initial",
+      "capturedAt": "2026-11-11T00:41:20.515Z",
+      "catalogAt": "2026-11-11T00:41:06.654Z",
+      "complete": true,
+      "cwd": "<probe>/project",
+      "winnerFiles": {
+        "sync-bundled": {
+          "source": "bundled",
+          "path": "<probe>/bundled-skills/sync-bundled/SKILL.md"
+        },
+        "sync-flat": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-flat.md"
+        },
+        "sync-global": {
+          "source": "user-dsh",
+          "path": "<probe>/dsh/skills/sync-global/SKILL.md"
+        },
+        "sync-human-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-human-only/SKILL.md"
+        },
+        "sync-local": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md"
+        },
+        "sync-model-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-model-only/SKILL.md"
+        },
+        "sync-shared": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md"
+        }
+      },
+      "modelEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-local",
+        "sync-model-only",
+        "sync-shared"
+      ],
+      "userEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "registeredCommands": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "definitions": {
+        "sync-local": {
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "5992e7239f1daf03e0a2804de93b224ae9380dfe059cf119677aaafb1269b203",
+          "body": "LOCAL-BODY"
+        },
+        "sync-flat": {
+          "path": "<probe>/project/.dsh/skills/sync-flat.md",
+          "source": "project-dsh",
+          "contentSha256": "35489a483181a25306c04a5ecb09398d6d23aa5fd64035794bf03d40c2ee72de",
+          "body": "FLAT-BODY"
+        },
+        "sync-shared": {
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "76837c3bc13b0298a86bf020ce805bce67c8db5ace0ca202b2524af91954f839",
+          "body": "WORKSPACE-WINNER"
+        }
+      },
+      "panelRows": [
+        "sync-flat | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-human-only | project-dsh | enabled | effective=true | model=false user=true",
+        "sync-invalid | project-dsh | invalid | effective=false | model=undefined user=undefined",
+        "sync-local | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-model-only | project-dsh | enabled | effective=true | model=true user=false",
+        "sync-shared | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-global | user-dsh | enabled | effective=true | model=true user=true",
+        "sync-shared | user-dsh | enabled | effective=false | model=true user=true",
+        "sync-bundled | bundled | enabled | effective=true | model=true user=true"
+      ],
+      "picker": [
+        "      项目 · Isolated real-TUI verification skill",
+        "      /sync-bundled",
+        "      内置 · Read-only bundled fixture",
+        "      /sync-flat",
+        "      项目 · Flat skill",
+        "      /sync-global",
+        "      用户 · Global only",
+        "      /sync-human-only",
+        "      项目 · Human invocation only",
+        "      /sync-local",
+        "      项目 · Workspace only",
+        "      sync-model-only",
+        "      项目 · Model invocation only",
+        "      /sync-shared",
+        "      项目 · Workspace winner",
+        "    Enter 填入命令 · Esc 退出",
+        "   deepseek-flash · project"
+      ]
+    },
+    {
+      "phase": "local-off",
+      "capturedAt": "2026-11-11T00:42:21.372Z",
+      "catalogAt": "2026-11-11T00:42:20.765Z",
+      "complete": true,
+      "cwd": "<probe>/project",
+      "winnerFiles": {
+        "sync-bundled": {
+          "source": "bundled",
+          "path": "<probe>/bundled-skills/sync-bundled/SKILL.md"
+        },
+        "sync-flat": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-flat.md"
+        },
+        "sync-global": {
+          "source": "user-dsh",
+          "path": "<probe>/dsh/skills/sync-global/SKILL.md"
+        },
+        "sync-human-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-human-only/SKILL.md"
+        },
+        "sync-model-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-model-only/SKILL.md"
+        },
+        "sync-shared": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md"
+        }
+      },
+      "modelEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-model-only",
+        "sync-shared"
+      ],
+      "userEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-shared"
+      ],
+      "registeredCommands": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-shared"
+      ],
+      "definitions": {
+        "sync-local": null,
+        "sync-flat": {
+          "path": "<probe>/project/.dsh/skills/sync-flat.md",
+          "source": "project-dsh",
+          "contentSha256": "35489a483181a25306c04a5ecb09398d6d23aa5fd64035794bf03d40c2ee72de",
+          "body": "FLAT-BODY"
+        },
+        "sync-shared": {
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "76837c3bc13b0298a86bf020ce805bce67c8db5ace0ca202b2524af91954f839",
+          "body": "WORKSPACE-WINNER"
+        }
+      },
+      "panelRows": [
+        "sync-flat | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-human-only | project-dsh | enabled | effective=true | model=false user=true",
+        "sync-invalid | project-dsh | invalid | effective=false | model=undefined user=undefined",
+        "sync-local | project-dsh | disabled | effective=false | model=true user=true",
+        "sync-model-only | project-dsh | enabled | effective=true | model=true user=false",
+        "sync-shared | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-global | user-dsh | enabled | effective=true | model=true user=true",
+        "sync-shared | user-dsh | enabled | effective=false | model=true user=true",
+        "sync-bundled | bundled | enabled | effective=true | model=true user=true"
+      ],
+      "picker": [
+        "      项目 · Isolated real-TUI verification skill",
+        "      /sync-bundled",
+        "      内置 · Read-only bundled fixture",
+        "      /sync-flat",
+        "      项目 · Flat skill",
+        "      /sync-global",
+        "      用户 · Global only",
+        "      /sync-human-only",
+        "      项目 · Human invocation only",
+        "      sync-model-only",
+        "      项目 · Model invocation only",
+        "      /sync-shared",
+        "      项目 · Workspace winner",
+        "    Enter 填入命令 · Esc 退出",
+        "   deepseek-flash · project"
+      ]
+    },
+    {
+      "phase": "local-on",
+      "capturedAt": "2026-11-11T00:42:28.287Z",
+      "catalogAt": "2026-11-11T00:42:27.796Z",
+      "complete": true,
+      "cwd": "<probe>/project",
+      "winnerFiles": {
+        "sync-bundled": {
+          "source": "bundled",
+          "path": "<probe>/bundled-skills/sync-bundled/SKILL.md"
+        },
+        "sync-flat": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-flat.md"
+        },
+        "sync-global": {
+          "source": "user-dsh",
+          "path": "<probe>/dsh/skills/sync-global/SKILL.md"
+        },
+        "sync-human-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-human-only/SKILL.md"
+        },
+        "sync-local": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md"
+        },
+        "sync-model-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-model-only/SKILL.md"
+        },
+        "sync-shared": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md"
+        }
+      },
+      "modelEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-local",
+        "sync-model-only",
+        "sync-shared"
+      ],
+      "userEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "registeredCommands": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "definitions": {
+        "sync-local": {
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "5992e7239f1daf03e0a2804de93b224ae9380dfe059cf119677aaafb1269b203",
+          "body": "LOCAL-BODY"
+        },
+        "sync-flat": {
+          "path": "<probe>/project/.dsh/skills/sync-flat.md",
+          "source": "project-dsh",
+          "contentSha256": "35489a483181a25306c04a5ecb09398d6d23aa5fd64035794bf03d40c2ee72de",
+          "body": "FLAT-BODY"
+        },
+        "sync-shared": {
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "76837c3bc13b0298a86bf020ce805bce67c8db5ace0ca202b2524af91954f839",
+          "body": "WORKSPACE-WINNER"
+        }
+      },
+      "panelRows": [
+        "sync-flat | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-human-only | project-dsh | enabled | effective=true | model=false user=true",
+        "sync-invalid | project-dsh | invalid | effective=false | model=undefined user=undefined",
+        "sync-local | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-model-only | project-dsh | enabled | effective=true | model=true user=false",
+        "sync-shared | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-global | user-dsh | enabled | effective=true | model=true user=true",
+        "sync-shared | user-dsh | enabled | effective=false | model=true user=true",
+        "sync-bundled | bundled | enabled | effective=true | model=true user=true"
+      ],
+      "picker": [
+        "      项目 · Isolated real-TUI verification skill",
+        "      /sync-bundled",
+        "      内置 · Read-only bundled fixture",
+        "      /sync-flat",
+        "      项目 · Flat skill",
+        "      /sync-global",
+        "      用户 · Global only",
+        "      /sync-human-only",
+        "      项目 · Human invocation only",
+        "      /sync-local",
+        "      项目 · Workspace only",
+        "      sync-model-only",
+        "      项目 · Model invocation only",
+        "      /sync-shared",
+        "      项目 · Workspace winner",
+        "    Enter 填入命令 · Esc 退出",
+        "   deepseek-flash · project"
+      ]
+    },
+    {
+      "phase": "shared-off",
+      "capturedAt": "2026-11-11T00:42:35.051Z",
+      "catalogAt": "2026-11-11T00:42:34.330Z",
+      "complete": true,
+      "cwd": "<probe>/project",
+      "winnerFiles": {
+        "sync-bundled": {
+          "source": "bundled",
+          "path": "<probe>/bundled-skills/sync-bundled/SKILL.md"
+        },
+        "sync-flat": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-flat.md"
+        },
+        "sync-global": {
+          "source": "user-dsh",
+          "path": "<probe>/dsh/skills/sync-global/SKILL.md"
+        },
+        "sync-human-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-human-only/SKILL.md"
+        },
+        "sync-local": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md"
+        },
+        "sync-model-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-model-only/SKILL.md"
+        },
+        "sync-shared": {
+          "source": "user-dsh",
+          "path": "<probe>/dsh/skills/sync-shared/SKILL.md"
+        }
+      },
+      "modelEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-local",
+        "sync-model-only",
+        "sync-shared"
+      ],
+      "userEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "registeredCommands": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "definitions": {
+        "sync-local": {
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "5992e7239f1daf03e0a2804de93b224ae9380dfe059cf119677aaafb1269b203",
+          "body": "LOCAL-BODY"
+        },
+        "sync-flat": {
+          "path": "<probe>/project/.dsh/skills/sync-flat.md",
+          "source": "project-dsh",
+          "contentSha256": "35489a483181a25306c04a5ecb09398d6d23aa5fd64035794bf03d40c2ee72de",
+          "body": "FLAT-BODY"
+        },
+        "sync-shared": {
+          "path": "<probe>/dsh/skills/sync-shared/SKILL.md",
+          "source": "user-dsh",
+          "contentSha256": "8a7405ea9a84760d28e7a59fcb6ba5ec968ad3cbe3ca8a72b6662ae6d4dda23e",
+          "body": "GLOBAL-FALLBACK"
+        }
+      },
+      "panelRows": [
+        "sync-flat | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-human-only | project-dsh | enabled | effective=true | model=false user=true",
+        "sync-invalid | project-dsh | invalid | effective=false | model=undefined user=undefined",
+        "sync-local | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-model-only | project-dsh | enabled | effective=true | model=true user=false",
+        "sync-shared | project-dsh | disabled | effective=false | model=true user=true",
+        "sync-global | user-dsh | enabled | effective=true | model=true user=true",
+        "sync-shared | user-dsh | enabled | effective=true | model=true user=true",
+        "sync-bundled | bundled | enabled | effective=true | model=true user=true"
+      ],
+      "picker": [
+        "      项目 · Isolated real-TUI verification skill",
+        "      /sync-bundled",
+        "      内置 · Read-only bundled fixture",
+        "      /sync-flat",
+        "      项目 · Flat skill",
+        "      /sync-global",
+        "      用户 · Global only",
+        "      /sync-human-only",
+        "      项目 · Human invocation only",
+        "      /sync-local",
+        "      项目 · Workspace only",
+        "      sync-model-only",
+        "      项目 · Model invocation only",
+        "      /sync-shared",
+        "      用户 · Global fallback",
+        "    Enter 填入命令 · Esc 退出",
+        "   deepseek-flash · project"
+      ]
+    },
+    {
+      "phase": "shared-on",
+      "capturedAt": "2026-11-11T00:42:42.733Z",
+      "catalogAt": "2026-11-11T00:42:42.071Z",
+      "complete": true,
+      "cwd": "<probe>/project",
+      "winnerFiles": {
+        "sync-bundled": {
+          "source": "bundled",
+          "path": "<probe>/bundled-skills/sync-bundled/SKILL.md"
+        },
+        "sync-flat": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-flat.md"
+        },
+        "sync-global": {
+          "source": "user-dsh",
+          "path": "<probe>/dsh/skills/sync-global/SKILL.md"
+        },
+        "sync-human-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-human-only/SKILL.md"
+        },
+        "sync-local": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md"
+        },
+        "sync-model-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-model-only/SKILL.md"
+        },
+        "sync-shared": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md"
+        }
+      },
+      "modelEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-local",
+        "sync-model-only",
+        "sync-shared"
+      ],
+      "userEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "registeredCommands": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "definitions": {
+        "sync-local": {
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "5992e7239f1daf03e0a2804de93b224ae9380dfe059cf119677aaafb1269b203",
+          "body": "LOCAL-BODY"
+        },
+        "sync-flat": {
+          "path": "<probe>/project/.dsh/skills/sync-flat.md",
+          "source": "project-dsh",
+          "contentSha256": "35489a483181a25306c04a5ecb09398d6d23aa5fd64035794bf03d40c2ee72de",
+          "body": "FLAT-BODY"
+        },
+        "sync-shared": {
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "76837c3bc13b0298a86bf020ce805bce67c8db5ace0ca202b2524af91954f839",
+          "body": "WORKSPACE-WINNER"
+        }
+      },
+      "panelRows": [
+        "sync-flat | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-human-only | project-dsh | enabled | effective=true | model=false user=true",
+        "sync-invalid | project-dsh | invalid | effective=false | model=undefined user=undefined",
+        "sync-local | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-model-only | project-dsh | enabled | effective=true | model=true user=false",
+        "sync-shared | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-global | user-dsh | enabled | effective=true | model=true user=true",
+        "sync-shared | user-dsh | enabled | effective=false | model=true user=true",
+        "sync-bundled | bundled | enabled | effective=true | model=true user=true"
+      ],
+      "picker": [
+        "      项目 · Isolated real-TUI verification skill",
+        "      /sync-bundled",
+        "      内置 · Read-only bundled fixture",
+        "      /sync-flat",
+        "      项目 · Flat skill",
+        "      /sync-global",
+        "      用户 · Global only",
+        "      /sync-human-only",
+        "      项目 · Human invocation only",
+        "      /sync-local",
+        "      项目 · Workspace only",
+        "      sync-model-only",
+        "      项目 · Model invocation only",
+        "      /sync-shared",
+        "      项目 · Workspace winner",
+        "    Enter 填入命令 · Esc 退出",
+        "   deepseek-flash · project"
+      ]
+    },
+    {
+      "phase": "flat-off",
+      "capturedAt": "2026-11-11T00:43:18.707Z",
+      "catalogAt": "2026-11-11T00:43:17.942Z",
+      "complete": true,
+      "cwd": "<probe>/project",
+      "winnerFiles": {
+        "sync-bundled": {
+          "source": "bundled",
+          "path": "<probe>/bundled-skills/sync-bundled/SKILL.md"
+        },
+        "sync-global": {
+          "source": "user-dsh",
+          "path": "<probe>/dsh/skills/sync-global/SKILL.md"
+        },
+        "sync-human-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-human-only/SKILL.md"
+        },
+        "sync-local": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md"
+        },
+        "sync-model-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-model-only/SKILL.md"
+        },
+        "sync-shared": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md"
+        }
+      },
+      "modelEligible": [
+        "sync-bundled",
+        "sync-global",
+        "sync-local",
+        "sync-model-only",
+        "sync-shared"
+      ],
+      "userEligible": [
+        "sync-bundled",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "registeredCommands": [
+        "sync-bundled",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "definitions": {
+        "sync-local": {
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "5992e7239f1daf03e0a2804de93b224ae9380dfe059cf119677aaafb1269b203",
+          "body": "LOCAL-BODY"
+        },
+        "sync-flat": null,
+        "sync-shared": {
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "76837c3bc13b0298a86bf020ce805bce67c8db5ace0ca202b2524af91954f839",
+          "body": "WORKSPACE-WINNER"
+        }
+      },
+      "panelRows": [
+        "sync-flat | project-dsh | disabled | effective=false | model=true user=true",
+        "sync-human-only | project-dsh | enabled | effective=true | model=false user=true",
+        "sync-invalid | project-dsh | invalid | effective=false | model=undefined user=undefined",
+        "sync-local | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-model-only | project-dsh | enabled | effective=true | model=true user=false",
+        "sync-shared | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-global | user-dsh | enabled | effective=true | model=true user=true",
+        "sync-shared | user-dsh | enabled | effective=false | model=true user=true",
+        "sync-bundled | bundled | enabled | effective=true | model=true user=true"
+      ],
+      "picker": [
+        "      项目 · Isolated real-TUI verification skill",
+        "      /sync-bundled",
+        "      内置 · Read-only bundled fixture",
+        "      /sync-global",
+        "      用户 · Global only",
+        "      /sync-human-only",
+        "      项目 · Human invocation only",
+        "      /sync-local",
+        "      项目 · Workspace only",
+        "      sync-model-only",
+        "      项目 · Model invocation only",
+        "      /sync-shared",
+        "      项目 · Workspace winner",
+        "    Enter 填入命令 · Esc 退出",
+        "   deepseek-flash · project"
+      ]
+    },
+    {
+      "phase": "flat-on",
+      "capturedAt": "2026-11-11T00:43:26.022Z",
+      "catalogAt": "2026-11-11T00:43:25.241Z",
+      "complete": true,
+      "cwd": "<probe>/project",
+      "winnerFiles": {
+        "sync-bundled": {
+          "source": "bundled",
+          "path": "<probe>/bundled-skills/sync-bundled/SKILL.md"
+        },
+        "sync-flat": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-flat.md"
+        },
+        "sync-global": {
+          "source": "user-dsh",
+          "path": "<probe>/dsh/skills/sync-global/SKILL.md"
+        },
+        "sync-human-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-human-only/SKILL.md"
+        },
+        "sync-local": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md"
+        },
+        "sync-model-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-model-only/SKILL.md"
+        },
+        "sync-shared": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md"
+        }
+      },
+      "modelEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-local",
+        "sync-model-only",
+        "sync-shared"
+      ],
+      "userEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "registeredCommands": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "definitions": {
+        "sync-local": {
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "5992e7239f1daf03e0a2804de93b224ae9380dfe059cf119677aaafb1269b203",
+          "body": "LOCAL-BODY"
+        },
+        "sync-flat": {
+          "path": "<probe>/project/.dsh/skills/sync-flat.md",
+          "source": "project-dsh",
+          "contentSha256": "35489a483181a25306c04a5ecb09398d6d23aa5fd64035794bf03d40c2ee72de",
+          "body": "FLAT-BODY"
+        },
+        "sync-shared": {
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "76837c3bc13b0298a86bf020ce805bce67c8db5ace0ca202b2524af91954f839",
+          "body": "WORKSPACE-WINNER"
+        }
+      },
+      "panelRows": [
+        "sync-flat | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-human-only | project-dsh | enabled | effective=true | model=false user=true",
+        "sync-invalid | project-dsh | invalid | effective=false | model=undefined user=undefined",
+        "sync-local | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-model-only | project-dsh | enabled | effective=true | model=true user=false",
+        "sync-shared | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-global | user-dsh | enabled | effective=true | model=true user=true",
+        "sync-shared | user-dsh | enabled | effective=false | model=true user=true",
+        "sync-bundled | bundled | enabled | effective=true | model=true user=true"
+      ],
+      "picker": [
+        "      项目 · Isolated real-TUI verification skill",
+        "      /sync-bundled",
+        "      内置 · Read-only bundled fixture",
+        "      /sync-flat",
+        "      项目 · Flat skill                                                                                               …",
+        "      /sync-global",
+        "      用户 · Global only",
+        "      /sync-human-only",
+        "      项目 · Human invocation only",
+        "      /sync-local",
+        "      项目 · Workspace only",
+        "      sync-model-only",
+        "      项目 · Model invocation only",
+        "      /sync-shared",
+        "      项目 · Workspace winner",
+        "    Enter 填入命令 · Esc 退出",
+        "   deepseek-flash · project"
+      ]
+    },
+    {
+      "phase": "global-off",
+      "capturedAt": "2026-11-11T00:43:33.138Z",
+      "catalogAt": "2026-11-11T00:43:32.597Z",
+      "complete": true,
+      "cwd": "<probe>/project",
+      "winnerFiles": {
+        "sync-bundled": {
+          "source": "bundled",
+          "path": "<probe>/bundled-skills/sync-bundled/SKILL.md"
+        },
+        "sync-flat": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-flat.md"
+        },
+        "sync-human-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-human-only/SKILL.md"
+        },
+        "sync-local": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md"
+        },
+        "sync-model-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-model-only/SKILL.md"
+        },
+        "sync-shared": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md"
+        }
+      },
+      "modelEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-local",
+        "sync-model-only",
+        "sync-shared"
+      ],
+      "userEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "registeredCommands": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "definitions": {
+        "sync-local": {
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "5992e7239f1daf03e0a2804de93b224ae9380dfe059cf119677aaafb1269b203",
+          "body": "LOCAL-BODY"
+        },
+        "sync-flat": {
+          "path": "<probe>/project/.dsh/skills/sync-flat.md",
+          "source": "project-dsh",
+          "contentSha256": "35489a483181a25306c04a5ecb09398d6d23aa5fd64035794bf03d40c2ee72de",
+          "body": "FLAT-BODY"
+        },
+        "sync-shared": {
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "76837c3bc13b0298a86bf020ce805bce67c8db5ace0ca202b2524af91954f839",
+          "body": "WORKSPACE-WINNER"
+        }
+      },
+      "panelRows": [
+        "sync-flat | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-human-only | project-dsh | enabled | effective=true | model=false user=true",
+        "sync-invalid | project-dsh | invalid | effective=false | model=undefined user=undefined",
+        "sync-local | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-model-only | project-dsh | enabled | effective=true | model=true user=false",
+        "sync-shared | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-global | user-dsh | disabled | effective=false | model=true user=true",
+        "sync-shared | user-dsh | enabled | effective=false | model=true user=true",
+        "sync-bundled | bundled | enabled | effective=true | model=true user=true"
+      ],
+      "picker": [
+        "      项目 · Isolated real-TUI verification skill",
+        "      /sync-bundled",
+        "      内置 · Read-only bundled fixture                                                                                 …",
+        "      /sync-flat",
+        "      项目 · Flat skill",
+        "      /sync-human-only",
+        "      项目 · Human invocation only",
+        "      /sync-local",
+        "      项目 · Workspace only",
+        "      sync-model-only",
+        "      项目 · Model invocation only",
+        "      /sync-shared",
+        "      项目 · Workspace winner",
+        "    Enter 填入命令 · Esc 退出",
+        "   deepseek-flash · project"
+      ]
+    },
+    {
+      "phase": "global-on",
+      "capturedAt": "2026-11-11T00:43:40.425Z",
+      "catalogAt": "2026-11-11T00:43:39.753Z",
+      "complete": true,
+      "cwd": "<probe>/project",
+      "winnerFiles": {
+        "sync-bundled": {
+          "source": "bundled",
+          "path": "<probe>/bundled-skills/sync-bundled/SKILL.md"
+        },
+        "sync-flat": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-flat.md"
+        },
+        "sync-global": {
+          "source": "user-dsh",
+          "path": "<probe>/dsh/skills/sync-global/SKILL.md"
+        },
+        "sync-human-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-human-only/SKILL.md"
+        },
+        "sync-local": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md"
+        },
+        "sync-model-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-model-only/SKILL.md"
+        },
+        "sync-shared": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md"
+        }
+      },
+      "modelEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-local",
+        "sync-model-only",
+        "sync-shared"
+      ],
+      "userEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "registeredCommands": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "definitions": {
+        "sync-local": {
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "5992e7239f1daf03e0a2804de93b224ae9380dfe059cf119677aaafb1269b203",
+          "body": "LOCAL-BODY"
+        },
+        "sync-flat": {
+          "path": "<probe>/project/.dsh/skills/sync-flat.md",
+          "source": "project-dsh",
+          "contentSha256": "35489a483181a25306c04a5ecb09398d6d23aa5fd64035794bf03d40c2ee72de",
+          "body": "FLAT-BODY"
+        },
+        "sync-shared": {
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "76837c3bc13b0298a86bf020ce805bce67c8db5ace0ca202b2524af91954f839",
+          "body": "WORKSPACE-WINNER"
+        }
+      },
+      "panelRows": [
+        "sync-flat | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-human-only | project-dsh | enabled | effective=true | model=false user=true",
+        "sync-invalid | project-dsh | invalid | effective=false | model=undefined user=undefined",
+        "sync-local | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-model-only | project-dsh | enabled | effective=true | model=true user=false",
+        "sync-shared | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-global | user-dsh | enabled | effective=true | model=true user=true",
+        "sync-shared | user-dsh | enabled | effective=false | model=true user=true",
+        "sync-bundled | bundled | enabled | effective=true | model=true user=true"
+      ],
+      "picker": [
+        "      项目 · Isolated real-TUI verification skill",
+        "      /sync-bundled",
+        "      内置 · Read-only bundled fixture",
+        "      /sync-flat",
+        "      项目 · Flat skill",
+        "      /sync-global",
+        "      用户 · Global only",
+        "      /sync-human-only",
+        "      项目 · Human invocation only",
+        "      /sync-local",
+        "      项目 · Workspace only",
+        "      sync-model-only",
+        "      项目 · Model invocation only",
+        "      /sync-shared",
+        "      项目 · Workspace winner",
+        "    Enter 填入命令 · Esc 退出",
+        "   deepseek-flash · project"
+      ]
+    },
+    {
+      "phase": "bundled-ro",
+      "capturedAt": "2026-11-11T00:43:47.848Z",
+      "catalogAt": "2026-11-11T00:43:39.753Z",
+      "complete": true,
+      "cwd": "<probe>/project",
+      "winnerFiles": {
+        "sync-bundled": {
+          "source": "bundled",
+          "path": "<probe>/bundled-skills/sync-bundled/SKILL.md"
+        },
+        "sync-flat": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-flat.md"
+        },
+        "sync-global": {
+          "source": "user-dsh",
+          "path": "<probe>/dsh/skills/sync-global/SKILL.md"
+        },
+        "sync-human-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-human-only/SKILL.md"
+        },
+        "sync-local": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md"
+        },
+        "sync-model-only": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-model-only/SKILL.md"
+        },
+        "sync-shared": {
+          "source": "project-dsh",
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md"
+        }
+      },
+      "modelEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-local",
+        "sync-model-only",
+        "sync-shared"
+      ],
+      "userEligible": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "registeredCommands": [
+        "sync-bundled",
+        "sync-flat",
+        "sync-global",
+        "sync-human-only",
+        "sync-local",
+        "sync-shared"
+      ],
+      "definitions": {
+        "sync-local": {
+          "path": "<probe>/project/.dsh/skills/sync-local/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "5992e7239f1daf03e0a2804de93b224ae9380dfe059cf119677aaafb1269b203",
+          "body": "LOCAL-BODY"
+        },
+        "sync-flat": {
+          "path": "<probe>/project/.dsh/skills/sync-flat.md",
+          "source": "project-dsh",
+          "contentSha256": "35489a483181a25306c04a5ecb09398d6d23aa5fd64035794bf03d40c2ee72de",
+          "body": "FLAT-BODY"
+        },
+        "sync-shared": {
+          "path": "<probe>/project/.dsh/skills/sync-shared/SKILL.md",
+          "source": "project-dsh",
+          "contentSha256": "76837c3bc13b0298a86bf020ce805bce67c8db5ace0ca202b2524af91954f839",
+          "body": "WORKSPACE-WINNER"
+        }
+      },
+      "panelRows": [
+        "sync-flat | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-human-only | project-dsh | enabled | effective=true | model=false user=true",
+        "sync-invalid | project-dsh | invalid | effective=false | model=undefined user=undefined",
+        "sync-local | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-model-only | project-dsh | enabled | effective=true | model=true user=false",
+        "sync-shared | project-dsh | enabled | effective=true | model=true user=true",
+        "sync-global | user-dsh | enabled | effective=true | model=true user=true",
+        "sync-shared | user-dsh | enabled | effective=false | model=true user=true",
+        "sync-bundled | bundled | enabled | effective=true | model=true user=true"
+      ],
+      "picker": [
+        "      项目 · Isolated real-TUI verification skill",
+        "      /sync-bundled",
+        "      内置 · Read-only bundled fixture",
+        "      /sync-flat",
+        "      项目 · Flat skill",
+        "      /sync-global",
+        "      用户 · Global only",
+        "      /sync-human-only",
+        "      项目 · Human invocation only",
+        "      /sync-local",
+        "      项目 · Workspace only",
+        "      sync-model-only",
+        "      项目 · Model invocation only",
+        "      /sync-shared",
+        "      项目 · Workspace winner",
+        "    Enter 填入命令 · Esc 退出",
+        "   deepseek-flash · project"
+      ]
+    }
+  ],
+  "bundledReadOnlyMessage": "已切换 0/1；失败：sync-bundled：bundled（随包）技能只读，不能启停",
+  "processExitCodes": {
+    "preparationTrial": 0,
+    "verification": 0
+  },
+  "negativeChecks": {
+    "exitedHostSnapshot": "rejected with ESRCH, exit 1"
+  },
+  "observerErrors": null,
+  "limits": [
+    "Model-eligible catalog source verified, not actual model request messages or generation",
+    "No agent/pre-step dispatch was performed",
+    "Controlled bundled root only; user launcher bundled path still needs manual review",
+    "No custom directories, runtime skill registrations or cross-profile sessions tested",
+    "No precise watcher latency claim; observer waits up to 8 seconds",
+    "Full user acceptance remains pending"
+  ],
+  "published": false,
+  "userAcceptance": false,
+  "artifact": {
+    "name": "dsh-tui-skill-mcp-panel",
+    "version": "0.1.0-dev.0",
+    "fileCount": 62,
+    "bytes": 85808,
+    "sha256": "6f71b3cc0443970629f7256ffe79fa10bbf3000c3aff5494cbd7d58717cc37a4",
+    "npmIntegrity": "sha512-Ny+cvQDyQU5reyNCnoKJ1C3MDGeoJS2n0AUuQezgFM92sEqqarIEXeqzg0XVr4CRBQawlDM6S3oo8mFkK0ozLg==",
+    "dryRunFileCount": 62,
+    "manifestId": "com.dsh-tui.skill-mcp-panel",
+    "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+    "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+  }
+}

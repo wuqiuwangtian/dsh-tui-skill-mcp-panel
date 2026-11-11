@@ -65,7 +65,7 @@
 2. **bundled 根**：本次启动环境未设置 `DSH_BUNDLED_SKILL_DIR`，`bundled` 根不存在；TUI 正常启动时由启动器提供该变量，需在真实 TUI 里再核对一次「随包技能」行。
 3. **customSkillDirs**：host 插件读不到 provider 配置，当前按未配置处理 → 自定义技能根会被漏掉（诊断页已注明）。若必须支持，需要从 profile patch/设置读取 provider 配置（后续里程碑）。
 4. **运行期注册技能**：扫盘只覆盖文件来源；`ctx.skills.register` 的 runtime/agent-scope 技能不在列表中（M0 已确认 host 层 `ctx.skills` 为空，无法互补）。
-5. **AC-10（TUI `/skills` 与模型侧热更新）**：M0 已确认 `.disabled` 内核机制，但 TUI 内的逐步走查仍未做。
+5. **AC-10（TUI `/skills` 与模型侧热更新）**：M0 已确认 `.disabled` 内核机制；**2026-11-11 补充**：同一真实 TUI/agent 下的目录、菜单、slash 注册、正文来源与调用策略已做 10 阶段验证，见 [发布准备 §10](../release-readiness.md#10-技能启停与实际-agent-目录同步)。实际模型请求中的 catalog 更新与模型行为仍待完整人工验收。
 
 ## 4. 复现
 

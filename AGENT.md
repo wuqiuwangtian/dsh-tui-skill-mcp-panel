@@ -17,8 +17,8 @@
 
 ## 2. 当前阶段与边界
 
-- **阶段：M5 发布准备检查已落地，完整人工验收与发布仍待执行（2026-11-09）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
-- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；共享技能分组 TUI 写入保护与 web 边界见同文档 §6；布局/异常交互回归及最小可用区域见 §7；实际 tgz 安装/停用/再启用/卸载与信任提示见 §8；鼠标回归、窄屏导航与启停选中项保持见 §9；完整人工验收与发布仍待执行；**不可发布**。
+- **阶段：M5 发布准备检查已落地，完整人工验收与发布仍待执行（2026-11-11）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
+- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；共享技能分组 TUI 写入保护与 web 边界见同文档 §6；布局/异常交互回归及最小可用区域见 §7；实际 tgz 安装/停用/再启用/卸载与信任提示见 §8；鼠标回归、窄屏导航与启停选中项保持见 §9；技能启停与实际 agent 目录/`/skills` 同步见 §10；完整人工验收与发布仍待执行；**不可发布**。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -53,7 +53,7 @@
 
 - **技能真源是磁盘文件**：目录束 `<root>/<name>/SKILL.md` 或平铺 `<root>/<name>.md`（只认固定文件名，不递归）。
 - **发现根与优先级**（数值小者优先）：`<projectRoot>/.dsh/skills`(100) → `<projectRoot>/.agents/skills`(200) → `customSkillDirs`(300) → `~/.dsh/skills`(400) → `~/.agents/skills`(500) → bundled(600)。
-- **没有原生「停用」状态**。唯一无内核改动且热生效的停用手段是改名 `SKILL.md` ↔ `SKILL.md.disabled`（`<name>.md` ↔ `<name>.md.disabled`），**需真机验证**。
+- **没有原生「停用」状态**。唯一无内核改动且热生效的停用手段是改名 `SKILL.md` ↔ `SKILL.md.disabled`（`<name>.md` ↔ `<name>.md.disabled`）；2026-11-11 已在同一真实 TUI/agent 中验证启停、目录与平铺、工作区与全局、同名回退，见发布准备 §10。
 - **frontmatter 非法 = 静默丢弃该技能**（只有日志）。面板必须把「存在但不可用」明确显示出来，否则用户会以为面板漏项。
 - **bundled 技能只读**（不可停用/删除）；用户根下的 `.system/` 子树被 provider 跳过。
 - **dsh-TUI 在 host 层禁用了 `skill-filesystem` 与 `tool-skill`**（技能由 preset 在 agent 作用域挂载）→ host 层 `ctx.skills.snapshot()` 可能为空。**列表以「按发现规则扫盘」为主、`ctx.skills` 为辅**。
@@ -160,6 +160,8 @@ node scripts/prepare-tui-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepsee
 M4 真机步骤见 [`research/09`](docs/research/09-m4-managed-crud-verification.md)：MCP 页 `a` 填入本地夹具的 Node 命令/JSON args，保存后 `/mcp` 核对 `ping`；`Enter` 修改参数，`d/y` 删除，重新打开面板后 `u` 恢复。夹具位置 `test/fixtures/mcp-stdio-server.mjs`。MCP 分组验收见 [`research/10`](docs/research/10-m4-groups-filter-verification.md)：`g` 建组、`f` 筛选、`/` 搜索、分组页 `t` 切换 MCP。
 
 宿主 0.19 的首选项直接使用 `os.homedir()`，不认 `DSH_TUI_HOME`；脚本用仅测试进程的 Node preload 将该路径指向临时目录，**不修改 HOME 或真实首选项**。开发依赖中的宿主可能缺少启动所需的内核 peer，真机脚本应传入 CLI 已安装的宿主目录。证据与剩余人工项见 `docs/research/08`/`09`。
+
+技能同步探针：`node scripts/prepare-skill-sync-probe.mjs <CLI 已安装宿主目录>`；启动输出的 `run.sh` 后，用 `record-skill-sync.mjs <root> <phase>` 核对实际 agent、面板与命令集合。步骤和观测边界见 [发布准备 §10](docs/release-readiness.md#10-技能启停与实际-agent-目录同步)。它只观察目录源，不派发模型回合；不要把 host 层空目录当作 agent 无技能。
 
 **历史真机安装流程**——复制独立探针 profile；此流程会写 `~/.dsh`，仍需遵循 §2 的逐次授权：
 

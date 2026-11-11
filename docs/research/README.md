@@ -53,7 +53,7 @@
 
 1. ✅ **场景内 `tuiDialogs` / `tuiToast`**（已实测）：**都不可用**——dialog 0ms 静默 false、toast `delivered=false`；确认/输入必须场景内自绘。
 2. ✅ **`pluginManager.setPluginEnabled`**（已实测）：可调用但 `listPlugins()` 为 0、对 patch 插入行返回 `failed/unknown-plugin`（~33s）；MCP 启停改以 patch 文本编辑为主路径。
-3. ⚠️ **`SKILL.md.disabled`**（部分实测）：内核 provider 侧已确认生效（改名后技能目录即时变化），M1 扫盘也按约定显示「停用」；**TUI `/skills` picker 与模型侧同步仍待补**。
+3. ⚠️ **`SKILL.md.disabled`**（部分实测）：内核 provider 侧已确认生效（改名后技能目录即时变化），M1 扫盘也按约定显示「停用」；**2026-11-11 已补同一 TUI 的 `/skills` 与实际 agent 目录同步（发布准备 §10），真实模型请求仍待验收**。
 4. ✅ **TUI 中 HMR 延迟**（已实测）：patch 写入 → loader 行可见 **≈2.0–2.5s**。
 5. ⬜ **与 web 面板并发写 profile patch / groups.json 的锁互操作**（01 §9.6、04 §3.5）。
 6. ⬜ **场景能否收到鼠标事件**（首版设计为纯键盘，不依赖）（01 §9.3）。
@@ -80,6 +80,8 @@
 - **M5 实际包生命周期**：tgz 经 CLI 独立安装面板依赖、真实 TUI 信任确认/取消、停用/再启用/卸载与卸载后启动、9 文件哈希保留见 [发布准备 §8](../release-readiness.md#8-实际-tgz-安装停用与卸载)；复用已装宿主/内核，不代表全新 registry 环境或用户完整验收。
 
 - **M5 鼠标与选中项保持**：SGR 命中检测的 61 项断言、真实 TTY 文件写入与确认/取消、窄屏点击冒泡及启停 ID 变化修复见 [发布准备 §9](../release-readiness.md#9-鼠标交互与选中项保持)；用户完整验收仍待执行。
+
+- **M5 技能同步**：同一真实 TUI/agent 下工作区/平铺/全局启停、同名回退、策略分流、bundled 只读的 10 阶段目录与 `/skills` 验证见 [发布准备 §10](../release-readiness.md#10-技能启停与实际-agent-目录同步)；真实模型请求中的 catalog 更新仍待人工验收。
 
 ## 5. 证据基线与复核方式
 
