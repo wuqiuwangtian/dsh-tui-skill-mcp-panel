@@ -1,0 +1,13 @@
+--- a/lib/patch-editor.js
++++ b/lib/patch-editor.js
+@@ -484,6 +484,10 @@
+ function nodeContentEndOf(node) {
+     if (node === null || typeof node !== "object")
+         return undefined;
++    // Flow collections include closing delimiters before range[1]. Comments
++    // after the collection belong to range[2] and must remain outside the edit.
++    if ((isSeq(node) || isMap(node)) && node.flow && typeof node.range?.[1] === "number")
++        return node.range[1];
+     if (isSeq(node)) {
+         const items = Array.isArray(node.items) ? node.items : [];
+         for (let index = items.length - 1; index >= 0; index -= 1) {

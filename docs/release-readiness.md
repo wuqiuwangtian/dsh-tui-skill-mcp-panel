@@ -58,7 +58,7 @@ pnpm check:release     # 类型、域层/发布检查、打包、全部现有 UI
 | 待测 | AC-13 撤销：技能、受管 MCP 各删除后撤销；重开后仍能撤销；删除后外部修改目标文件，撤销拒绝覆盖。原始 profile MCP 行仅启停，home/表达式行不可编辑删除。 |
 | 待测 | FR-8/9 分组/过滤：技能分组与 web 一致；MCP `g/f/ /x`、分组页 `t/a/r/d/Enter`；搜索与状态/组取交集；不同 profile 同名服务器不串组，重开保留成员，改名/删除/撤销归属正确。 |
 | 待测 | AC-14 布局：<64、64–92、≥93 列，inline/fullscreen；键盘/鼠标完成列表→详情→表单→确认→取消，无溢出/错位。包含长列表、CJK/emoji、空列表/过滤空结果；底部按钮可点击且与键盘范围一致。 |
-| 部分修复；仍未通过，见 §11.1 | AC-15 共存：技能双向刷新、受管块保留与 D-12 精确启停/旧覆盖迁移已验证；独立的 web 崩溃、flow 拒写和 TTY 输入模式异常未闭环。共享技能分组并发边界另见 §6，用户完整验收仍待执行。 |
+| 根因与隔离候选已补；仍未通过，见 §11.2 | AC-15 共存：技能双向刷新、受管块保留与 D-12 已验证；剩余 web/TTY 问题已定位，真实环境尚未集成修复。共享技能分组并发边界另见 §6，用户完整验收仍待执行。 |
 | 待测 | AC-16/18 限制与信任：MCP 顶部“无工作区级”、home 只读、帮助/README 一致；宿主装/启用前显示进程内全信任/非沙箱。错误/备份路径可找到，关闭面板后宿主键盘正常。 |
 
 记录格式：包版本/提交、宿主/内核/Node、终端尺寸与模式、操作、实际结果、必要的脱敏截图/日志。失败保留最短复现，不将自动化报告当成人工勾选依据。
@@ -276,3 +276,61 @@ node scripts/mcp-web-interop.mjs ~/.dsh/profiles/web/node_modules/dsh-skill-mcp-
 - 手写多行 flow 配置中，web 在启用后再次补入 `disabled` 会生成非法候选并拒写，原文件保持完整；表单 Edit 也复现片段定位错误。通过 web Add server 重生成它自己的受管块为普通格式后，受影响的最后两个观察才通过。该失败和恢复路径均保留在证据中，不算 flow 格式兼容已修复；TUI 不擅自重排 config 来规避它。
 - 隔离 PTY 两次变为 canonical/echo 输入；一次手动恢复、一次有日志的恢复后继续核对，受影响的旧 dump 被丢弃并重新获取。追加旧式覆盖停用的单次对照未复现，原因和归属仍未定位，不能排除宿主、夹具或交互回归；产品未新增接管 stdin/raw mode 的代码。最终确认快照保护另用新启动的真实 TTY 复验迁移，正常退出。
 - 用户完整验收、真实模型请求同步、技能组的无锁 web 后提交覆盖仍按原边界保留。降级旧 TUI 会重新生成覆盖，需要再次迁移。
+
+### 11.2 剩余互操作问题溯源与候选修复（2026-11-11）
+
+本节更新 §11.1 当时“原因未定位”的结论，保留历史测试记录。产品源码基线仍为 `c581d2b`，**本轮没有改动 `src/`、真实 profile 或已安装第三方包**。新增隔离复现脚本与[脱敏结构化证据](research/evidence/m5-interop-root-causes.json)，另提供[针对官方 web 2.3.12 的 flow 候选补丁](research/evidence/web-2.3.12-flow-span.patch)，尚未提交上游或安装。**AC-15 仍未通过，不能发布。**
+
+**问题一：web 开关后卡片崩溃。**【已验证事实】web 2.3.7 点击 MCP 开关后，卡片可能消失并抛出 `Cannot read properties of null (reading 'ok')`；刷新能恢复。原因是 `lib/mcp/gateway.js:230` 返回 `{ server, reconciled }`，`lib/client.js:4759` 的 adapter 原样透传，而 `applyToggle`（4080 起）把整个返回值当服务器卡片保存。错误卡片没有 `serverName`，与空 `oauthNotice` 的可选属性比较成为 `undefined === undefined`，进而访问空值的 `.ok`。单纯给 `.ok` 加判空只能隐藏后果，不能纠正卡片数据。
+
+具体修复位置是 web 返回值到卡片的边界。2.3.7 临时候选在 adapter 解包并校验 `result.server`；实际浏览器完成 6 次 web、4 次 TUI 交替启停（普通和 flow 行），无需整页重载，另完成 flow 表单编辑/删除及外部字节核对。正常 **Refresh** 用于读取热加载后的工具数，不把这算作自动刷新能力。
+
+【已验证事实】从 npm 下载的[官方 2.3.12 包](https://registry.npmjs.org/dsh-skill-mcp-panel/-/dsh-skill-mcp-panel-2.3.12.tgz)已在 `lib/client.js:4215` 起的 `applyToggle` 解包 `result.server`，并以 `usableCard` 防止坏卡片入状态。其未改动副本完成普通 MCP 的 4 次 web、2 次 TUI 交替启停，无整页重载或该空值错误。**因此后续优先评估官方升级，不维护旧 adapter 补丁；不能把 2.3.7 的 adapter 补丁再次叠加到 2.3.12。** 升级影响整包和协议依赖；本次通过只读链接本机内核依赖运行，并未验证全新 registry 依赖安装或真实环境升级。
+
+**问题二：部分多行 flow YAML 无法启停、编辑或删除。**【已验证事实】`lib/patch-editor.js:484` 的 `nodeContentEndOf()` 递归到最后一个内部值，漏掉 flow 集合的 `]` / `}`。`pairContentEndOf()` 在错误位置插入 `disabled`；`itemSpan()` 编辑/删除时又会遗留闭合符。写后校验通常拒写，界面表现为操作失败。官方 2.3.12 与已装 2.3.7 的该编辑器逐字节一致，升级本身不解决此项。
+
+具体改动是在 `nodeContentEndOf()` 进入递归前，仅对 flow map/seq 返回 `node.range[1]`。它包含闭合符；不使用 `range[2]`，以保留集合外尾注释。块式集合继续走原逻辑。候选会同时影响启停、编辑、删除的定位，故实际编辑器覆盖 stdio flow、HTTP 嵌套 flow、普通 block × LF/CRLF，各 18 项操作；两个版本均复现 4 个原 flow 失败、候选全部通过，外部哨兵、未知键、env/headers 和 `!!js` 保留。旧版候选另有完整浏览器操作；**最新版 flow 候选只验证首个网页停用成功，随后触发问题三，不能记作最新版完整 UI 通过。** 补丁只放在仓库作为可审阅提案，未部署。
+
+**问题三：停止 MCP 后 TUI 按键失效或开始回显。**【已验证事实】TTY 从 raw 切回 canonical/echo：输入按行缓存，快捷键无法及时到达。系统调用已经把修改对应到真实 MCP 子进程，排除了“必须先打开本面板才触发”的假设：同一隔离宿主从未打开 `/skill-mcp`，冷启动已启用的 Node MCP fixture 后，通过真实网页停用它，仍复现。
+
+完整链路如下：
+
+1. 内核 `@deepseek-ai/dsh-mcp-client/lib/index.js:38` 的 `createTransport()` 未指定 stdio stderr 策略；实际 `@modelcontextprotocol/client/dist/stdio.mjs:79–82` 默认 `inherit`。
+2. 子进程启动在宿主开启 raw 之前，stderr fd 2 指向同一 PTY，记录了 canonical/echo。停止时，子进程通过 fd 2 发出 `TCSETS2` 恢复该状态，覆盖宿主之后设置的 raw。脱敏证据保留 PID、时间与相关 ioctl；未收录完整 exec 环境或认证链接。
+3. 宿主 `lib/types/ink/components/App.js:626` 的 `reassertRawMode()` 定期调用 `stdin.setRawMode(true)`；但 Node v26.3.0 / libuv 1.52.1 的缓存仍认为 raw 已开启，重复 true 不会恢复实际终端状态。独立 PTY 中 false→true 能恢复，单独重复 true 不能。
+
+真实 SDK 对照使用三套自建 PTY、真实 fixture 的 MCP 握手与 `listTools()`：冷启动继承 stderr 的关闭后 canonical/echo 均为 true；先开 raw 再启动、冷启动但 stderr 管道隔离，关闭后均保持 false。三例工具均为 `ping`。这证明预防路径有效，**不表示所有 Node 版本、MCP 程序或平台都已验证**。
+
+需要修改的具体位置与影响：
+
+| 位置 | 建议与依据 | 影响和验证要求 |
+| --- | --- | --- |
+| 内核 `createTransport()` 的 stdio 分支及其连接/日志生命周期 | 显式 `stderr: 'pipe'`，启动前订阅并持续消费，接入有界诊断日志；避免 MCP 子进程持有用户终端 | 不能只改 pipe 后不读，否则缓冲堆积可能阻塞子进程；需要保留启动错误、处理日志量和 dispose 清理。实验只消费并计数字节，没有实现生产日志策略。HTTP transport 不受此候选影响。 |
+| 宿主 `App.reassertRawMode()` | 处理 Node 缓存与实际 termios 不一致；false→true 是已验证的恢复原理 | 仍须限定 ownsStdin、rawModeEnabledCount 和退出状态，验证焦点切换、其他输入所有者、恢复与正常退出；不能直接把实验当作宿主补丁已经通过。 |
+| 本项目面板 | 保持通过配置驱动 MCP 生命周期 | 不接管 stdin、不增加定时抢 raw；这样不会掩盖内核/宿主问题，也不扩大插件权限与职责。 |
+
+**可复核入口。** Linux、Python 3、当前 Node；SDK 对照还需 `dsh` 可从 PATH 解析及本机内核依赖。命令创建自己的 PTY/临时文件并清理，不连接真实 MCP 或写真实配置：
+
+```sh
+node scripts/tty-raw-recovery-probe.mjs
+node scripts/mcp-stdio-tty-probe.mjs
+```
+
+第一个命令在当前基线预期 `repeatedTrueRecovered: false`、`forcedTransition` 的 canonical/echo 均为 false；第二个输出上述三组对照。更换 Node/libuv 后以实际输出判断，不把当前现象强加给新版本。stderr 管道示例只用于隔离实验，不能作为丢弃生产诊断日志的建议。
+
+web 复核先沿 §11 的 CLI host 准备前提构建；`WEB_RELEASE` 指已核对版本的官方 2.3.12 解包目录。下载与解包应核对归档路径，不执行安装脚本。以下输出新的隔离 root，真实安装目录只读；不传 `--flow-candidate` 则比较官方原包：
+
+```sh
+HOST_DIR=~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui
+WEB_DIR=~/.dsh/profiles/web/node_modules/dsh-skill-mcp-panel
+# WEB_RELEASE 需先设为已解包的官方 2.3.12 目录
+node scripts/prepare-web-release-probe.mjs "$HOST_DIR" "$WEB_DIR" "$WEB_RELEASE"
+node scripts/prepare-web-release-probe.mjs "$HOST_DIR" "$WEB_DIR" "$WEB_RELEASE" --flow-candidate
+node scripts/check-web-compat-candidate.mjs "<第一个 root>/web-official-2.3.12" "<第二个 root>/web-official-2.3.12"
+```
+
+上例两个准备器分别产生带只读依赖链接的原包副本和候选副本，模块检查直接使用这两个目录，无需改动官方原解包目录。启动输出 launcher 后，沿 §11 使用真实浏览器与 TTY；从冷启动已启用的本地 fixture 开始停用才能覆盖问题三，不能只测试运行中后启用的服务器。新版候选脚本不改变初始测试行的状态，需要在启动前仅修改新临时 profile。认证链接保持私有，禁止提交。
+
+**交付边界与下一步。** 五个新增脚本均为开发期工具，不随 npm `files` 发布；没有新增运行时依赖或修改产品写入边界。真实浏览器/SDK/系统调用证据已经定位三个问题，但内核日志策略与宿主恢复方案尚未集成；web flow 也尚未发布修复。下一步按需求 §14「下一步」第 1 项，先形成内核与宿主的可审阅候选，使用隔离副本验证冷启动关闭、反复重连、日志与退出，再组合官方 web 更新/flow 候选完成无需恢复的全 UI 复验。真实安装更新、上游提交和正式发布沿各自授权处理。§6 的共享技能分组并发边界及用户完整人工验收仍独立存在。
+
+本轮实际检查：五个脚本语法、两个版本编辑器、最终脚本的两套 PTY 实验、新版 flow 准备器和 `git diff --check` 均通过。`pnpm check:tarball` 退出 0，65 文件、89,602 字节，SHA-256 `3bf6abf4d2d34ef28c34e98299dcf2c66468c38bc3e1283a61387f7004ddaa91`；新增工具/证据没有混入 npm 包。README 限制说明改变使包摘要变化，产品源码仍与 `c581d2b` 相同。本轮未重跑完整 `check:release`；§11.1 的 96/176/61 项属于前次运行时基线，不冒充本轮结果。

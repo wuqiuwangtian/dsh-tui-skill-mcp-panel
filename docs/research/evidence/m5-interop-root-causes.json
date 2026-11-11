@@ -1,0 +1,385 @@
+{
+  "date": "2026-11-11",
+  "productSourceBaseline": "c581d2b",
+  "environment": {
+    "node": "v26.3.0",
+    "libuv": "1.52.1",
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "installedWeb": "2.3.7",
+    "officialWebCompared": "2.3.12",
+    "platform": "Arch Linux, owned PTYs"
+  },
+  "scope": {
+    "userConfigChanged": false,
+    "installedThirdPartyChanged": false,
+    "runtimeSourceChanged": false,
+    "upstreamSubmitted": false,
+    "published": false,
+    "acceptanceAC15": "not passed"
+  },
+  "webEnvelope": {
+    "cause": "gateway returns {server,reconciled}; web 2.3.7 applyToggle stores the envelope as the server card",
+    "official2312": "applyToggle already unwraps result.server and checks usableCard",
+    "oldCandidate": {
+      "webToggles": 6,
+      "tuiToggles": 4,
+      "pageReloads": 0,
+      "finalWeb": {
+        "label": "final-candidate",
+        "states": {
+          "mcp-probe": {
+            "enabled": true,
+            "tools": 1
+          },
+          "mcp-flow": {
+            "enabled": true,
+            "tools": 1
+          }
+        },
+        "reloaded": false
+      },
+      "flowFormEdit": "passed; external bytes preserved",
+      "flowFormDelete": "passed; external sentinel preserved"
+    },
+    "official2312Unmodified": {
+      "webToggles": 4,
+      "tuiToggles": 2,
+      "pageReloads": 0,
+      "finalWeb": {
+        "label": "official-web-4",
+        "states": {
+          "mcp-probe": {
+            "enabled": false,
+            "tools": 0
+          }
+        },
+        "reloaded": false
+      },
+      "limit": "ordinary MCP only; linked existing runtime dependencies, not a fresh registry install"
+    }
+  },
+  "flowSpans": {
+    "originalEditorSha256": "7802ea9f49aef28d4a257638e8cb798261749d95bf886bc5046888e1623dbfb9",
+    "versionsWithIdenticalEditor": [
+      "2.3.7",
+      "2.3.12"
+    ],
+    "candidate": "flow collections use range[1] before recursing into items; leave range[2] comments outside",
+    "module237": {
+      "installedVersion": "2.3.7",
+      "baselineFlowFailures": 4,
+      "cases": [
+        {
+          "kind": "stdio-flow",
+          "eol": "LF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        },
+        {
+          "kind": "stdio-flow",
+          "eol": "CRLF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        },
+        {
+          "kind": "http-nested-flow",
+          "eol": "LF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        },
+        {
+          "kind": "http-nested-flow",
+          "eol": "CRLF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        },
+        {
+          "kind": "ordinary-block",
+          "eol": "LF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        },
+        {
+          "kind": "ordinary-block",
+          "eol": "CRLF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        }
+      ],
+      "scope": "actual web editor modules; full browser contract checked separately"
+    },
+    "module2312": {
+      "installedVersion": "2.3.12",
+      "baselineFlowFailures": 4,
+      "cases": [
+        {
+          "kind": "stdio-flow",
+          "eol": "LF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        },
+        {
+          "kind": "stdio-flow",
+          "eol": "CRLF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        },
+        {
+          "kind": "http-nested-flow",
+          "eol": "LF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        },
+        {
+          "kind": "http-nested-flow",
+          "eol": "CRLF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        },
+        {
+          "kind": "ordinary-block",
+          "eol": "LF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        },
+        {
+          "kind": "ordinary-block",
+          "eol": "CRLF",
+          "toggle": "pass",
+          "edit": "pass",
+          "delete": "pass",
+          "unrelatedBytes": "preserved",
+          "expressions": "preserved"
+        }
+      ],
+      "scope": "actual web editor modules; full browser contract checked separately"
+    },
+    "latestCandidateBrowser": "first flow stop succeeded but TTY reset; full latest-version flow UI sequence is not passed"
+  },
+  "tty": {
+    "goldenControl": "same host, /skill-mcp scene never opened; cold-start enabled fixture stopped from real browser",
+    "hostPid": 135945,
+    "mcpChildPid": 135995,
+    "childIdentity": "node <repo>/test/fixtures/mcp-stdio-server.mjs",
+    "childStderr": "same owned PTY as host",
+    "syscalls": [
+      {
+        "pid": 135945,
+        "line": "1794368939.599836 ioctl(23<<owned-pty><char 136:10>>, TCSETSW2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|OPOST|ONLCR, c_cflag=B38400|CS8|CREAD, c_lflag=ECHOE|ECHOK|ECHOCTL|ECHOKE, ...}) = 0"
+      },
+      {
+        "pid": 135995,
+        "line": "1794368935.678253 ioctl(2<<owned-pty><char 136:10>>, TCGETS2, {c_iflag=ICRNL|IXON, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|OPOST|ONLCR, c_cflag=B38400|CS8|CREAD, c_lflag=ISIG|ICANON|ECHO|ECHOE|ECHOK|IEXTEN|ECHOCTL|ECHOKE, ...}) = 0"
+      },
+      {
+        "pid": 135995,
+        "line": "1794369076.082158 ioctl(2<<owned-pty><char 136:10>>, TCSETS2, {c_iflag=ICRNL|IXON, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|OPOST|ONLCR, c_cflag=B38400|CS8|CREAD, c_lflag=ISIG|ICANON|ECHO|ECHOE|ECHOK|IEXTEN|ECHOCTL|ECHOKE, ...}) = 0"
+      },
+      {
+        "pid": 135995,
+        "line": "1794369076.098900 ioctl(2<<owned-pty><char 136:10>>, TCSETS2, {c_iflag=ICRNL|IXON, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|OPOST|ONLCR, c_cflag=B38400|CS8|CREAD, c_lflag=ISIG|ICANON|ECHO|ECHOE|ECHOK|IEXTEN|ECHOCTL|ECHOKE, ...}) = 0"
+      }
+    ],
+    "afterWebStop": {
+      "canonical": true,
+      "echo": true
+    },
+    "webAfterStop": {
+      "label": "golden-cold-stop",
+      "states": {
+        "mcp-probe": {
+          "enabled": false,
+          "tools": 0
+        },
+        "mcp-flow": {
+          "enabled": false,
+          "tools": 0
+        }
+      },
+      "reloaded": false
+    },
+    "sdkControlledCases": {
+      "results": [
+        {
+          "scenario": "cold-inherit",
+          "initial": {
+            "canonical": true,
+            "echo": true,
+            "cachedRaw": false
+          },
+          "beforeClose": {
+            "canonical": false,
+            "echo": false,
+            "cachedRaw": true
+          },
+          "afterClose": {
+            "canonical": true,
+            "echo": true,
+            "cachedRaw": true
+          },
+          "tools": [
+            "ping"
+          ],
+          "drainedBytes": 0,
+          "node": "v26.3.0",
+          "libuv": "1.52.1"
+        },
+        {
+          "scenario": "warm-inherit",
+          "initial": {
+            "canonical": true,
+            "echo": true,
+            "cachedRaw": false
+          },
+          "beforeClose": {
+            "canonical": false,
+            "echo": false,
+            "cachedRaw": true
+          },
+          "afterClose": {
+            "canonical": false,
+            "echo": false,
+            "cachedRaw": true
+          },
+          "tools": [
+            "ping"
+          ],
+          "drainedBytes": 0,
+          "node": "v26.3.0",
+          "libuv": "1.52.1"
+        },
+        {
+          "scenario": "cold-pipe",
+          "initial": {
+            "canonical": true,
+            "echo": true,
+            "cachedRaw": false
+          },
+          "beforeClose": {
+            "canonical": false,
+            "echo": false,
+            "cachedRaw": true
+          },
+          "afterClose": {
+            "canonical": false,
+            "echo": false,
+            "cachedRaw": true
+          },
+          "tools": [
+            "ping"
+          ],
+          "drainedBytes": 0,
+          "node": "v26.3.0",
+          "libuv": "1.52.1"
+        }
+      ],
+      "scope": "real MCP protocol, three owned PTYs; pipe stderr is drained in this experiment, production logging policy is not implemented"
+    },
+    "cachedRawRecovery": {
+      "node": "v26.3.0",
+      "libuv": "1.52.1",
+      "initial": {
+        "canonical": false,
+        "echo": false,
+        "cachedRaw": true
+      },
+      "externallyReset": {
+        "canonical": true,
+        "echo": true,
+        "cachedRaw": true
+      },
+      "repeatedTrue": {
+        "canonical": true,
+        "echo": true,
+        "cachedRaw": true
+      },
+      "forcedTransition": {
+        "canonical": false,
+        "echo": false,
+        "cachedRaw": true
+      },
+      "repeatedTrueRecovered": false,
+      "scope": "isolated Node/libuv recovery behavior; does not identify who reset the previous DSH terminal"
+    },
+    "productionCandidate": "kernel stdio stderr pipe plus bounded diagnostic routing; host recovery must handle stale Node raw cache",
+    "limits": [
+      "pipe experiment drains data without production logging implementation",
+      "false-to-true raw recovery tested only in isolated PTY, not patched into installed host",
+      "strace process ended by SIGINT (130); only owned PTY restored for teardown"
+    ]
+  },
+  "remaining": [
+    "official 2.3.12 flow span bug not shipped upstream",
+    "kernel stderr isolation and host recovery not integrated",
+    "shared skill-group web writer remains outside TUI lock",
+    "user complete manual acceptance pending"
+  ],
+  "artifacts": {
+    "flowProposal": "web-2.3.12-flow-span.patch",
+    "releaseTarballUrl": "https://registry.npmjs.org/dsh-skill-mcp-panel/-/dsh-skill-mcp-panel-2.3.12.tgz",
+    "releaseTarballSha256": "5e85e3e052fdb5312f503981843db63ed5c0dd24282f89321a291a87fb7f8c34"
+  },
+  "installedWebUnchangedSha256": {
+    "client.js": "ebae1655e42b2c4fd2c4e88ea282274a2812272c63d2f532f92ac76dc30a660d",
+    "patch-editor.js": "7802ea9f49aef28d4a257638e8cb798261749d95bf886bc5046888e1623dbfb9"
+  },
+  "validation": {
+    "fiveScriptSyntaxChecks": "passed",
+    "releasePreparerFlowVariant": "passed",
+    "editorChecks237and2312": "passed after final script edits",
+    "sdkPtyCases": "passed after final script edits",
+    "rawCachePty": "passed",
+    "diffWhitespace": "passed",
+    "tarball": {
+      "check": "tarball",
+      "ok": true,
+      "name": "dsh-tui-skill-mcp-panel",
+      "version": "0.1.0-dev.0",
+      "fileCount": 65,
+      "bytes": 89602,
+      "sha256": "3bf6abf4d2d34ef28c34e98299dcf2c66468c38bc3e1283a61387f7004ddaa91",
+      "npmIntegrity": "sha512-wGkrFa/U24yR1NmnjpKWq58EYtxvdQimVPyLZoN/8dD++IYrapysVIiodm3GHuFI/xFjx8ZgDoGe17tUKVLDlQ==",
+      "dryRunFileCount": 65,
+      "manifestId": "com.dsh-tui.skill-mcp-panel",
+      "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+      "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+    },
+    "fullCheckRelease": "not repeated this documentation/dev-tool change; previous runtime baseline c581d2b had 96 domain/release, 176 layout, 61 mouse and runtime/UI checks passed",
+    "releasePreparerOfficialVariant": "passed; client and editor bytes match official source",
+    "documentedTwoCopyEditorCommand": "passed"
+  }
+}
