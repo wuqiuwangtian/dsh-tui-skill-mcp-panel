@@ -1,0 +1,29 @@
+--- a/lib/client.js
++++ b/lib/client.js
+@@ -4756,7 +4756,12 @@
+                 listMcp: () => callMcp("list"),
+                 saveMcp: (input, previousServerName, previousEntryId) => callMcp("save", { input, previousServerName, previousEntryId }),
+                 removeMcp: (serverName, entryId) => callMcp("removeServer", { serverName, entryId }),
+-                setEnabledMcp: (serverName, enabled, entryId) => callMcp("setEnabled", { serverName, enabled, entryId }),
++                setEnabledMcp: async (serverName, enabled, entryId) => {
++                    const result = await callMcp("setEnabled", { serverName, enabled, entryId });
++                    if (result?.server === null || typeof result?.server?.serverName !== "string")
++                        throw new Error("mcpManager.setEnabled returned an invalid server");
++                    return result.server;
++                },
+                 readRawMcp: (payload) => callMcp("readRaw", payload),
+                 writeRawMcp: (payload) => callMcp("writeRaw", payload),
+                 testMcp: (payload) => callMcp("test", payload),
+--- a/lib/patch-editor.js
++++ b/lib/patch-editor.js
+@@ -484,6 +484,10 @@
+ function nodeContentEndOf(node) {
+     if (node === null || typeof node !== "object")
+         return undefined;
++    // Flow collections include closing delimiters before range[1]. Comments
++    // after the collection belong to range[2] and must remain outside the edit.
++    if ((isSeq(node) || isMap(node)) && node.flow && typeof node.range?.[1] === "number")
++        return node.range[1];
+     if (isSeq(node)) {
+         const items = Array.isArray(node.items) ? node.items : [];
+         for (let index = items.length - 1; index >= 0; index -= 1) {

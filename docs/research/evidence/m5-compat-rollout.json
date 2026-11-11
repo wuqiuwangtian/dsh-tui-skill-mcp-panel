@@ -1,0 +1,152 @@
+{
+  "date": "2026-11-11",
+  "baseline": "6ce43d8; product runtime c581d2b",
+  "status": "proposal only; no installed changes or approval",
+  "bundleId": "9a27a2a35acd4248",
+  "temporaryStrategy": "profile-local MCP override plus two pinned web 2.3.7 backports; temporary proposal",
+  "versions": {
+    "node": "v26.3.0",
+    "kernel": "0.2.2-rc.1",
+    "web": "2.3.7",
+    "host": "0.19.0"
+  },
+  "policy": {
+    "level": "warn (proposed)",
+    "lineBytes": 4096,
+    "logBytes": 16384,
+    "lines": 32,
+    "redaction": "exact known config.env values only",
+    "overflow": "continue draining; suppress excess diagnostics"
+  },
+  "payloadSha256": {
+    "mcp": "35da4099998407214f18c5ec2b197c8f2729c4b8abc7f6c2ba036a6af2465365",
+    "stderrHelper": "badcf67de60b2f74142bd3c1fa9f51fa052193ae59735f49f0ef3229320f187b",
+    "lib/client.js": "2ae68da477585b69d0843c21959e2fd8659aeba342b0b9c76a0542f486144675",
+    "lib/patch-editor.js": "bf86daa36b2e6bf7b1dac9ac76906bed059e784a949585ea0e59dde81a9c41a9"
+  },
+  "targets": {
+    "addedLinks": [
+      "<profile:dsh-tui>/node_modules/@deepseek-ai/dsh-mcp-client",
+      "<profile:web>/node_modules/@deepseek-ai/dsh-mcp-client"
+    ],
+    "webFiles": [
+      {
+        "relative": "lib/client.js",
+        "beforeSha256": "ebae1655e42b2c4fd2c4e88ea282274a2812272c63d2f532f92ac76dc30a660d",
+        "afterSha256": "2ae68da477585b69d0843c21959e2fd8659aeba342b0b9c76a0542f486144675",
+        "mode": 420
+      },
+      {
+        "relative": "lib/patch-editor.js",
+        "beforeSha256": "7802ea9f49aef28d4a257638e8cb798261749d95bf886bc5046888e1623dbfb9",
+        "afterSha256": "bf86daa36b2e6bf7b1dac9ac76906bed059e784a949585ea0e59dde81a9c41a9",
+        "mode": 420
+      }
+    ],
+    "newStore": "<user-data>/dsh-panel-compat/9a27a2a35acd4248",
+    "mcpOriginalState": "absent in both profiles; fallback resolves CLI-owned original package",
+    "moduleParents": "both profile node_modules and @deepseek-ai are real directories"
+  },
+  "unchanged": [
+    "global CLI MCP package",
+    "host code",
+    "profile package.json and lockfiles",
+    "profile/home YAML",
+    "skills and groups",
+    "panel runtime"
+  ],
+  "protectedFilesRechecked": 8,
+  "rehearsal": {
+    "successApplyRestore": true,
+    "twoProfilesResolveOverride": true,
+    "controlProfileUnchanged": true,
+    "partialFailureRestored": true,
+    "sourceDriftRejectedBeforeWrites": true,
+    "rollbackConflictRejectedBeforeWrites": true,
+    "existingOverrideRejectedBeforeWrites": true,
+    "corruptedBackupRejectedBeforeWrites": true,
+    "bytesAndModesRestored": true,
+    "realEnvironmentChanged": false,
+    "limit": "filesystem and Node resolution rehearsal; not actual DSH loader or package-manager installation"
+  },
+  "payloadProvenance": "byte-identical MCP and web fixes to earlier actual module/browser candidates",
+  "officialUpgradeAlternative": {
+    "from": "2.3.7",
+    "to": "2.3.12",
+    "packageFiles": 30,
+    "unchanged": 24,
+    "changed": [
+      "README.en.md",
+      "README.md",
+      "lib/client.js",
+      "lib/mcp/gateway.js",
+      "lib/mcp/wire.js",
+      "package.json"
+    ],
+    "protocolDependency": "@deepseek-ai/dsh-typert-protocol moved from dependency to peer",
+    "newProtocolPeerRange": ">=0.2.0-rc.1 <0.3.0-0",
+    "installedKernelProtocol": "0.2.2-rc.1",
+    "defaultSemverSatisfies": false,
+    "limit": "range mismatch is not proof every package-manager install fails; linked-dependency runtime checks do not prove a clean install"
+  },
+  "validation": {
+    "scriptSyntax": "passed",
+    "realTargetRootRejected": "passed before writes",
+    "pathEscapeMetadataRejected": "passed before writes",
+    "installedSourceAndProtectedFiles": "unchanged after preparation",
+    "packageDryRun": "npm pack --ignore-scripts --dry-run: 65 files; no build rerun; development tools/docs excluded",
+    "twoFilePatchAppliedToOriginalCopies": "passed; bytes equal prepared payload",
+    "finalPreparationAndProtectedFiles": "passed; target links/store still absent",
+    "McpPayloadDriftRejected": "passed before sandbox creation"
+  },
+  "notVerified": [
+    "No real installation or live profile update",
+    "Rehearsal uses fresh Node resolution, not the DSH module interception layer or package manager",
+    "Power-loss recovery, hostile concurrent writes and real disk/permission failures are not proven by injected callback failure"
+  ],
+  "release": "AC-15 and user acceptance remain pending; a local compatibility bundle is not an upstream published fix",
+  "minimalCombinationPilot": {
+    "host": "unmodified 0.19.0",
+    "web": "2.3.7 with two backports",
+    "mcp": "prepared vendor payload via profile-local symlink",
+    "environment": "isolated DSH profile, real browser and real PTY; local stdio fixture",
+    "coldStartEnabled": true,
+    "stages": [
+      {
+        "label": "pilot-cold-off",
+        "web": {
+          "enabled": false,
+          "tools": 0
+        },
+        "tui": {
+          "enabled": false,
+          "phase": "disposed"
+        },
+        "mode": {
+          "canonical": false,
+          "echo": false
+        },
+        "pageReloaded": false
+      },
+      {
+        "label": "pilot-tui-on",
+        "web": {
+          "enabled": true,
+          "tools": 1
+        },
+        "tui": {
+          "enabled": true,
+          "phase": "active"
+        },
+        "mode": {
+          "canonical": false,
+          "echo": false
+        },
+        "pageReloaded": false
+      }
+    ],
+    "exitCode": 0,
+    "manualTerminalRestores": 0,
+    "pageReloads": 0
+  }
+}
