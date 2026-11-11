@@ -58,7 +58,7 @@ pnpm check:release     # 类型、域层/发布检查、打包、全部现有 UI
 | 待测 | AC-13 撤销：技能、受管 MCP 各删除后撤销；重开后仍能撤销；删除后外部修改目标文件，撤销拒绝覆盖。原始 profile MCP 行仅启停，home/表达式行不可编辑删除。 |
 | 待测 | FR-8/9 分组/过滤：技能分组与 web 一致；MCP `g/f/ /x`、分组页 `t/a/r/d/Enter`；搜索与状态/组取交集；不同 profile 同名服务器不串组，重开保留成员，改名/删除/撤销归属正确。 |
 | 待测 | AC-14 布局：<64、64–92、≥93 列，inline/fullscreen；键盘/鼠标完成列表→详情→表单→确认→取消，无溢出/错位。包含长列表、CJK/emoji、空列表/过滤空结果；底部按钮可点击且与键盘范围一致。 |
-| 待测 | AC-15 共存：同一测试 profile 中 web/TUI 交替停用技能与 MCP；刷新双方一致，受管块互不覆盖；并发写触发等待/冲突，无丢行。共享技能分组已有 TUI 快照保护，但实际 web 2.3.7 不使用组锁，不能先勾选双端同时写入通过；可复核边界见 §6。 |
+| 未通过；顺序 UI 证据见 §11 | AC-15 共存：技能双向刷新、两种 MCP 受管块保留已验证；MCP 覆盖行导致 web 2.3.7 开关与运行态不一致，不能勾选通过。共享技能分组的无锁 web 后提交覆盖另见 §6。修复后仍需用户完整验收与并发边界复核。 |
 | 待测 | AC-16/18 限制与信任：MCP 顶部“无工作区级”、home 只读、帮助/README 一致；宿主装/启用前显示进程内全信任/非沙箱。错误/备份路径可找到，关闭面板后宿主键盘正常。 |
 
 记录格式：包版本/提交、宿主/内核/Node、终端尺寸与模式、操作、实际结果、必要的脱敏截图/日志。失败保留最短复现，不将自动化报告当成人工勾选依据。
@@ -215,3 +215,38 @@ node scripts/record-skill-sync.mjs "$probe_root" local-on
 预期每次输出 `OK`，snapshot complete、同一 idle agent 的目录与面板赢家一致，物理文件和策略、slash 注册一致。脚本不会替你启停或刷新；旧宿主已退出时会拒绝读取留存快照。此探针需要本机实际 CLI/宿主及 TTY 驱动，不纳入通用 `check:release`。10 个阶段始终为同一 PID/agent，实际 TUI 正常退出；另验证退出后快照被拒绝。
 
 **尚未验证**：本轮证明的是注册表、正文加载、用户菜单及模型可调用目录源的同步，没有执行 `agent/pre-step`、生成模型请求或检查实际请求消息中的 catalog 更新。因此 AC-10 的真实模型请求与行为仍待完整人工验收；没有据此将整个 AC-10 标记通过。自定义根、运行期注册技能、普通启动器 bundled 路径和跨 profile 会话不在本轮覆盖范围。
+
+## 11. web/TUI 完整 UI 顺序共存
+
+2026-11-11，产品源码基线 `c99651d`，web 面板 **2.3.7**、官方 web app/内核 **0.2.2-rc.1**、TUI 宿主 **0.19.0**。通过 Playwright 驱动真实 Chromium 网页和同一 Cordis 宿主的真实 TTY，交替操作同一个临时 profile。测试专用启动插件只提供回环地址、随机端口和本地认证链接；网页组件、RPC、loader、TUI 均为实际安装的实现。两个面板 bundle 默认使用相同 entry id，因此夹具为 TUI 单独插入 `tui-panel-interop`，保留实际 web bundle。没有修改第三方已安装包或真实用户配置。
+
+[结构化证据](research/evidence/m5-web-tui-interop.json)记录 8 个观察项：5 项符合预期、3 项复现兼容失败。**AC-15 未通过，属于发布阻塞**；不能用“共享文件未损坏”代替“双端状态一致”。
+
+| 实际 UI 操作 | 结果 |
+| --- | --- |
+| web 停用全局 `interop-skill`，TUI 刷新 | `.disabled` 文件与 TUI 停用显示一致 |
+| TUI 恢复技能，web 完整刷新后重新打开面板 | 文件恢复 `SKILL.md`，web 开关显示启用；未验证自动刷新 |
+| TUI 启用原有 `mcp-probe`，web 点击 Refresh | loader 为 active，web 能看到 1 个工具，开关仍显示 Disabled |
+| web 对该 MCP 先启用再停用 | 原行恢复停用，但 TUI 的 `disabled: false` 覆盖仍使服务 active；完整刷新也不一致 |
+| web 新增 `interop-web`，TUI 刷新 | 本地 stdio 服务器可见且 active |
+| TUI 新增 `interop-tui`，web 刷新 | 同样 active/1 个工具；创建前全部字节原样保留，两种受管块共存 |
+| web 停用 TUI 新增行（此时尚无该行覆盖） | TUI 刷新显示停用、fiber disposed；web 自己的受管块字节未变 |
+| TUI 恢复自己新增行，web 完整刷新 | 服务 active，web 开关仍 Disabled；web 受管块字节未变 |
+
+根因已由安装源码与 UI 交叉确认：本插件 `saveMcpToggle` / `upsertManagedToggle` 对原始行和受管行都写独立的 `id + disabled` 覆盖；web `listMcpPatchRows` 只列有 `name` 的 MCP 行，其开关从原行取值，忽略后续覆盖。这也说明该问题不限于原始行。共同使用文件锁只能串行保存，不能保证双方理解配置的方式一致。
+
+另观察到 web 2.3.7 三次开关操作后 `serverCard` 抛出 `TypeError: Cannot read properties of null (reading 'ok')`，导致主面板消失；完整刷新可恢复。未改该第三方问题，不把其他版本的表现推定相同。一次自动输入多发 Esc 退出 TUI 表单，误触发聊天；隔离环境无 API key，回合本地失败后已中断，未完成模型调用，不计入模型验收。后续驱动逐步核对当前模态状态。
+
+复验需要本机已安装上述 CLI/宿主/web 包、已构建仓库和浏览器。准备脚本只写新建的 `/tmp` 目录，不启动服务、不下载依赖：
+
+```sh
+pnpm build
+node scripts/prepare-web-interop-probe.mjs \
+  ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui \
+  ~/.dsh/profiles/web/node_modules/dsh-skill-mcp-panel
+# 在终端执行输出的 run.sh；初次后端选择选 DSH，完成临时欢迎界面。
+```
+
+服务启动后，用浏览器打开输出 root 中 `web-auth-url.txt` 的本地链接，接受官方预览说明，进入 **Skill / MCP**。该文件权限 0600，内容是临时认证凭据，勿提交或贴入报告。TUI 输入 `/skill-mcp`。先按上表交替启停 `interop-skill`，再 TUI `2` → 选择 `mcp-probe` → 空格启用 → 等待已生效 → web **MCP → Refresh**；当前会复现“Disabled + 1 tools”。TUI 大写 `R` 刷新后可用 `<root>/dump.json` 核对 `enabled:true, phase:active`；dump 仅在扫描/显式刷新时更新，旧 dump 不代表当前状态。新增 MCP 复用 `test/fixtures/mcp-stdio-server.mjs` 与当前 Node 绝对路径；TUI 的 args 填 JSON 数组，web 每行一个参数。不要连续发送多个 Esc 后继续输入，先确认仍在面板内。测试结束关闭浏览器、Esc 退出场景并退出隔离宿主。
+
+**待决定与完成条件**：保留“原始 YAML 零改动”的约束则继续把当前不兼容记为阻塞；若用户选择仅放宽已有行的 `disabled` 原位修改，需先设计精确标量编辑、现有覆盖迁移、锁/备份/冲突与表达式只读保护，再实施并重跑上述失败链路。不能仅改新写入而遗留旧覆盖，也不能擅自把 D-10 扩为原始行 CRUD。用户尚未回答该取舍，当前运行时保持原样。 复用准备脚本已通过语法、实际准备、组合宿主启动及认证文件 0600 检查，进程正常退出。`pnpm check:tarball` 通过：62 文件、85,939 字节，SHA-256 `237f4f22d3508b0024eca29c98b70d3c3bab545f2ccb60a86a322da5be59396c`；README 新增兼容限制使包摘要变化，运行时代码未变，未重复完整域层/UI 回归。共享技能分组的并发边界仍按 §6，用户完整验收、模型同步和升级 web 后行为仍未验证。

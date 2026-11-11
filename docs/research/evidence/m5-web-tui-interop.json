@@ -1,0 +1,158 @@
+{
+  "date": "2026-11-11",
+  "sourceBaseline": "c99651d",
+  "runtimeVersion": "0.1.0-dev.0",
+  "scope": "AC-15 sequential full-UI interoperability; not complete acceptance",
+  "environment": {
+    "tui": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "webApp": "0.2.2-rc.1",
+    "webPanel": "2.3.7",
+    "node": "v26.3.0",
+    "terminal": {
+      "columns": 120,
+      "rows": 35
+    },
+    "scene": {
+      "columns": 116,
+      "rows": 33
+    },
+    "browser": "Playwright CLI Chromium headless",
+    "isolation": "temporary os.homedir + DSH_HOME + DSH_AGENTS_HOME + SKILL_MCP_PANEL_HOME; actual installed packages referenced read-only",
+    "host": "single combined Cordis loader, same profile patch, official web frontend/RPC and TUI",
+    "bootstrap": "test-only loopback webStartup with port 0; unique TUI loader id tui-panel-interop avoids bundle id collision"
+  },
+  "observations": [
+    {
+      "case": "web skill off -> TUI refresh",
+      "result": "pass",
+      "web": "                - checkbox \"Select interop-skill\" [ref=e280] [cursor=pointer]\n                - button \"interop-skill Isolated global interop skill\" [ref=e284] [cursor=pointer]:\n                  - generic [ref=e285]: interop-skill\n                  - switch \"Enable interop-skill\" [ref=e295] [cursor=pointer]\n                  - button \"Delete interop-skill\" [ref=e291] [cursor=pointer]",
+      "file": "<probe>/dsh/skills/interop-skill/SKILL.md.disabled",
+      "screen": "\n   Skill / MCP manager                                                                       skill-mcp-panel · 116x33\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                                      全部 · 1 项\n   ╭────────────────────╮ ╭───────────────────────────────────────────╮ ╭───────────────────────────────────────────╮\n   │ 作用域             │ │ 技能列表  全部 · 1项 · \"interop-skill\"    │ │ 详情  interop-skill                       │\n   │ ❯ 全部 (2)         │ │ ❯ interop-skill      user/~/.dsh  停用    │ │ 状态 停用 · 来源 user/~/.dsh · rank 400 … │\n   │   工作区 (1)       │ │                                           │ │ 形态 目录束 · 内核不可见                  │\n   │   全局 (1)         │ │                                           │ │ 文件 <probe>/dsh/… │\n   │                    │ │                                           │ │ 根 <probe>/dsh/sk… │\n   │                    │ │                                           │ │ description Isolated global interop ski…  │\n   │                    │ │                                           │ │ 正文 Body（只读）                         │\n   │                    │ │                                           │ │   INTEROP-BODY                            │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   │                    │ │                                           │ │                                           │\n   ╰────────────────────╯ ╰───────────────────────────────────────────╯ ╰───────────────────────────────────────────╯ \n   [空格 启停] [v 标记] [d 删除] [u 撤销] [a 添加] [g 分组] [/ 搜索] [x 清除] [r 刷新] [? 帮助] 共 2 · 生效 1 · 停用… \n   已写入 <probe>/dump.json                                                                    \n                                                                                                                      \n"
+    },
+    {
+      "case": "TUI skill on -> web full reload",
+      "result": "pass",
+      "web": "                - checkbox \"Select interop-skill\" [ref=f1e268] [cursor=pointer]\n                - button \"interop-skill Isolated global interop skill\" [ref=f1e272] [cursor=pointer]:\n                  - generic [ref=f1e273]: interop-skill\n                  - switch \"Disable interop-skill\" [checked] [ref=f1e276] [cursor=pointer]\n                  - button \"Delete interop-skill\" [ref=f1e279] [cursor=pointer]",
+      "file": "<probe>/dsh/skills/interop-skill/SKILL.md"
+    },
+    {
+      "case": "TUI enables original MCP -> real web Refresh",
+      "result": "fail",
+      "actual": {
+        "id": "mcp-probe",
+        "enabled": true,
+        "phase": "active",
+        "managed": false,
+        "layer": "profile"
+      },
+      "webCard": ": mcp-probe\n            - generic [ref=f1e297]: STDIO\n            - button \"Edit MCP server\" [ref=f1e299] [cursor=pointer]\n          - generic [ref=f1e303]: 1 tools\n          - generic [ref=f1e306]:\n            - generic [ref=f1e307]:\n              - switch \"Enable\" [ref=f1e308] [cursor=pointer]\n              - generic [ref=f1e310]: Disabled\n            -",
+      "screen": "\n   Skill / MCP manager                                                                       skill-mcp-panel · 116x33\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                                                 \n   ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮\n   │ MCP servers  3 行 · 启用 1 · 停用 2                                                                            │\n   │ 无工作区级配置 · 当前 profile 可写 · home 全局层只读                                                           │\n   │ 筛选: 全部 · 分组:全部 · 3/3 行                                                                                │\n   │   mcp-expr                  stdio  停用 · profile · 只读                                                       │\n   │   mcp-home                  stdio  停用 · home · 只读                                                          │\n   │ ❯ mcp-probe                 stdio  启用 · profile · active · 仅启停                                            │\n   │ ────────────────────────────────────────────────────────────────────────────────────────────────────────────   │\n   │ 分组：(未分组) · g 修改                                                                                        │\n   │ id mcp-probe · entryId mcp-probe · 层 profile                                                                  │\n   │ serverName mcp-probe · transport stdio · 启用 · active                                                         │\n   │ 已有 profile 行仅支持启停；编辑/删除仅限本面板新增的受管行                                                     │\n   │ 配置（敏感值已脱敏）                                                                                           │\n   │   transport stdio                                                                                              │\n   │   serverName mcp-probe                                                                                         │\n   │   command /home/wqwt/.local/node/bin/node                                                                      │\n   │   args <repo>/test/fixtures/mcp-stdio-server.mjs                              │\n   │   env keys PANEL_TEST_TOKEN（值已隐藏）                                                                        │\n   │                                                                                                                │\n   │                                                                                                                │\n   │                                                                                                                │\n   │                                                                                                                │\n   │                                                                                                                │\n   │                                                                                                                │\n   │                                                                                                                │\n   │                                                                                                                │\n   │                                                                                                                │\n   ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ \n   [空格 启停] [a 新增] [↵ 编辑] [d 删除] [u 撤销] [g 分组] [f 筛选] [/ 搜索] [x 清除] [i 详情] [r 刷新] [? 帮助]     \n   已写入 <probe>/dump.json                                                                    \n                                                                                                                      \n"
+    },
+    {
+      "case": "web Enable then Disable original MCP while TUI false override remains",
+      "result": "fail",
+      "actualAfterWebDisable": {
+        "id": "mcp-probe",
+        "enabled": true,
+        "phase": "active",
+        "managed": false,
+        "layer": "profile"
+      },
+      "webAfterFullReload": ": mcp-probe\n            - generic [ref=f3e180]: STDIO\n            - button \"Edit MCP server\" [ref=f3e182] [cursor=pointer]\n          - generic [ref=f3e186]: 1 tools\n          - generic [ref=f3e189]:\n            - generic [ref=f3e190]:\n              - switch \"Enable\" [ref=f3e191] [cursor=pointer]\n              - generic [ref=f3e193]: Disabled\n            -"
+    },
+    {
+      "case": "web creates local stdio MCP -> TUI refresh",
+      "result": "pass",
+      "actual": {
+        "id": "panel-mcp-interop-web",
+        "enabled": true,
+        "phase": "active",
+        "managed": false,
+        "layer": "profile"
+      }
+    },
+    {
+      "case": "TUI creates local stdio MCP preserving preexisting file",
+      "result": "pass",
+      "allPreviousBytesPreserved": true,
+      "previousSha256": "127b548caa61c96c0d905e2535847e109e82efe5ac392138e5fe17e149d2daf6",
+      "webOwnedBlockSha256": "042907c4413a1dfc43a60884fb11f7d6c9f8f58ac550c432812dba31c781681e"
+    },
+    {
+      "case": "web disables TUI-owned row without prior override -> TUI refresh",
+      "result": "pass",
+      "actual": {
+        "id": "mcp-interop-tui",
+        "enabled": false,
+        "phase": "disposed",
+        "managed": true,
+        "layer": "profile"
+      },
+      "webOwnedBlockUnchanged": true
+    },
+    {
+      "case": "TUI reenables its row -> web full reload",
+      "result": "fail",
+      "actual": {
+        "id": "mcp-interop-tui",
+        "enabled": true,
+        "phase": "active",
+        "managed": true,
+        "layer": "profile"
+      },
+      "webCard": ": interop-tui\n            - generic [ref=f4e182]: STDIO\n            - button \"Edit MCP server\" [ref=f4e184] [cursor=pointer]\n          - generic [ref=f4e188]: 1 tools\n          - generic [ref=f4e191]:\n            - generic [ref=f4e192]:\n              - switch \"Enable\" [ref=f4e193] [cursor=pointer]\n              - generic [ref=f4e195]: Disabled\n            -",
+      "webOwnedBlockUnchanged": true,
+      "screen": "\n   Skill / MCP manager                                                                       skill-mcp-panel · 116x33\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                                                 \n   ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮\n   │ MCP servers  5 行 · 启用 3 · 停用 2                                                                            │\n   │ 无工作区级配置 · 当前 profile 可写 · home 全局层只读                                                           │\n   │ 筛选: 全部 · 分组:全部 · 5/5 行                                                                                │\n   │ ❯ interop-tui               stdio  启用 · profile · active · 受管                                              │\n   │   interop-web               stdio  启用 · profile · active · 仅启停                                            │\n   │   mcp-expr                  stdio  停用 · profile · 只读                                                       │\n   │   mcp-home                  stdio  停用 · home · 只读                                                          │\n   │   mcp-probe                 stdio  启用 · profile · active · 仅启停                                            │\n   │ ────────────────────────────────────────────────────────────────────────────────────────────────────────────   │\n   │ 分组：(未分组) · g 修改                                                                                        │\n   │ id mcp-interop-tui · entryId mcp-interop-tui · 层 profile                                                      │\n   │ serverName interop-tui · transport stdio · 启用 · active                                                       │\n   │ 本面板受管行：Enter 编辑 · d 删除 · u 撤销                                                                     │\n   │ 配置（敏感值已脱敏）                                                                                           │\n   │   transport stdio                                                                                              │\n   │   serverName interop-tui                                                                                       │\n   │   command /home/wqwt/.local/node/bin/node                                                                      │\n   │   args <repo>/test/fixtures/mcp-stdio-server.mjs                              │\n   │                                                                                                                │   \n   │                                                                                                                │\n   │                                                                                                                │\n   │                                                                                                                │\n   │                                                                                                                │ \n   │                                                                                                                │ \n   │                                                                                                                │ \n   │                                                                                                                │ \n   ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ \n   [空格 启停] [a 新增] [↵ 编辑] [d 删除] [u 撤销] [g 分组] [f 筛选] [/ 搜索] [x 清除] [i 详情] [r 刷新] [? 帮助]     \n   已写入 <probe>/dump.json                                                                    \n                                                                                                                      \n"
+    }
+  ],
+  "rootCause": {
+    "tui": "saveMcpToggle/upsertManagedToggle appends id+disabled override even for owned rows",
+    "web": "listMcpPatchRows only lists named MCP entries; rowEnabled reads original disabled and ignores later unnamed overrides",
+    "effect": "web can report Disabled with 1 tool while loader is active; a web disable can be shadowed by a TUI false override"
+  },
+  "additionalWebFailure": {
+    "repeated": 3,
+    "trigger": "real web MCP toggle",
+    "message": "TypeError: Cannot read properties of null (reading 'ok')",
+    "recovery": "full browser reload",
+    "attribution": "observed in installed web 2.3.7 serverCard; no third-party patch applied; compatibility with other versions unverified"
+  },
+  "driverIncident": {
+    "cause": "duplicate Esc left TUI form before later keyboard input",
+    "result": "one chat turn failed locally: no API key for provider route deepseek-official; later inputs queued; interrupted",
+    "modelCallCompleted": false,
+    "modelSideAcceptance": "unverified; accidental failed turn does not provide model evidence"
+  },
+  "nextDecision": "pending user choice: preserve original bytes and keep release blocked, or allow narrowly scoped in-place disabled changes; no boundary change applied",
+  "safety": {
+    "realUserConfigWritten": false,
+    "thirdPartyModified": false,
+    "tagged": false,
+    "published": false,
+    "browserClosed": true,
+    "combinedHostExitCode": 0
+  },
+  "limitations": [
+    "AC-15 not passed",
+    "not concurrency evidence; existing skill-group unlocked web stale write issue remains",
+    "home/!!js readonly guards not exhaustively retested",
+    "no model catalog acceptance",
+    "no full user acceptance",
+    "web 2.3.12 upgrade not tested"
+  ],
+  "reusableProbeCheck": {
+    "script": "scripts/prepare-web-interop-probe.mjs",
+    "syntax": "passed",
+    "preparation": "passed using actual installed packages",
+    "startup": "passed: combined host plus loopback origin and private authentication URL",
+    "authFileMode": "0600",
+    "fixtureShutdownExitCode": 0
+  },
+  "artifact": {
+    "fileCount": 62,
+    "bytes": 85939,
+    "sha256": "237f4f22d3508b0024eca29c98b70d3c3bab545f2ccb60a86a322da5be59396c",
+    "check": "pnpm check:tarball passed; exact files and extracted entry import; not registry installation"
+  }
+}

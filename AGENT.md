@@ -18,7 +18,7 @@
 ## 2. 当前阶段与边界
 
 - **阶段：M5 发布准备检查已落地，完整人工验收与发布仍待执行（2026-11-11）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
-- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；共享技能分组 TUI 写入保护与 web 边界见同文档 §6；布局/异常交互回归及最小可用区域见 §7；实际 tgz 安装/停用/再启用/卸载与信任提示见 §8；鼠标回归、窄屏导航与启停选中项保持见 §9；技能启停与实际 agent 目录/`/skills` 同步见 §10；完整人工验收与发布仍待执行；**不可发布**。
+- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；共享技能分组 TUI 写入保护与 web 边界见同文档 §6；布局/异常交互回归及最小可用区域见 §7；实际 tgz 安装/停用/再启用/卸载与信任提示见 §8；鼠标回归、窄屏导航与启停选中项保持见 §9；技能启停与实际 agent 目录/`/skills` 同步见 §10；完整 web/TUI 顺序 UI 共存的技能互读、受管块保留及 MCP 状态不一致阻塞见 §11，写入边界取舍待用户答复；完整人工验收与发布仍待执行；**不可发布**。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -152,6 +152,8 @@ node scripts/skill-groups-interop.mjs ~/.dsh/profiles/web/node_modules/dsh-skill
 node scripts/prepare-tui-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui
                             # 准备 /tmp 下独立 home/profile/技能/本地 MCP，输出 run.sh；不启动进程
 ```
+
+完整 web/TUI 同一宿主探针用 `node scripts/prepare-web-interop-probe.mjs <CLI 已安装宿主目录> <已安装 web 面板目录>`；复验步骤、认证链接保护与 AC-15 失败证据见 [发布准备 §11](docs/release-readiness.md#11-webtui-完整-ui-顺序共存)。只准备临时目录，仍需真实 UI 操作。
 
 实际 tgz 安装/生命周期探针用 `node scripts/prepare-install-probe.mjs <CLI 已安装宿主目录>`，数据与 observer 都在 `/tmp`；`install-probe-state.mjs` 检查真实注册与文件哈希。前提、步骤和证据见 [发布准备 §8](docs/release-readiness.md#8-实际-tgz-安装停用与卸载)，不纳入通用 `check:release`。
 

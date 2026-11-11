@@ -83,6 +83,8 @@
 
 - **M5 技能同步**：同一真实 TUI/agent 下工作区/平铺/全局启停、同名回退、策略分流、bundled 只读的 10 阶段目录与 `/skills` 验证见 [发布准备 §10](../release-readiness.md#10-技能启停与实际-agent-目录同步)；真实模型请求中的 catalog 更新仍待人工验收。
 
+- **M5 完整 web/TUI 顺序 UI 共存**：同一隔离宿主中技能双向刷新、两种 MCP 受管块保留已验证；覆盖行与 web 2.3.7 的 MCP 开关语义不一致，AC-15 未通过。8 项实际观察、复验脚本及待定写入边界见 [发布准备 §11](../release-readiness.md#11-webtui-完整-ui-顺序共存)。
+
 ## 5. 证据基线与复核方式
 
 - **类型面基线**：已安装 `@deepseek-harness-tui/dsh-tui@0.19.0` 的 `lib/types/*.d.ts`（`~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui`）。
