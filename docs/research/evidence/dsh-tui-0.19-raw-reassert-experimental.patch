@@ -1,0 +1,11 @@
+--- a/lib/types/ink/components/App.js
++++ b/lib/types/ink/components/App.js
+@@ -627,6 +627,8 @@
+         if (this.props.ownsStdin?.() === false || this.shutdownDetached || this.rawModeEnabledCount === 0 || !this.isRawModeSupported()) {
+             return;
+         }
++        // Node may cache raw=true after another process changed termios.
++        this.props.stdin.setRawMode(false);
+         this.props.stdin.setRawMode(true);
+     };
+ }

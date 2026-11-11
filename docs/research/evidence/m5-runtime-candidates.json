@@ -1,0 +1,421 @@
+{
+  "date": "2026-11-11",
+  "baseline": "8abdd76 (runtime c581d2b)",
+  "environment": {
+    "node": "v26.3.0",
+    "libuv": "1.52.1",
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "officialWeb": "2.3.12 + flow proposal",
+    "platform": "Arch Linux / WSL2; real PTY + Chromium"
+  },
+  "sourceSha256": {
+    "mcp": "64dfc9127a47d9d453d72022b47d3b8d8a5c82cad756ac1114b09faf1a956120",
+    "host": "432ab2f205f19d79b251d3813c13afc85cb7b711bf03a2d3563de48755863ce9"
+  },
+  "scope": {
+    "runtimeSrcChanged": false,
+    "installedPackagesChanged": false,
+    "realUserProfileChanged": false,
+    "published": false,
+    "upstreamSubmitted": false,
+    "AC15": "not passed in real installation/user acceptance"
+  },
+  "mcpCandidate": {
+    "stderr": "pipe, attach bounded consumer before connect",
+    "diagnosticLimits": {
+      "lineBytes": 4096,
+      "bodyBytesPerConnection": 16384,
+      "linesPerConnection": 32,
+      "extra": "one suppression summary; logger prefix outside body budget"
+    },
+    "knownEnvironmentValues": "exact-value redaction, not arbitrary-secret detection",
+    "logSink": "existing ctx.logger.warn; logger failures contained",
+    "lifecycle": "stream end/error/close or explicit transport.close flush, remove listeners and destroy stream",
+    "http": "construction only; no HTTP/OAuth acceptance"
+  },
+  "moduleCheck": {
+    "boundedDiagnostics": {
+      "passed": true,
+      "lineBytes": 4096,
+      "logBytes": 16384,
+      "lines": 32,
+      "emittedEvents": 33
+    },
+    "runtime": {
+      "cycles": [
+        {
+          "cycle": 0,
+          "autoReconnect": true,
+          "afterDispose": {
+            "canonical": false,
+            "echo": false
+          }
+        },
+        {
+          "cycle": 1,
+          "autoReconnect": true,
+          "afterDispose": {
+            "canonical": false,
+            "echo": false
+          }
+        },
+        {
+          "cycle": 2,
+          "autoReconnect": true,
+          "afterDispose": {
+            "canonical": false,
+            "echo": false
+          }
+        }
+      ],
+      "logEvents": 21,
+      "knownSecretRedacted": true,
+      "earlyStartupError": true,
+      "httpUnchanged": true,
+      "hostExternalResetRecovered": true,
+      "ownershipGuards": [
+        "not-owner",
+        "shutdown",
+        "zero-count",
+        "not-tty"
+      ],
+      "normalExitMode": {
+        "canonical": true,
+        "echo": true
+      }
+    },
+    "scope": "actual candidate methods; synthetic registry/logger in owned PTY; full host UI checked separately"
+  },
+  "combinedUi": {
+    "runtimeHost": "original unmodified 0.19.0",
+    "kernel": "stderr candidate",
+    "coldStartFirstStop": "web off/tools 0; TUI disabled/disposed and raw assertions passed before an unrelated fingerprint-probe assertion failed",
+    "durableJointStages": [
+      {
+        "label": "flow-web-off-2",
+        "web": {
+          "mcp-probe": {
+            "enabled": false,
+            "tools": 0
+          },
+          "mcp-flow": {
+            "enabled": false,
+            "tools": 0
+          }
+        },
+        "tui": {
+          "mcp-flow": {
+            "entryId": "mcp-flow",
+            "enabled": false,
+            "phase": "disposed"
+          },
+          "mcp-probe": {
+            "entryId": "mcp-probe",
+            "enabled": false,
+            "phase": null
+          }
+        },
+        "mode": {
+          "canonical": false,
+          "echo": false
+        },
+        "reloaded": false
+      },
+      {
+        "label": "flow-tui-on-2",
+        "web": {
+          "mcp-probe": {
+            "enabled": false,
+            "tools": 0
+          },
+          "mcp-flow": {
+            "enabled": true,
+            "tools": 1
+          }
+        },
+        "tui": {
+          "mcp-flow": {
+            "entryId": "mcp-flow",
+            "enabled": true,
+            "phase": "active"
+          },
+          "mcp-probe": {
+            "entryId": "mcp-probe",
+            "enabled": false,
+            "phase": null
+          }
+        },
+        "mode": {
+          "canonical": false,
+          "echo": false
+        },
+        "reloaded": false
+      },
+      {
+        "label": "ordinary-web-on-1",
+        "web": {
+          "mcp-probe": {
+            "enabled": true,
+            "tools": 1
+          },
+          "mcp-flow": {
+            "enabled": true,
+            "tools": 1
+          }
+        },
+        "tui": {
+          "mcp-flow": {
+            "entryId": "mcp-flow",
+            "enabled": true,
+            "phase": "active"
+          },
+          "mcp-probe": {
+            "entryId": "mcp-probe",
+            "enabled": true,
+            "phase": "active"
+          }
+        },
+        "mode": {
+          "canonical": false,
+          "echo": false
+        },
+        "reloaded": false
+      },
+      {
+        "label": "ordinary-tui-off-1",
+        "web": {
+          "mcp-probe": {
+            "enabled": false,
+            "tools": 0
+          },
+          "mcp-flow": {
+            "enabled": true,
+            "tools": 1
+          }
+        },
+        "tui": {
+          "mcp-flow": {
+            "entryId": "mcp-flow",
+            "enabled": true,
+            "phase": "active"
+          },
+          "mcp-probe": {
+            "entryId": "mcp-probe",
+            "enabled": false,
+            "phase": "disposed"
+          }
+        },
+        "mode": {
+          "canonical": false,
+          "echo": false
+        },
+        "reloaded": false
+      },
+      {
+        "label": "ordinary-web-on-2",
+        "web": {
+          "mcp-probe": {
+            "enabled": true,
+            "tools": 1
+          },
+          "mcp-flow": {
+            "enabled": true,
+            "tools": 1
+          }
+        },
+        "tui": {
+          "mcp-flow": {
+            "entryId": "mcp-flow",
+            "enabled": true,
+            "phase": "active"
+          },
+          "mcp-probe": {
+            "entryId": "mcp-probe",
+            "enabled": true,
+            "phase": "active"
+          }
+        },
+        "mode": {
+          "canonical": false,
+          "echo": false
+        },
+        "reloaded": false
+      },
+      {
+        "label": "ordinary-tui-off-2",
+        "web": {
+          "mcp-probe": {
+            "enabled": false,
+            "tools": 0
+          },
+          "mcp-flow": {
+            "enabled": true,
+            "tools": 1
+          }
+        },
+        "tui": {
+          "mcp-flow": {
+            "entryId": "mcp-flow",
+            "enabled": true,
+            "phase": "active"
+          },
+          "mcp-probe": {
+            "entryId": "mcp-probe",
+            "enabled": false,
+            "phase": "disposed"
+          }
+        },
+        "mode": {
+          "canonical": false,
+          "echo": false
+        },
+        "reloaded": false
+      },
+      {
+        "label": "flow-web-off-3",
+        "web": {
+          "mcp-probe": {
+            "enabled": false,
+            "tools": 0
+          },
+          "mcp-flow": {
+            "enabled": false,
+            "tools": 0
+          }
+        },
+        "tui": {
+          "mcp-flow": {
+            "entryId": "mcp-flow",
+            "enabled": false,
+            "phase": "disposed"
+          },
+          "mcp-probe": {
+            "entryId": "mcp-probe",
+            "enabled": false,
+            "phase": "disposed"
+          }
+        },
+        "mode": {
+          "canonical": false,
+          "echo": false
+        },
+        "reloaded": false
+      },
+      {
+        "label": "flow-tui-on-3",
+        "web": {
+          "mcp-probe": {
+            "enabled": false,
+            "tools": 0
+          },
+          "mcp-flow": {
+            "enabled": true,
+            "tools": 1
+          }
+        },
+        "tui": {
+          "mcp-flow": {
+            "entryId": "mcp-flow",
+            "enabled": true,
+            "phase": "active"
+          },
+          "mcp-probe": {
+            "entryId": "mcp-probe",
+            "enabled": false,
+            "phase": "disposed"
+          }
+        },
+        "mode": {
+          "canonical": false,
+          "echo": false
+        },
+        "reloaded": false
+      }
+    ],
+    "flowFormEdit": {
+      "externalBytesPreserved": true,
+      "expressionPreserved": true,
+      "argsEdited": true
+    },
+    "flowDelete": {
+      "deletedFlowRow": true,
+      "externalBytesPreserved": true
+    },
+    "activeRawCalls": 107,
+    "activeRequestedFalse": 0,
+    "manualTerminalRestores": 0,
+    "pageReloads": 0,
+    "exitCode": 0,
+    "lastRawCallRequested": false
+  },
+  "hostRecoveryExperiment": {
+    "externalResetRecoveredWithinSeconds": 6.5,
+    "recoveredMode": {
+      "canonical": false,
+      "echo": false
+    },
+    "coldChildStderrIsTty": false,
+    "coldWebStop": {
+      "label": "cold-flow-stop",
+      "states": {
+        "mcp-probe": {
+          "enabled": false,
+          "tools": 0
+        },
+        "mcp-flow": {
+          "enabled": false,
+          "tools": 0
+        }
+      },
+      "reloaded": false
+    },
+    "coldMode": {
+      "canonical": false,
+      "echo": false
+    },
+    "exitCode": 0,
+    "lastRawCallRequested": false,
+    "observation": "terminal query reply ^[[?1049;0$y appeared echoed during candidate run; not seen in original-host control",
+    "limitation": "false-to-true is two separate mode transitions; periodic integration is not recommended without review",
+    "classification": "experimental proposal, not an accepted host fix"
+  },
+  "probeCorrections": [
+    "Host copy must mirror original ancestor resolution, optional and implicit backend imports; no clean install claim.",
+    "Initial capture wrongly assumed profileFingerprint is plain file SHA256; that assertion was discarded, later R snapshots check actual target state.",
+    "An early Refresh saw tools=0 during HMR; later checks poll normal Refresh, never page reload.",
+    "Deletion fixture initially lacked insert container; corrected before deletion assertions.",
+    "Never-started disabled MCP rows may have no loader phase; only the operated target must reach active/disposed."
+  ],
+  "recommendation": "prefer kernel stderr isolation + bounded diagnostics and web upgrade/flow proposal; keep host recovery experimental",
+  "remaining": [
+    "Production owners must review diagnostic level, budget, redaction and lifecycle policy.",
+    "No real installed update, clean registry dependency install, Windows/OAuth or user full acceptance.",
+    "Shared skill-group web writer still does not participate in TUI lock."
+  ],
+  "validation": {
+    "finalGuardedModuleCheck": "passed",
+    "scriptSyntax": "3 passed",
+    "defaultAndRecoveryVariants": "passed; correct host symlink targets",
+    "mutationBoundaryNegativeCheck": "installed source in candidate metadata rejected before writes",
+    "patchApplyAgainstIsolatedOriginals": "both checked/applied and bytes equal tested candidates",
+    "installedMcpAndHostSourceHashes": "unchanged",
+    "tarball": {
+      "check": "tarball",
+      "ok": true,
+      "name": "dsh-tui-skill-mcp-panel",
+      "version": "0.1.0-dev.0",
+      "fileCount": 65,
+      "bytes": 89602,
+      "sha256": "3bf6abf4d2d34ef28c34e98299dcf2c66468c38bc3e1283a61387f7004ddaa91",
+      "npmIntegrity": "sha512-wGkrFa/U24yR1NmnjpKWq58EYtxvdQimVPyLZoN/8dD++IYrapysVIiodm3GHuFI/xFjx8ZgDoGe17tUKVLDlQ==",
+      "dryRunFileCount": 65,
+      "manifestId": "com.dsh-tui.skill-mcp-panel",
+      "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+      "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+    },
+    "fullCheckRelease": "not repeated; runtime src/README/manifest/dependencies unchanged",
+    "diffWhitespace": "passed; patch artifacts retain legitimate leading context space before original tabs via narrow .gitattributes",
+    "finalNpmDryRun": "65 files; .gitattributes, scripts and evidence excluded; prepack build/manifest passed"
+  }
+}

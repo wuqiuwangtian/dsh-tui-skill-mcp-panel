@@ -58,7 +58,7 @@ pnpm check:release     # 类型、域层/发布检查、打包、全部现有 UI
 | 待测 | AC-13 撤销：技能、受管 MCP 各删除后撤销；重开后仍能撤销；删除后外部修改目标文件，撤销拒绝覆盖。原始 profile MCP 行仅启停，home/表达式行不可编辑删除。 |
 | 待测 | FR-8/9 分组/过滤：技能分组与 web 一致；MCP `g/f/ /x`、分组页 `t/a/r/d/Enter`；搜索与状态/组取交集；不同 profile 同名服务器不串组，重开保留成员，改名/删除/撤销归属正确。 |
 | 待测 | AC-14 布局：<64、64–92、≥93 列，inline/fullscreen；键盘/鼠标完成列表→详情→表单→确认→取消，无溢出/错位。包含长列表、CJK/emoji、空列表/过滤空结果；底部按钮可点击且与键盘范围一致。 |
-| 根因与隔离候选已补；仍未通过，见 §11.2 | AC-15 共存：技能双向刷新、受管块保留与 D-12 已验证；剩余 web/TTY 问题已定位，真实环境尚未集成修复。共享技能分组并发边界另见 §6，用户完整验收仍待执行。 |
+| 隔离组合复验已补；仍未通过，见 §11.3 | AC-15 共存：技能双向刷新、受管块保留与 D-12 已验证；剩余 web/TTY 问题已定位，内核/web 候选已在隔离原宿主复验，真实环境尚未集成修复。共享技能分组并发边界另见 §6，用户完整验收仍待执行。 |
 | 待测 | AC-16/18 限制与信任：MCP 顶部“无工作区级”、home 只读、帮助/README 一致；宿主装/启用前显示进程内全信任/非沙箱。错误/备份路径可找到，关闭面板后宿主键盘正常。 |
 
 记录格式：包版本/提交、宿主/内核/Node、终端尺寸与模式、操作、实际结果、必要的脱敏截图/日志。失败保留最短复现，不将自动化报告当成人工勾选依据。
@@ -334,3 +334,48 @@ node scripts/check-web-compat-candidate.mjs "<第一个 root>/web-official-2.3.1
 **交付边界与下一步。** 五个新增脚本均为开发期工具，不随 npm `files` 发布；没有新增运行时依赖或修改产品写入边界。真实浏览器/SDK/系统调用证据已经定位三个问题，但内核日志策略与宿主恢复方案尚未集成；web flow 也尚未发布修复。下一步按需求 §14「下一步」第 1 项，先形成内核与宿主的可审阅候选，使用隔离副本验证冷启动关闭、反复重连、日志与退出，再组合官方 web 更新/flow 候选完成无需恢复的全 UI 复验。真实安装更新、上游提交和正式发布沿各自授权处理。§6 的共享技能分组并发边界及用户完整人工验收仍独立存在。
 
 本轮实际检查：五个脚本语法、两个版本编辑器、最终脚本的两套 PTY 实验、新版 flow 准备器和 `git diff --check` 均通过。`pnpm check:tarball` 退出 0，65 文件、89,602 字节，SHA-256 `3bf6abf4d2d34ef28c34e98299dcf2c66468c38bc3e1283a61387f7004ddaa91`；新增工具/证据没有混入 npm 包。README 限制说明改变使包摘要变化，产品源码仍与 `c581d2b` 相同。本轮未重跑完整 `check:release`；§11.1 的 96/176/61 项属于前次运行时基线，不冒充本轮结果。
+
+### 11.3 内核 stderr 候选与真实双端复验（2026-11-11）
+
+本节承接 §11.2，产品运行时仍为 `c581d2b`；本轮仅新增开发工具、[内核候选补丁](research/evidence/dsh-mcp-client-0.2.2-rc.1-stderr.patch)、[宿主实验补丁](research/evidence/dsh-tui-0.19-raw-reassert-experimental.patch)和[脱敏证据](research/evidence/m5-runtime-candidates.json)。**真实安装未更新，AC-15 与用户完整验收仍未通过。** 补丁针对所列已安装包的构建文件布局，尚未移植到上游 TypeScript 源码、提交上游或发布。
+
+**内核候选的改动与影响。** 在 `@deepseek-ai/dsh-mcp-client@0.2.2-rc.1/lib/index.js` 的 `createTransport()` stdio 分支显式指定 `stderr: 'pipe'`，在 `connectGeneration()` 调用 `connect()` 前接入消费器；通过现有 `ctx.logger.warn` 输出有限诊断。`scripts/candidates/mcp-stderr.mjs` 是该消费器的可审阅源文件，准备器把它复制到新临时包中，不进入本项目运行时代码。
+
+- 每行最多暂存 4 KiB；超长行整行替换为提示，避免保留截断的敏感片段。每次连接的日志正文最多 16 KiB、32 行，超过后继续读取，仅在结束时追加一次抑制提示。宿主 logger 添加的前缀不计入正文预算。
+- 支持跨 chunk 的 UTF-8、无换行尾部和早期启动错误；过滤终端控制符，并精确遮盖当前 `config.env` 的已知字符串值。**这不是任意密钥识别器**；生产日志级别、预算及脱敏策略仍需维护者评审。
+- 在 stderr end/close/error 或显式 transport close 时刷新尾部、撤销监听并销毁流；日志输出失败不让 MCP 连接崩溃。HTTP 分支不改动。
+- 代价是高流量 stderr 超额内容不再完整落日志；收益是子进程不再持有用户终端，也不会因无人读取 stderr 而堵住。限量日志策略是候选方案，不宣称已成为上游契约。
+
+【已验证事实】实际候选 `startConnection()`、真实 SDK 和本地 fixture 在自建 PTY 完成 3 轮连接、异常退出后的自动重连、工具重新注册及 dispose 清理。每次启动先输出 2 MiB stderr，再进行握手，均未堵住；已知环境变量值被遮盖，启动失败的无换行诊断被保留。消费器另验证跨 chunk 字符、控制符、超限、尾部、幂等清理及 logger 抛错。工具 registry/logger 在此项使用最小替身；完整宿主证据在下文，不能把模块替身叫作完整宿主。
+
+**宿主恢复候选的结论。** `App.reassertRawMode()` 在现有 ownsStdin、shutdown、raw 引用计数和 TTY 检查之后，改为 false→true。实际 App 方法通过四项禁止操作的守卫检查；在真实候选宿主的自有 PTY 人工注入 canonical/echo 后，6.5 秒检查时已由原有周期任务恢复，退出码 0，最后一次 raw 请求为 false。
+
+但该方案要经过两次独立的模式切换，期间会短暂进入非 raw 状态。候选宿主运行中观察到终端查询回复 `^[[?1049;0$y` 的回显，原宿主对照未见同类回显；尚未把该观察提升为覆盖所有终端的因果结论。**不推荐现在集成周期性的 false→true；保留为实验补丁。** 它能恢复状态，不等于恢复动作没有输入副作用。当前推荐优先修复内核的 stderr 继承来源，宿主防御方案单独评审；不是让本面板接管 stdin。
+
+**组合验证结果。** 使用原始宿主 0.19.0、内核 stderr 候选、官方 web 2.3.12 + §11.2 flow 补丁，启动时启用一个多行 flow MCP。实际浏览器与同一宿主 `/skill-mcp` 操作后：
+
+| 核对项 | 实际结果 |
+| --- | --- |
+| 冷启动服务器首次由 web 停用 | web 停用、0 工具；TUI 为 disabled/disposed，termios 仍为 raw；未手工恢复 |
+| 普通行与 flow 行交替启停 | 保留 8 组完整双端快照：网页开关/工具数、TUI 启停/目标 loader phase 和实际终端模式一致 |
+| web flow 表单编辑 | 保存后仍 active/1 工具；args 新增测试标记，目标之外字节和 env 表达式保持 |
+| web 原始 flow 行删除 | 网页确认后删除成功；结果精确等于候选编辑器删除目标的结果，其他字节保留 |
+| 输入与退出 | 活动期记录 107 次 raw 请求，没有 false 请求；无需整页重载或手动恢复，退出码 0，最后 raw 请求为 false |
+
+第一次采集错误地把项目 `profileFingerprint` 当成文件的直接 SHA-256，导致验证辅助断言失败；后续按大写 `R` 获取新快照并核对目标实际状态。一次过早 Refresh 仍读到 HMR 中的旧工具数，后续轮询普通 Refresh 等待收敛；未整页重载。删除测试行首次准备缺少 insert 容器，已纠正夹具后再执行删除断言。未启动过的停用行可能没有 loader phase，不能一概断言 disposed；实际操作目标需收敛到 active/disposed。证据保留这些测试过程修正，不把它们隐去后声称“一次全过”。
+
+**复核步骤。** Linux/Python 3、当前 Node、CLI 安装的 host 0.19.0 / 内核 0.2.2-rc.1、已装 web 2.3.7，以及经核对的官方 web 2.3.12 解包目录；先构建本项目，运行真实 TUI 时不重建。准备器只写新临时目录，复用原安装的依赖解析（包括可选和隐式 backend 导入），**不是全新安装证明**。
+
+```sh
+node scripts/prepare-runtime-candidates.mjs "$HOST_DIR" "$WEB_DIR" "$WEB_RELEASE"
+node scripts/check-runtime-candidates.mjs "<输出 root>/runtime-candidates.json"
+# 仅比较实验宿主时，给准备命令追加 --with-raw-recovery
+```
+
+变量路径沿 §11.2。默认 launcher 使用原宿主 + 内核 stderr/新版 web flow 候选，冷启动启用 `mcp-flow`；模块检查仍会检查已生成的宿主实验方法，但不会把它接入默认 launcher。预期输出 3 个 `autoReconnect: true`、关闭后 canonical/echo 均为 false、正常退出模式均为 true，四项所有权守卫通过，诊断限量与已知值遮盖通过。再沿 §11 启动 launcher、浏览器接受 Preview Notice、打开 MCP 和 TUI `/skill-mcp`，先 web 停用冷启动 flow 行，再交替启停并等待工具数收敛，按 `R` 核对 TUI。全过程不应需要 `stty` 或整页重载。模块检查可能短暂添加/删除临时 MCP 包内的测试导出，不能对真实安装目录运行该检查。
+
+**当前边界与下一项。** 本轮没有新增产品功能、改变 D-10/D-12 边界或修改真实安装。已验证的是隔离候选组合与当前 Linux/Node/本地 stdio fixture，未验证 Windows、真实 HTTP/OAuth、全新 registry 依赖安装或用户完整验收。下一项按需求 §14「下一步」第 1 项审阅内核诊断策略与 web 修复的集成方式；真实安装更新仍沿 AGENT.md §2 的授权边界，宿主实验不默认随之采用。共享技能分组并发限制和发布前完整人工清单继续保留。
+
+本轮最终检查：3 个脚本语法、带临时路径守卫的候选生命周期检查、默认/实验两种准备器链接、真实安装路径误入时拒写的反例均通过；两个补丁在独立原文件副本上 `git apply --check`/应用后，与实测候选逐字节一致。已装 MCP/宿主入口哈希保持不变。`pnpm check:tarball` 退出 0，仍为 65 文件、89,602 字节、SHA-256 `3bf6abf4d2d34ef28c34e98299dcf2c66468c38bc3e1283a61387f7004ddaa91`；新增候选/工具/证据均未进入发布包。产品源码、README、manifest 和依赖均未变，本轮未重跑完整 `check:release`。
+
+补丁数据的合法上下文前缀（空格后接原文件 tab）会被普通源码空白规则误判；`.gitattributes` 仅对证据目录的 `.patch` 关闭这一项，保留其他空白检查，源码检查不变。最终 `git diff --check` 与提交检查通过；补充 `npm pack --dry-run`（含 prepack 构建/manifest）仍为 65 文件，未包含该属性文件、工具或证据。
