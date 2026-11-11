@@ -43,12 +43,14 @@ import {
   MCP_MODULE,
   buildMcpRows,
   maskSecretConfig,
+  legacyMcpToggles,
   parsePatchText,
   type LoaderMcpRow,
   type McpRowView,
   type PatchRow,
+  type ToggleRow,
 } from '../domain/mcp/patch.js'
-import { PatchConflictError, readPatchSnapshot, saveMcpToggle } from '../domain/mcp/write.js'
+import { PatchConflictError, readPatchSnapshot, saveMcpMigration, saveMcpToggle } from '../domain/mcp/write.js'
 import { managedMcpEntries } from '../domain/mcp/managed.js'
 import { deleteMcpEntry, listMcpDeletions, openMcpEditor, restoreMcpEntry, saveMcpEditor,
   type McpDeletionSummary, type McpEditSession } from '../domain/mcp/crud.js'
@@ -130,6 +132,7 @@ export interface McpPanelState {
   rows: McpRowView[]
   errors: string[]
   warnings: string[]
+  legacyToggles?: ToggleRow[]
   togglingId?: string
   lastAction?: McpToggleOutcome
   latestDeletion?: McpDeletionSummary
@@ -552,6 +555,11 @@ export class ManagerRuntime {
     }
     homeRows = await readLayer(homePatchPath, 'home patch ')
     const loaderRows = this.readLoaderMcpRows(warnings)
+    let legacyToggles: ToggleRow[] = []
+    try {
+      legacyToggles = legacyMcpToggles(texts[profilePatchPath ?? ''] ?? '')
+      if (legacyToggles.length > 0) warnings.push(`有 ${legacyToggles.length} 条旧启停配置，web 开关可能不一致；按 m 迁移`)
+    } catch { warnings.push('旧启停覆盖标记无法安全解析；请手工合并，原文件保留') }
     let managedIds = new Set<string>()
     try { managedIds = new Set(managedMcpEntries(texts[profilePatchPath ?? ''] ?? '').map((row) => row.id)) }
     catch { warnings.push('MCP 受管块无法安全解析，编辑/删除已禁用；请手工检查标记与 YAML') }
@@ -577,6 +585,7 @@ export class ManagerRuntime {
         rows,
         errors,
         warnings,
+        legacyToggles,
         latestDeletion,
         ...(this.state.mcp.togglingId === undefined ? {} : { togglingId: this.state.mcp.togglingId }),
         ...(this.state.mcp.lastAction === undefined ? {} : { lastAction: this.state.mcp.lastAction }),
@@ -709,7 +718,22 @@ export class ManagerRuntime {
     })
   }
 
-  /** Toggle one MCP row by writing/removing our disabled override in the profile patch. */
+  /** Explicitly migrate old overrides without changing their saved enabled states. */
+  async migrateMcpToggles(expected: Pick<McpPanelState, 'profilePatchPath' | 'homePatchPath' | 'profileFingerprint' | 'homeFingerprint'>): Promise<void> {
+    await this.withBusy(async () => {
+      try {
+        const files = this.mcpFiles()
+        if (expected.profilePatchPath !== files.patchPath || expected.homePatchPath !== files.homePatchPath ||
+          expected.profileFingerprint !== files.expectedProfile || expected.homeFingerprint !== files.expectedHome) throw new PatchConflictError()
+        const result = await saveMcpMigration({ ...files, backupRoot: backupsRoot(this.panelHomePath) })
+        await this.loadMcp()
+        this.setStatus(result.changed ? '旧启停配置已迁移并备份，保存的启停状态不变；请刷新 web 面板核对' : '没有待迁移的旧启停配置', 'success')
+        await this.writeDump('mcp:migration')
+      } catch (error) { this.setStatus(`旧启停配置迁移失败：${error instanceof Error ? error.message : '请刷新后重试'}`, 'error') }
+    })
+  }
+
+  /** Toggle the definition's boolean field and remove only its own legacy override. */
   async toggleMcp(id: string): Promise<void> {
     const row = this.state.mcp.rows.find((entry) => entry.id === id)
     if (row === undefined) {

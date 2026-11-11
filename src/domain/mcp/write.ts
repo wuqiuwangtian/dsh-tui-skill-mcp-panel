@@ -3,7 +3,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { lstat, open, readFile, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
-import { MCP_MODULE, backupPatchFile, parsePatchText, upsertManagedToggle, writePatchFileAtomic } from './patch.js'
+import { editMcpDisabled, migrateLegacyMcpToggles } from './toggle.js'
+import { MCP_MODULE, backupPatchFile, legacyMcpToggles, parsePatchText, writePatchFileAtomic } from './patch.js'
 
 export interface PatchSnapshot {
   text: string
@@ -99,7 +100,12 @@ export interface TogglePatchInput {
 }
 
 /** Refuse stale snapshots, damaged YAML/blocks, changed identity and missing backups. */
-export async function saveMcpToggle(input: TogglePatchInput): Promise<{ changed: boolean; backupPath?: string }> {
+type PatchMutationInput = Omit<TogglePatchInput, 'id' | 'serverName' | 'disabled'>
+
+async function saveMcpMutation(
+  input: PatchMutationInput,
+  build: (profile: PatchSnapshot, home: PatchSnapshot) => { text: string; changed: boolean },
+): Promise<{ changed: boolean; backupPath?: string }> {
   return withPatchLock(input.patchPath, async () => {
     const checkSnapshots = async (): Promise<[PatchSnapshot, PatchSnapshot]> => {
       const snapshots = await Promise.all([readPatchSnapshot(input.patchPath), readPatchSnapshot(input.homePatchPath)])
@@ -114,15 +120,7 @@ export async function saveMcpToggle(input: TogglePatchInput): Promise<{ changed:
     const profilePatch = parsePatchText(profile.text)
     const homePatch = parsePatchText(home.text)
     if (!profilePatch.ok || !homePatch.ok) throw new Error('profile/home patch YAML 非法，请修复后重试')
-    if (homePatch.rows.some((row) => row.id === input.id)) throw new PatchConflictError()
-    const targetRows = profilePatch.rows.filter((row) => row.id === input.id)
-    if (targetRows.length === 0) throw new PatchConflictError()
-    const moduleName = [...targetRows].reverse().find((row) => row.name !== undefined)?.name
-    if (moduleName !== undefined && moduleName !== MCP_MODULE) throw new PatchConflictError()
-    const config = [...targetRows].reverse().find((row) => row.config !== undefined)?.config
-    if (typeof config?.serverName === 'string' && config.serverName !== input.serverName) throw new PatchConflictError()
-    const next = upsertManagedToggle(profile.text, input.id, input.disabled)
-    if (!next.ok) throw new Error(next.error)
+    const next = build(profile, home)
     if (!next.changed) return { changed: false }
 
     let backupPath: string
@@ -136,5 +134,27 @@ export async function saveMcpToggle(input: TogglePatchInput): Promise<{ changed:
     // Catch non-cooperating editors changing either layer while we made the backup.
     await writePatchFileAtomic(input.patchPath, next.text, checkSnapshots)
     return { changed: true, backupPath }
+  })
+}
+
+/** The only new-toggle write path: local boolean edit + target legacy cleanup. */
+export async function saveMcpToggle(input: TogglePatchInput): Promise<{ changed: boolean; backupPath?: string }> {
+  return saveMcpMutation(input, (profile, home) => {
+    if (parsePatchText(home.text).rows.some(row => row.id === input.id)) throw new PatchConflictError()
+    const rows = parsePatchText(profile.text).rows.filter(row => row.id === input.id)
+    const definitions = rows.filter(row => row.name === MCP_MODULE)
+    if (definitions.length !== 1 || definitions[0]?.config?.serverName !== input.serverName) throw new PatchConflictError()
+    return editMcpDisabled(profile.text, input, input.disabled)
+  })
+}
+
+/** Explicit all-or-nothing migration. Opening/refreshing the panel never writes. */
+export async function saveMcpMigration(input: PatchMutationInput): Promise<{ changed: boolean; backupPath?: string }> {
+  return saveMcpMutation(input, (profile, home) => {
+    const homeRows = parsePatchText(home.text).rows
+    if (legacyMcpToggles(profile.text).some(toggle => homeRows.some(row => row.id === toggle.id))) {
+      throw new Error('旧覆盖目标存在 home 层配置，迁移已停止；请手工合并')
+    }
+    return migrateLegacyMcpToggles(profile.text)
   })
 }

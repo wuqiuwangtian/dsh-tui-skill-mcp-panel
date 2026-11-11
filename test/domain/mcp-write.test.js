@@ -4,8 +4,8 @@ import { mkdtemp, readFile, readdir, rm, stat, utimes, writeFile } from 'node:fs
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { setTimeout as delay } from 'node:timers/promises'
-import { parsePatchText, writePatchFileAtomic } from '../../lib/types/domain/mcp/patch.js'
-import { PatchConflictError, readPatchSnapshot, saveMcpToggle, withPatchLock } from '../../lib/types/domain/mcp/write.js'
+import { parsePatchText, writePatchFileAtomic, upsertManagedToggle } from '../../lib/types/domain/mcp/patch.js'
+import { PatchConflictError, readPatchSnapshot, saveMcpMigration, saveMcpToggle, withPatchLock } from '../../lib/types/domain/mcp/write.js'
 
 const PATCH = `# user-owned configuration\n- insert:\n    - id: mcp-alpha\n      name: '@deepseek-ai/dsh-mcp-client'\n      config:\n        serverName: alpha\n        transport: stdio\n        command: node\n        env:\n          TOKEN: !!js process.env.TOKEN\n`
 
@@ -32,11 +32,40 @@ test('guarded toggle backs up exact bytes, preserves permissions and releases th
   assert.equal((await stat(result.backupPath)).mode & 0o777, 0o600)
   assert.equal((await stat(input.patchPath)).mode & 0o777, 0o640)
   const saved = await readFile(input.patchPath, 'utf8')
-  assert.ok(saved.startsWith(PATCH))
-  assert.deepEqual(parsePatchText(saved).toggles, [{ id: 'mcp-alpha', disabled: true }])
+  assert.equal(saved, PATCH.replace('      name:', '      disabled: true\n      name:'))
+  assert.deepEqual(parsePatchText(saved).toggles, [])
   await assert.rejects(stat(`${input.patchPath}.panel.lock`), { code: 'ENOENT' })
   await saveMcpToggle({ ...input, disabled: false, expectedProfile: (await readPatchSnapshot(input.patchPath)).fingerprint })
   assert.equal(await readFile(input.patchPath, 'utf8'), PATCH)
+})
+
+test('explicit migration backs up the complete legacy file and preserves enabled state', async (t) => {
+  const { input } = await fixture(t)
+  const legacy = upsertManagedToggle(PATCH, 'mcp-alpha', true).text
+  await writeFile(input.patchPath, legacy)
+  const expectedProfile = (await readPatchSnapshot(input.patchPath)).fingerprint
+  const result = await saveMcpMigration({...input,expectedProfile})
+  assert.equal(await readFile(result.backupPath,'utf8'),legacy)
+  const saved = parsePatchText(await readFile(input.patchPath,'utf8'))
+  assert.deepEqual(saved.toggles,[])
+  assert.equal(saved.rows.find(r=>r.id==='mcp-alpha').disabled,true)
+})
+
+test('migration is all-or-nothing for unsupported targets, home overrides and stale snapshots', async (t) => {
+  for (const mode of ['missing','home','stale']) {
+    const { input } = await fixture(t)
+    let legacy = upsertManagedToggle(PATCH,'mcp-alpha',true).text
+    if(mode==='missing') legacy=upsertManagedToggle(legacy,'missing',true).text
+    await writeFile(input.patchPath,legacy)
+    if(mode==='home') await writeFile(input.homePatchPath,'- id: mcp-alpha\n  disabled: true\n')
+    const expectedProfile=(await readPatchSnapshot(input.patchPath)).fingerprint
+    const expectedHome=(await readPatchSnapshot(input.homePatchPath)).fingerprint
+    if(mode==='stale') await writeFile(input.patchPath,legacy+'# external\n')
+    const before=await readFile(input.patchPath,'utf8')
+    await assert.rejects(saveMcpMigration({...input,expectedProfile,expectedHome}))
+    assert.equal(await readFile(input.patchPath,'utf8'),before)
+    await assert.rejects(stat(input.backupRoot),{code:'ENOENT'})
+  }
 })
 
 test('changed profile or home snapshots never overwrite an external edit', async (t) => {

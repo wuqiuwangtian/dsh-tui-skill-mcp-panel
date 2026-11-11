@@ -18,7 +18,7 @@
 ## 2. 当前阶段与边界
 
 - **阶段：M5 发布准备检查已落地，完整人工验收与发布仍待执行（2026-11-11）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
-- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；共享技能分组 TUI 写入保护与 web 边界见同文档 §6；布局/异常交互回归及最小可用区域见 §7；实际 tgz 安装/停用/再启用/卸载与信任提示见 §8；鼠标回归、窄屏导航与启停选中项保持见 §9；技能启停与实际 agent 目录/`/skills` 同步见 §10；完整 web/TUI 顺序 UI 共存的技能互读、受管块保留及 MCP 状态不一致阻塞见 §11，写入边界取舍待用户答复；完整人工验收与发布仍待执行；**不可发布**。
+- **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；共享技能分组 TUI 写入保护与 web 边界见同文档 §6；布局/异常交互回归及最小可用区域见 §7；实际 tgz 安装/停用/再启用/卸载与信任提示见 §8；鼠标回归、窄屏导航与启停选中项保持见 §9；技能启停与实际 agent 目录/`/skills` 同步见 §10；完整 web/TUI 顺序共存历史失败见 §11；D-12 精确 disabled 编辑、旧覆盖迁移及剩余独立 web/TTY 问题见 §11.1；完整人工验收与发布仍待执行；**不可发布**。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -67,7 +67,7 @@
 - `disabled: true` = dispose fiber（断开连接 + 注销工具）；改回即重新初始化。
 - patch 变更由 HMR 热重载（条目级重启，进程不重启），延迟约 1–2s（`awaitWriteFinish` 2s 窗口）。**`patchReload: "live"` 在 DSH 0.2.2-rc.1 中无任何代码引用，是无效遗留键**，不要依赖它。
 - **行身份 = `serverName` + `entryId`**；同文件可存在重名。编辑必须双键定位。
-- 受管块只允许动**自己插入的行**；块内外来行必须逐字节保留（参考版 ADR-0003 真实事故）。**我们的受管块 marker 必须与 web 版不同名**。
+- 配置编辑/删除只允许动本面板受管行，块内外来行保真（参考版 ADR-0003 真实事故）；D-12 的启停例外只允许定点修改 profile MCP 定义的普通布尔 `disabled` 并清理本插件对应旧覆盖，其他字节保留。**我们的受管块 marker 必须与 web 版不同名**。
 - `!!js` 表达式必须原样往返（否则 Bearer 令牌退化成字面量）；`env`/`headers` 在 UI 与日志中脱敏，值里的 `${NAME}` 读环境变量。
 - **不要注册公共 `mcpManager` 服务名**（参考版 issue #81：与宿主内置冲突）。内部服务用 `dsh-tui-skill-mcp.*` 命名空间。
 
@@ -99,7 +99,7 @@
 - **裸 ESC 是 escape+meta**：宿主输入解析给 `useInput` 的裸 Esc 同时带 `escape: true` 与 `meta: true`（Ink 50ms flush）→ 快捷键守卫必须写成 `if ((key.ctrl || key.meta) && !key.escape) return`，否则模态框无法用 Esc 取消（M2 实际踩过）。
 - **`r` 键按页签分派**：分组页 `r` = 重命名，技能/诊断页 `r` = 刷新；全局刷新用 `R`。
 - **←/→ 统一语义**：先移动空间焦点（技能页：作用域 ⇄ 列表 ⇄ 详情）；内容区没有左右相邻区域时（分组/MCP/诊断）切换页签；页签栏上始终切换页签。
-- **MCP 启停不靠 pluginManager**：`listPlugins()` 实测为空；启停写 profile patch 的**受管块**（marker `dsh-tui-skill-mcp-panel:mcp-toggle`，与 web 版不同名），块外字节零改动；写前备份、写后 YAML 校验、原子写，然后轮询 loader 最多 10s。`!!js` 值只用 custom tag 解析、不 eval、不执行；home 层/表达式控制行只读。
+- **MCP 启停不靠 pluginManager**：`listPlugins()` 实测为空；D-12 启停精确编辑 profile MCP 定义的普通布尔 `disabled`，不再追加覆盖；旧 `dsh-tui-skill-mcp-panel:mcp-toggle` 在目标启停时清理，或 MCP 页 `m` 确认后整批迁移（不改保存的启停状态、遇歧义整批拒写），打开/刷新不自动写；写前备份、写后 YAML 校验、原子写，然后轮询 loader 最多 10s。`!!js` 值只用 custom tag 解析、不 eval、不执行；home 层/表达式控制行只读。
 - **JSX 已验证可行**：`tsconfig` 的 `jsxImportSource: "@deepseek-harness-tui/dsh-tui"` + props 注入 `React`，真实 TUI 渲染无 invalid hook/元素错误。
 - **`link:` 安装时依赖解析**：插件运行时依赖须写在自身 `dependencies`（pnpm link 不解析目标目录依赖）；类型依赖放 `devDependencies`。
 - **扫盘与内核一致性已验证**（M1）：发现根/rank、frontmatter 名称、遮蔽、`.disabled`、非法条目与内核实测目录逐项一致（`docs/research/06`）；**但 `customSkillDirs` 在 host 层不可读**（按未配置处理），runtime 注册的技能不在扫盘内。
@@ -121,7 +121,7 @@ src/
 
 - **domain 层可单测、不 import React**；UI 层不直接做文件操作；host 层把 domain 接到 Cordis 服务与场景。
 - **不重实现 DSH 域服务**：技能注册/监听、MCP 连接与工具注册都归 DSH；本插件只做「读盘 + 写配置 + 呈现」。
-- **写入安全**：原子写（临时文件 + rename）、文件锁、写前重读、失败回滚；只改自己受管区域；用户文件损坏时保留原样并报错，**绝不静默覆盖**。
+- **写入安全**：原子写（临时文件 + rename）、文件锁、写前重读、失败回滚；CRUD 只改自己受管区域；D-12 允许对已有 profile MCP 精确编辑普通布尔 `disabled`，并清理本插件旧启停覆盖，其他字节保真；用户文件损坏时保留原样并报错，**绝不静默覆盖**。
 - **不可信输入**：技能名/正文、MCP 配置、`!!js` 表达式；所有进入渲染路径的字符串统一消毒（C0/C1、空白折叠、按 cell 截断）；不 `eval` 用户表达式。
 - **热加载是「异步生效」**：保存后 UI 显示「已保存，热加载中」并可轮询/订阅结果，不要假装瞬时。
 - **崩溃隔离**：单条技能/服务器失败不能拖垮整个场景；`apply` 内不 await 长任务；错误走日志与 UI，不抛到宿主。
@@ -140,7 +140,7 @@ pnpm test:ui                # headless Ink 渲染 smoke（160/58 列）
 pnpm test:ui:mouse          # 真实 host 命中检测：SGR 点击/释放/滚轮，40/58/116 列，含启停后选中项保持
 pnpm test:ui:interaction    # headless 交互：技能操作/分组 + 旧快照拒写/刷新/多 runtime/备份，
                             # 驱动 空格/v/d+u/a/g/Tab，断言文件与 groups.json 变化
-pnpm test:mcp               # headless MCP smoke：patch/loader 合成、受管块启停、HMR 轮询、home 只读
+pnpm test:mcp               # headless MCP smoke：patch/loader 合成、精确字段启停、HMR 轮询、home 只读
 pnpm check:manifest         # 固定官方 parser/core 摘要 + profile 校验 + 示例 descriptor 协商
 pnpm check:tarball          # clean build + npm dry-run/实际临时打包/解包/入口导入
 pnpm test:release           # 声明、打包拒绝边界、真实 Cordis 服务移除/恢复/停用

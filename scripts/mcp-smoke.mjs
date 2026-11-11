@@ -1,6 +1,6 @@
 /**
  * Headless MCP smoke (dev-only): real ManagerRuntime + fake loader/configEditor,
- * toggles a profile-patch MCP row by writing/removing the managed block, waits
+ * toggles a profile-patch MCP definition by editing its disabled field, waits
  * for the loader state change (simulating HMR), and checks home-layer/!!js
  * rows stay read-only.
  */
@@ -118,7 +118,7 @@ try {
   await runtime.toggleMcp('mcp-alpha')
   const afterDisable = runtime.snapshot().mcp
   const disabledText = await readFile(profilePatch, 'utf8')
-  check('managed block written', parsePatchText(disabledText).toggles.some((row) => row.id === 'mcp-alpha' && row.disabled))
+  check('definition disabled directly', parsePatchText(disabledText).rows.find((row) => row.id === 'mcp-alpha')?.disabled === true && parsePatchText(disabledText).toggles.length === 0)
   check('outside bytes preserved', disabledText.startsWith('# test profile patch'))
   check('toggle outcome applied', afterDisable.lastAction?.outcome === 'applied', JSON.stringify(afterDisable.lastAction))
   check('row disabled after toggle', afterDisable.rows.find((row) => row.id === 'mcp-alpha')?.enabled === false)
@@ -142,14 +142,14 @@ try {
   check('file restored exactly', enabledText === originalText)
   check('toggle back applied', afterEnable.rows.find((row) => row.id === 'mcp-alpha')?.enabled === true)
 
-  // Originally-disabled user rows need an explicit false override, then restore exactly.
-  const originallyDisabled = `${originalText}- id: mcp-alpha\n  disabled: true\n`
+  // Originally-disabled definitions are edited directly; foreign overrides remain guarded.
+  const originallyDisabled = originalText.replace('    - id: mcp-alpha\n', '    - id: mcp-alpha\n      disabled: true\n')
   await writeFile(profilePatch, originallyDisabled)
   loaderState['mcp-alpha'].disabled = true
   await runtime.refreshMcp()
   setTimeout(() => { loaderState['mcp-alpha'].disabled = false }, 700)
   await runtime.toggleMcp('mcp-alpha')
-  check('originally disabled row gets false override', parsePatchText(await readFile(profilePatch, 'utf8')).toggles.some((row) => row.id === 'mcp-alpha' && !row.disabled))
+  check('originally disabled definition enabled directly', parsePatchText(await readFile(profilePatch, 'utf8')).rows.find((row) => row.id === 'mcp-alpha')?.disabled !== true && parsePatchText(await readFile(profilePatch, 'utf8')).toggles.length === 0)
   check('originally disabled row enables', runtime.snapshot().mcp.lastAction?.outcome === 'applied')
   setTimeout(() => { loaderState['mcp-alpha'].disabled = true }, 700)
   await runtime.toggleMcp('mcp-alpha')

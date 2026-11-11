@@ -1,6 +1,7 @@
 # ADR-0001：MCP 启停与列表以 patch/loader 为主路径
 
 - 状态：已采纳（2026-11-08）
+- 更新（2026-11-11）：追加 disabled 覆盖的具体写法由 [ADR-0002](0002-mcp-disabled-in-place.md) 替代；patch/loader 主路径与写入保护继续有效。以下覆盖写法保留为历史背景。
 - 关联：[`../需求文档.md`](../需求文档.md) D-9、FR-9、FR-10；[`../research/05-m0-real-machine-probe.md`](../research/05-m0-real-machine-probe.md) §2 Q9
 
 ## 背景

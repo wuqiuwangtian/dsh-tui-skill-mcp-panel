@@ -129,7 +129,7 @@ const HELP_LINES = [
   '  a                  添加技能（本地路径导入）',
   '  g                  把选中/标记技能加入或移出分组',
   '  x                  清除分组过滤 / 清除标记',
-  '  MCP 页              ↑/↓ 选择 · 空格 启停（写 profile patch 受管块）· r 重新读取',
+  '  MCP 页              ↑/↓ 选择 · 空格 启停（仅改 disabled）· r 重新读取 · m 迁移旧启停配置',
   '                     a 新增 · Enter 编辑 · d 删除 · u 撤销（仅本面板受管行）',
   '                     home/表达式行只读；已有 profile 行仅支持启停',
   '                     g 加入/移出分组 · f 状态/分组筛选 · / 搜索元数据 · x 清除 MCP 过滤',
@@ -504,7 +504,9 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const fullActions = columns >= 110
     const skillActions = narrow && focus === 'detail'
       ? [...SKILL_ACTIONS, ['back', 'Esc 返回', '←返回'] as const] : SKILL_ACTIONS
-    const actionDefinitions = tab === 'skills' ? skillActions : tab === 'mcp' ? MCP_ACTIONS : tab === 'groups' ? GROUP_ACTIONS : DIAG_ACTIONS
+    const mcpActions = (state.mcp.legacyToggles?.length ?? 0) > 0
+      ? [...MCP_ACTIONS, ['migrate', 'm 迁移旧启停', 'm迁移'] as const] : MCP_ACTIONS
+    const actionDefinitions = tab === 'skills' ? skillActions : tab === 'mcp' ? mcpActions : tab === 'groups' ? GROUP_ACTIONS : DIAG_ACTIONS
     const actionLabels = actionDefinitions.map(([, full, short]) => ({ label: fullActions ? full : short }))
     const extraFooterRows = packActions(actionLabels, contentWidth).length - 1
     const statusText =
@@ -675,6 +677,17 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (selectedMcp === undefined) { runtime.setStatus('先选择 MCP 行', 'warning'); return }
       setModal({ kind: 'info', title: `MCP 详情 · ${selectedMcp.serverName}`,
         lines: mcpDetailLines(selectedMcp, Number.MAX_SAFE_INTEGER) })
+    }
+
+    const askMigrateMcp = (): void => {
+      const expected = state.mcp
+      const toggles = state.mcp.legacyToggles ?? []
+      if (toggles.length === 0) { runtime.setStatus('没有待迁移的旧启停配置', 'info'); return }
+      setModal({ kind: 'confirm', title: '迁移旧 MCP 启停配置',
+        message: ['将保存的启停状态写回服务器定义，恢复 web/TUI 开关一致。',
+          ...toggles.map(row => `${row.id} → ${row.disabled ? '停用' : '启用'}`),
+          '写前备份；仅修改 disabled 并移除本插件旧覆盖；任一目标有歧义则整批停止。'],
+        onConfirm: () => { void runtime.migrateMcpToggles(expected) } })
     }
 
     const askDeleteMcp = (): void => {
@@ -1078,6 +1091,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       if (tab === 'mcp') {
+        if (char === 'm') return askMigrateMcp()
         if (char === 'i') return openMcpInfo()
         if (char === 'g') return openGroupPicker()
         if (char === 'f') return openMcpFilters()
@@ -1626,7 +1640,10 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     )
 
     // ── MCP tab ─────────────────────────────────────────────────────────────
-    const mcpErrors = state.mcp.errors.slice(0, Math.min(2, Math.max(0, bodyRows - 4)))
+    const legacyCount = state.mcp.legacyToggles?.length ?? 0
+    const mcpErrors = [...state.mcp.errors.map(error => `错误：${error}`),
+      ...(legacyCount ? [`旧启停配置 ${legacyCount} 条，web 开关可能不一致；按 m 迁移`] : [])]
+      .slice(0, Math.min(2, Math.max(0, bodyRows - 4)))
     const mcpFixedRows = 2 + mcpErrors.length + (mcpRows.length > 1 ? 1 : 0)
     const mcpListRows = Math.max(1, Math.min(8, bodyRows - mcpFixedRows - 3))
     const mcpDetailRows = Math.max(0, bodyRows - mcpFixedRows - mcpListRows - 1)
@@ -1677,8 +1694,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         <Text key="mcp-scope" dimColor wrap="truncate">{columns < 72 ? '无工作区 · profile写 · home只读' : MCP_SCOPE_NOTICE}</Text>,
         <Text key="mcp-filters" color="accent" wrap="truncate">{`筛选: ${MCP_STATUSES[mcpStatus]} · 分组:${mcpGroupFilter === undefined ? '全部' : profileGroups[mcpGroupFilter]?.name ?? '?'}${mcpQuery ? ` · 搜索:${mcpQuery}` : ''} · ${mcpRows.length}/${state.mcp.rows.length} 行`}</Text>,
         ...mcpErrors.map((error, index) => (
-          <Text key={`mcp-error-${index}`} color="error" wrap="truncate">
-            {displayLine(`错误：${error}`, contentWidth - 6)}
+          <Text key={`mcp-error-${index}`} color={error.startsWith('错误：') ? 'error' : 'warning'} wrap="truncate">
+            {displayLine(error, contentWidth - 6)}
           </Text>
         )),
         ...mcpListNodes,
@@ -1779,6 +1796,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         else if (id === 'filter') toggleGroupFilter()
         else if (id === 'kind') setGroupKind(groupKind === 'skills' ? 'mcp' : 'skills')
       } else if (tab === 'mcp') {
+        if (id === 'migrate') askMigrateMcp()
         if (id === 'toggle') { if (selectedMcp !== undefined) void runtime.toggleMcp(selectedMcp.id) }
         else if (id === 'create') openMcpForm()
         else if (id === 'edit') { if (selectedMcp !== undefined) openMcpForm(selectedMcp.id) }

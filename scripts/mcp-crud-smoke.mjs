@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { ManagerRuntime } from '../lib/types/host/manager-runtime.js'
 import { createManagerScene } from '../lib/types/ui/ManagerScene.js'
-import { MCP_MODULE, jsValue, parsePatchText } from '../lib/types/domain/mcp/patch.js'
+import { MCP_MODULE, jsValue, parsePatchText, upsertManagedToggle } from '../lib/types/domain/mcp/patch.js'
 import { editManagedMcp, managedMcpEntries } from '../lib/types/domain/mcp/managed.js'
 
 const require = createRequire(import.meta.url)
@@ -195,6 +195,43 @@ try {
   const beforeHttpDelete = await readFile(patchPath, 'utf8')
   await press('\x1b[H'); await press('d'); await press('y')
   await waitFor(() => applied('delete'), 'HTTP delete')
+
+  // The migration is an explicit UI action, and cancel must preserve bytes.
+  let legacy = upsertManagedToggle(await readFile(patchPath, 'utf8'), 'existing', true).text
+  await writeFile(patchPath, legacy)
+  await waitFor(() => entries.find(row=>row.options.id==='existing')?.disabled === true, 'legacy configuration composed')
+  await press('r')
+  assert.equal(runtime.snapshot().mcp.legacyToggles.length,1)
+  assert((await screen()).includes('旧启停配置'))
+  await press('m')
+  assert((await screen()).includes('迁移旧 MCP 启停配置'))
+  await press('n')
+  assert.equal(await readFile(patchPath,'utf8'),legacy)
+  // Even a runtime refresh cannot silently widen an already-open preview.
+  await press('m')
+  legacy += '\n# external change while preview is open\n'
+  await writeFile(patchPath,legacy)
+  await runtime.refreshMcp()
+  await press('y')
+  assert.equal(await readFile(patchPath,'utf8'),legacy)
+  assert.match(runtime.snapshot().statusMessage?.text??'',/已变化/u)
+  await press('m'); await press('y')
+  await waitFor(()=>!runtime.snapshot().busy && runtime.snapshot().mcp.legacyToggles?.length===0,'confirmed migration')
+  const migrated = await readFile(patchPath,'utf8')
+  assert.equal(parsePatchText(migrated).toggles.length,0)
+  assert.equal(parsePatchText(migrated).rows.find(row=>row.id==='existing').disabled,true)
+  assert.equal(managedMcpEntries(migrated).find(row=>row.id===id).serverName,'crud-test')
+  await runtime.undoMcpDelete()
+  assert.equal(await readFile(patchPath,'utf8'),migrated,'an old deletion snapshot cannot undo subsequent migration')
+  assert.equal(runtime.snapshot().mcp.lastAction?.outcome,'conflict')
+
+  // Restore the deletion snapshot as a fixture so cold undo keeps testing its
+  // original conflict contract; migration itself correctly invalidates old undo.
+  await writeFile(patchPath, beforeHttpDelete)
+  await waitFor(()=>entries.some(row=>row.options.id===http.id),'restored HTTP fixture composed')
+  await runtime.refreshMcp()
+  await runtime.deleteMcp(http.id)
+  await waitFor(()=>applied('delete'),'delete again after migration fixture')
   instance.unmount()
   // Recreate the runtime to prove that undo survives a closed/reopened session.
   const cold = new ManagerRuntime(ctx)
@@ -205,7 +242,7 @@ try {
     assert.equal(cold.snapshot().mcp.lastAction.outcome, 'applied')
     assert.equal(await readFile(patchPath, 'utf8'), beforeHttpDelete)
   } finally { cold.dispose() }
-  console.log(`mcp-crud-smoke OK (${columns} cols): stdio+HTTP forms / masked refs / unknown fields / reload / delete+undo / cold recovery / existing-row boundary`)
+  console.log(`mcp-crud-smoke OK (${columns} cols): stdio+HTTP forms / masked refs / unknown fields / reload / delete+undo / cold recovery / existing-row boundary / migration confirm+cancel`)
 } catch (error) {
   console.error((await screen()).slice(-4000))
   throw error

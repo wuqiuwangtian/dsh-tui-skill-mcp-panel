@@ -1,17 +1,17 @@
 /**
  * MCP patch handling: parse profile/home `cordis.patch.yml` (YAML with `!!js`
  * expressions), identify `@deepseek-ai/dsh-mcp-client` rows, and maintain our
- * own "disabled override" managed block without touching any other byte.
+ * legacy "disabled override" block. New toggles edit the definition's boolean
+ * field in toggle.ts; the old writer remains for legacy fixtures/recovery.
  *
  * Write policy (ADR-0001): patch text editing is the primary enable/disable
  * path; the official `pluginManager` inventory cannot address rows inserted by
- * a profile patch. Our block contains `- id: …` / `disabled: true|false`
- * rows appended after the user's content, so composition order makes them win.
+ * a profile patch. Legacy blocks must be migrated, not appended by new toggles.
  */
 import { chmod, copyFile, mkdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { dirname, join } from 'node:path'
-import { isSeq, parseDocument } from 'yaml'
+import { isMap, isScalar, isSeq, parseDocument } from 'yaml'
 
 export const MCP_MODULE = '@deepseek-ai/dsh-mcp-client'
 export const TOGGLE_BLOCK_BEGIN = '# >>> dsh-tui-skill-mcp-panel:mcp-toggle:begin'
@@ -266,6 +266,34 @@ export function upsertManagedToggle(
 /** Read our managed toggles from a patch text (convenience for diagnostics/tests). */
 export function readManagedToggles(text: string): ToggleRow[] {
   return extractManagedBlock(text)?.rows ?? []
+}
+
+/** Strict inventory for explicit migration; diagnostics may use the lenient reader. */
+export function legacyMcpToggles(text: string): ToggleRow[] {
+  return readManagedBlock(text)?.rows ?? []
+}
+
+/** Remove only an unambiguous legacy two-field row, retaining foreign bytes. */
+export function removeLegacyMcpToggle(text: string, id: string): string {
+  const block = readManagedBlock(text)
+  if (block === undefined) return text
+  const targets = block.items.filter((item) => item.id === id)
+  if (targets.length === 0) return text
+  if (targets.length !== 1 || !targets[0]!.owned) throw new Error('旧启停覆盖重复或含外来字段，请手工合并')
+  const target = targets[0]!
+  const doc = parseDocument(block.body, { customTags: [JS_TAG] })
+  if (doc.warnings.length > 0 || !isSeq(doc.contents)) throw new Error('旧启停覆盖含不支持的 YAML，未修改文件')
+  const node = doc.contents.items.find((item) => item?.range?.[2] === target.end)
+  // Comments attached to a removed row must not silently disappear. Unusual
+  // hand-edited legacy rows are left for explicit manual merging instead.
+  if (!isMap(node) || node.anchor || node.flow || node.comment || node.items.some((pair) =>
+    !isScalar(pair.key) || !isScalar(pair.value) || pair.key.comment || pair.key.commentBefore || pair.value.comment ||
+    pair.value.commentBefore || pair.key.anchor || pair.value.anchor || pair.value.tag)) {
+    throw new Error('旧启停覆盖含注释、别名或特殊格式，请手工合并；原文件保留')
+  }
+  const body = block.body.slice(0, target.start) + block.body.slice(target.end)
+  if (body.trim().length > 0) return `${block.before}${TOGGLE_BLOCK_BEGIN}${body}${TOGGLE_BLOCK_END}${block.after}`
+  return block.before + block.after
 }
 
 export interface LoaderMcpRow {

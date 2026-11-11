@@ -1,0 +1,367 @@
+{
+  "date": "2026-11-11",
+  "sourceBaseline": "e6979ea + D-12 implementation",
+  "version": "0.1.0-dev.0",
+  "decision": "D-12 explicitly authorized: precise disabled edits and own legacy override migration; original-row CRUD remains restricted",
+  "environment": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "webPanel": "2.3.7",
+    "webApp": "0.2.2-rc.1",
+    "terminal": "120x35 / scene 116x33",
+    "isolation": "temporary home/profile; shared actual combined Cordis host and two complete UIs; installed packages not modified"
+  },
+  "migration": {
+    "previewAndCancel": "actual TTY, bytes unchanged",
+    "confirmed": "two opposite saved states preserved; only owned legacy rows removed",
+    "backupCount": 9,
+    "privateBackups": true,
+    "exactCandidateMatched": true,
+    "foreignRowsAndMarkersRetained": true,
+    "mouse": {
+      "open": [
+        8,
+        32
+      ],
+      "cancel": [
+        20,
+        10
+      ],
+      "result": "actual SGR click/release opens preview and cancels without writes",
+      "screen": "\n   Skill / MCP manager                                                                                skill-mcp-panel\n                                                                                                                     \n   ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮              \n   │ 迁移旧 MCP 启停配置                                                                              │              \n   │ 将保存的启停状态写回服务器定义，恢复 web/TUI 开关一致。                                          │              \n   │ mcp-probe → 停用                                                                                 │              \n   │ 写前备份；仅修改 disabled 并移除本插件旧覆盖；任一目标有歧义则整批停止。                         │              \n   │ [首] [上页] [下页] [末] 1-3/3                                                                    │              \n   │ [y 确认] [n / Esc 取消]                                                                          │              \n   ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯              \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                     \n                                                                                                                      \n                                                                                                                      \n                                                                                                                      \n                                                                                                                      \nR"
+    },
+    "lazyTargetCleanup": {
+      "result": "explicit target toggle removes only its own legacy override and enables actual server",
+      "web": {
+        "enabled": true,
+        "tools": 1,
+        "switchRef": "f9e259"
+      }
+    }
+  },
+  "observations": [
+    {
+      "label": "mcp-probe-1-tui",
+      "actor": "tui",
+      "name": "mcp-probe",
+      "enabled": false,
+      "rawInputRestored": true,
+      "web": {
+        "enabled": false,
+        "tools": 0,
+        "switchRef": "e393"
+      },
+      "loader": {
+        "enabled": false,
+        "phase": "disposed"
+      },
+      "patchSha256": "2979c8c55c3c25f02da0d51d97d469cff166e1d3df47a683c2645d0bf057f226"
+    },
+    {
+      "label": "mcp-probe-2-web",
+      "actor": "web",
+      "name": "mcp-probe",
+      "enabled": true,
+      "web": {
+        "enabled": true,
+        "tools": 1,
+        "switchRef": "f1e259"
+      },
+      "loader": {
+        "enabled": true,
+        "phase": "active"
+      },
+      "patchSha256": "407d398fb51932cafcb79469f02872129bf8d2a5e607b3a8294f22c4ad72762d"
+    },
+    {
+      "label": "mcp-probe-3-web",
+      "actor": "web",
+      "name": "mcp-probe",
+      "enabled": false,
+      "web": {
+        "enabled": false,
+        "tools": 0,
+        "switchRef": "f2e259"
+      },
+      "loader": {
+        "enabled": false,
+        "phase": "disposed"
+      },
+      "patchSha256": "e59cc2d286125e966e2ff4f4307cc8415e768858a17e35921dba6f258286e1bd"
+    },
+    {
+      "label": "mcp-probe-4-tui",
+      "actor": "tui",
+      "name": "mcp-probe",
+      "enabled": true,
+      "web": {
+        "enabled": true,
+        "tools": 1,
+        "switchRef": "f2e309"
+      },
+      "loader": {
+        "enabled": true,
+        "phase": "active"
+      },
+      "patchSha256": "407d398fb51932cafcb79469f02872129bf8d2a5e607b3a8294f22c4ad72762d"
+    },
+    {
+      "label": "mcp-owned-1-tui",
+      "actor": "tui",
+      "name": "mcp-owned",
+      "enabled": true,
+      "web": {
+        "enabled": true,
+        "tools": 1,
+        "switchRef": "f2e310"
+      },
+      "loader": {
+        "enabled": true,
+        "phase": "active"
+      },
+      "patchSha256": "562707b0482b0bf645ba005a79c5c267a6abc02d7445672374b248a9b554cc41"
+    },
+    {
+      "label": "mcp-owned-2-web",
+      "actor": "web",
+      "name": "mcp-owned",
+      "enabled": false,
+      "web": {
+        "enabled": false,
+        "tools": 0,
+        "switchRef": "f3e238"
+      },
+      "loader": {
+        "enabled": false,
+        "phase": "disposed"
+      },
+      "patchSha256": "dd30042f9d65e55ac7290d70f79e441f0efd3a6f2c93c0c2abb7d3f948889990"
+    },
+    {
+      "label": "mcp-owned-3-web",
+      "actor": "web",
+      "name": "mcp-owned",
+      "enabled": true,
+      "web": {
+        "enabled": true,
+        "tools": 1,
+        "switchRef": "f4e238"
+      },
+      "loader": {
+        "enabled": true,
+        "phase": "active"
+      },
+      "patchSha256": "562707b0482b0bf645ba005a79c5c267a6abc02d7445672374b248a9b554cc41"
+    },
+    {
+      "label": "mcp-owned-4-tui",
+      "actor": "tui",
+      "name": "mcp-owned",
+      "enabled": false,
+      "web": {
+        "enabled": false,
+        "tools": 0,
+        "switchRef": "f4e309"
+      },
+      "loader": {
+        "enabled": false,
+        "phase": "disposed"
+      },
+      "patchSha256": "407d398fb51932cafcb79469f02872129bf8d2a5e607b3a8294f22c4ad72762d"
+    },
+    {
+      "label": "mcp-web-1-tui",
+      "actor": "tui",
+      "name": "mcp-web",
+      "enabled": false,
+      "web": {
+        "enabled": false,
+        "tools": 0,
+        "switchRef": "f4e310"
+      },
+      "loader": {
+        "enabled": false,
+        "phase": "disposed"
+      },
+      "patchSha256": "3f6a61829c74cb5544982e095bf57a0ae6267e498a36770b1e60801dce65a3a8"
+    },
+    {
+      "label": "mcp-web-2-web",
+      "actor": "web",
+      "name": "mcp-web",
+      "enabled": true,
+      "web": {
+        "enabled": true,
+        "tools": 1,
+        "switchRef": "f5e302"
+      },
+      "loader": {
+        "enabled": true,
+        "phase": "active"
+      },
+      "patchSha256": "407d398fb51932cafcb79469f02872129bf8d2a5e607b3a8294f22c4ad72762d"
+    },
+    {
+      "label": "mcp-web-3-web",
+      "actor": "web",
+      "name": "mcp-web",
+      "enabled": false,
+      "afterWebManagedBlockRegeneration": true,
+      "web": {
+        "enabled": false,
+        "tools": 0,
+        "switchRef": "f8e302"
+      },
+      "loader": {
+        "enabled": false,
+        "phase": "disposed"
+      },
+      "patchSha256": "69f1e731ce9ea1d52fd553ebb4e1fb95b3e829546648ce685b89cc642d57723d"
+    },
+    {
+      "label": "mcp-web-4-tui",
+      "actor": "tui",
+      "name": "mcp-web",
+      "enabled": true,
+      "afterWebManagedBlockRegeneration": true,
+      "web": {
+        "enabled": true,
+        "tools": 1,
+        "switchRef": "f8e330"
+      },
+      "loader": {
+        "enabled": true,
+        "phase": "active"
+      },
+      "patchSha256": "5b1975987bebc9a76ca7896bf598e4157888b32139162e4a60862a15e315f7a2"
+    },
+    {
+      "label": "zz-web-created-1-tui",
+      "actor": "tui",
+      "name": "zz-web-created",
+      "enabled": false,
+      "createdThroughWebUI": true,
+      "web": {
+        "enabled": false,
+        "tools": 0,
+        "switchRef": "f8e331"
+      },
+      "loader": {
+        "enabled": false,
+        "phase": "disposed"
+      },
+      "patchSha256": "d5e1ab872209946eac525e3a6c4d5c7363e139a2a81747b7e3628134d4add3b9"
+    },
+    {
+      "label": "zz-web-created-2-web",
+      "actor": "web",
+      "name": "zz-web-created",
+      "enabled": true,
+      "createdThroughWebUI": true,
+      "web": {
+        "enabled": true,
+        "tools": 1,
+        "switchRef": "f9e323"
+      },
+      "loader": {
+        "enabled": true,
+        "phase": "active"
+      },
+      "patchSha256": "5b1975987bebc9a76ca7896bf598e4157888b32139162e4a60862a15e315f7a2"
+    }
+  ],
+  "preservation": {
+    "tuiTransitionsCheckedAgainstExactCandidates": 7,
+    "bulkAndLazyMigrationCandidatesMatched": true,
+    "sourceOfWebOwnedNormalization": "web Add server rewrites its own managed block; TUI does not normalize config"
+  },
+  "actualWebApi": {
+    "webPanel": "2.3.7",
+    "checks": 18,
+    "observations": [
+      "original: TUI off -> web read",
+      "original: web on -> TUI read",
+      "original: web off -> TUI read",
+      "original: TUI on -> web read",
+      "original: legacy migration -> web read",
+      "original: web on -> TUI read",
+      "tuiOwned: TUI off -> web read",
+      "tuiOwned: web on -> TUI read",
+      "tuiOwned: web off -> TUI read",
+      "tuiOwned: TUI on -> web read",
+      "tuiOwned: legacy migration -> web read",
+      "tuiOwned: web on -> TUI read",
+      "webOwned: TUI off -> web read",
+      "webOwned: web on -> TUI read",
+      "webOwned: web off -> TUI read",
+      "webOwned: TUI on -> web read",
+      "webOwned: legacy migration -> web read",
+      "webOwned: web on -> TUI read"
+    ],
+    "scope": "actual web editor/model + TUI guarded disk writer; not full UI/HMR acceptance"
+  },
+  "remainingIssues": {
+    "webNullRender": {
+      "occurrences": 7,
+      "handling": "full reload after web toggle; independent installed web bug remains"
+    },
+    "webMultilineFlow": {
+      "result": "web enable -> later disable rejects malformed candidate; no write",
+      "message": "- generic [ref=f5e310]: \"mcpManager.setEnabled failed: gateway/internal: cordis.patch.yml 解析失败：Flow sequence in block collection must be sufficiently indented and end with a ] at line 71, column 7: o-server.mjs\\\" disabled: true ^\"",
+      "followup": "web Edit also rejected; web Add regenerated its own block in ordinary format, then the two final mcp-web observations passed; flow compatibility is not claimed"
+    },
+    "ttyInputMode": {
+      "restorations": 2,
+      "handling": "one explicit manual restore plus one logged restore on owned probe PTY; affected stale dump observations were discarded and recaptured",
+      "cause": "unresolved; no product raw-mode patch added",
+      "oldOverrideBaseline": {
+        "canonical": false,
+        "echo": false
+      }
+    }
+  },
+  "acceptance": "original override-semantics defect fixed for verified ordinary definitions; AC-15/full UX acceptance remains open due independent web/TTY issues",
+  "verification": {
+    "fullUiTransitions": 14,
+    "webModuleTransitions": 18,
+    "domainAndReleaseTests": 96,
+    "viewportAssertions": 176,
+    "mouseAssertions": 61,
+    "mcpCrud": "120/58 columns including migration preview, cancel, stale confirmation, undo invalidation",
+    "fullReleaseCheck": "pnpm check:release completed, exit 0",
+    "finalPreviewGuard": {
+      "actualTty": "fresh combined host; one legacy off state migrated successfully; host exited 0",
+      "headless": "120/58 column normal/cancel/stale preview cases passed in final complete release check"
+    }
+  },
+  "safety": {
+    "realUserConfigWritten": false,
+    "installedThirdPartyModified": false,
+    "completedModelCalls": 0,
+    "browserClosed": true,
+    "probeExitCode": 0,
+    "tagged": false,
+    "published": false
+  },
+  "sourceSha256": {
+    "src/domain/mcp/toggle.ts": "06802109611d7c766a2ed65cef93db793a125f6e084ff8b383641af10258fee9",
+    "src/domain/mcp/patch.ts": "835413f38df7be56e331c8ecd0e4d3c66721a03dbaca9cc9780a1e12f1adacb9",
+    "src/domain/mcp/write.ts": "0c0315746eaebfcb0f75dee76cc10955b6c41e0a5f0599b6d4d9b5217fcfe712",
+    "src/host/manager-runtime.ts": "3f60e1d48bb520142352d826b8b7392a1d58e014245c01d1f6b44b660cba2d7e",
+    "src/ui/ManagerScene.tsx": "9b07500199fa1f7b2d8b6d0a90b2addb37c3b09eec180f7ce705d7fe075658dc"
+  },
+  "artifact": {
+    "check": "tarball",
+    "ok": true,
+    "name": "dsh-tui-skill-mcp-panel",
+    "version": "0.1.0-dev.0",
+    "fileCount": 65,
+    "bytes": 89495,
+    "sha256": "215e5817d8d1c8fd41f7507c09c2585fe877d7d3badddce43f79abf7821822b9",
+    "npmIntegrity": "sha512-4zN9psHlYvpOz8JBwPoFR4OMsEXW4o8p67I+PyiktKmTxwny3iYE2FzKtcnR8h1H4kQarGSD3GO4C59CmYsqCQ==",
+    "dryRunFileCount": 65,
+    "manifestId": "com.dsh-tui.skill-mcp-panel",
+    "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+    "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+  }
+}
