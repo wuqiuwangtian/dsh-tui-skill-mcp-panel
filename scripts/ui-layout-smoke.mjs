@@ -26,9 +26,11 @@ class Runtime {
   listeners = new Set()
   calls = []
   constructor() {
-    const instances = Array.from({ length: 60 }, (_, i) => ({ id: `s-${i}`, name: `skill-${String(i).padStart(3, '0')}`, description: word,
-      source: i === 59 ? 'bundled' : 'project-dsh', rank: 100, providerOrder: i, scope: i === 59 ? 'global' : 'workspace', form: 'directory', status: 'enabled', effective: true,
-      path: `/fixture/project/${word}/SKILL.md`, rootPath: '/fixture/project/.dsh/skills', skillFile: '/fixture/SKILL.md', bodyPreview: body }))
+    const instances = Array.from({ length: 60 }, (_, i) => ({ id: `s-${i}`, name: `skill-${String(i === 1 ? 0 : i).padStart(3, '0')}`, description: word,
+      source: i === 59 ? 'bundled' : i === 1 ? 'user-dsh' : 'project-dsh', rank: 100, providerOrder: i, scope: i === 59 || i === 1 ? 'global' : 'workspace', form: i === 2 ? 'file' : 'directory', status: i === 2 ? 'disabled' : 'enabled', effective: true,
+      locatorDir: `/fixture/${i === 1 ? 'global' : 'project'}/${word}/entity-${i}`,
+      path: `/fixture/${i === 1 ? 'global' : 'project'}/${word}/entity-${i}/SKILL.md`, rootPath: '/fixture/project/.dsh/skills',
+      skillFile: i === 2 ? `/fixture/project/${word}/flat.md.disabled` : `/fixture/${i === 1 ? 'global' : 'project'}/${word}/entity-${i}/SKILL.md`, bodyPreview: body }))
     this.state = { status: 'ready', refreshing: false, busy: false, refreshReason: 'layout-fixture', services: [], groupsWritable: false,
       paths: { homePatch: '/fixture/dsh/cordis.patch.yml', panelHome: '/fixture/panel', skillGroupsFile: '/fixture/groups.json' },
       detail: { status: 'idle' }, groups: Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`g-${i}`, { name: `group-${String(i).padStart(3, '0')} ${word}`, scopes: { global: [] } }])),
@@ -135,6 +137,37 @@ for (const [columns, rows] of sizes) {
     for (let i = 0; i < 10; i++) { await press('v'); await press('\x1b[B') }
     await press('d')
     await check('batch-confirm-buttons', (s) => s.includes('[y 确认]') && s.includes('取消') && s.includes('删除技能'))
+    // Read every body row through real paging; retain offsets to avoid duplicate
+    // overlap on the last page. Joining wrapped rows must recover the full paths.
+    const confirmationRows = new Map()
+    let previousFirst = 0
+    for (let page = 0; page < 1000; page++) {
+      const text = await screen(), lines = text.split('\n')
+      const titleAt = lines.findIndex(line => line.includes('删除技能'))
+      const pagerAt = lines.findIndex(line => line.includes('[首]'))
+      const range = lines[pagerAt]?.match(/(\d+)(?:-(\d+))?\/(\d+)/u)
+      if (titleAt < 0 || !range) throw new Error(`missing confirmation pager at ${columns}x${rows}`)
+      const first = Number(range[1]), total = Number(range[3])
+      if (first === previousFirst) break // PgDn clamps when the final page is reached.
+      previousFirst = first
+      lines.slice(titleAt + 1, pagerAt).forEach((line, index) => confirmationRows.set(first + index, line.replace(/[│\s]/gu, '')))
+      if (Number(range[2]) === total) break
+      await press('\x1b[6~')
+    }
+    const allConfirmation = [...confirmationRows].sort((a, b) => a[0] - b[0]).map(([, line]) => line).join('')
+    const expectedTargets = runtime.state.scan.instances.slice(0, 10)
+    const identity = allConfirmation.includes('作用域：全局') && allConfirmation.includes('作用域：工作区') && allConfirmation.includes('来源：user/~/.dsh')
+    await check('batch-confirm-all-identities-and-full-paths', () => identity && expectedTargets.every(row =>
+      allConfirmation.includes(row.name) && allConfirmation.includes(row.skillFile) && (row.form === 'file' || allConfirmation.includes(row.locatorDir))))
+    await check('batch-confirm-flat-disabled-entity', () => allConfirmation.includes('删除文件：') && allConfirmation.includes('flat.md.disabled'))
+    await press('\x1b[H')
+    await check('batch-confirm-home', s => s.includes('将移入回收站') && s.includes('共 10 个'))
+    await press('\x1b[F')
+    await check('batch-confirm-end', s => s.replace(/[│\s]/gu, '').includes('entity-9/SKILL.md'))
+    await press('\x1b')
+    await check('batch-confirm-cancel-no-delete', () => !runtime.calls.includes('delete'))
+    await press('d')
+    await check('batch-confirm-reopen-starts-at-top', s => s.includes('将移入回收站'))
     await press('\x1b'); await press('x')
     await press('2'); await press('\x1b[H'); await press('i'); await press('\x1b[F')
     await check('mcp-detail-end', (s) => s.includes('MCP-DETAIL-END'))

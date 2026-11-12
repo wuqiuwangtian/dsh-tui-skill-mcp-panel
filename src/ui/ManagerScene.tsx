@@ -577,8 +577,14 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         danger: true,
         message: [
           `将移入回收站（可撤销）：共 ${targets.length} 个`,
-          ...targets.slice(0, 8).map((instance) => `· ${instance.name}  [${SOURCE_LABELS[instance.source]}]`),
-          ...(targets.length > 8 ? [`… 其余 ${targets.length - 8} 个`] : []),
+          '↑/↓ 滚动 · PgUp/PgDn 翻页 · Home/End 首尾',
+          ...targets.flatMap((instance, index) => [
+            '',
+            `${index + 1}. ${instance.name}`,
+            `作用域：${SCOPE_LABELS[instance.scope]} · 来源：${SOURCE_LABELS[instance.source]}`,
+            instance.form === 'directory' ? `删除目录：${instance.locatorDir}` : `删除文件：${instance.skillFile}`,
+            ...(instance.form === 'directory' ? [`技能文件：${instance.skillFile}`] : []),
+          ]),
         ],
         onConfirm: () => {
           void runtime.deleteSkillInstances(targets)
@@ -1311,7 +1317,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           ['首', 0], ['上页', Math.max(0, at - page)],
           ['下页', Math.min(Math.max(0, total - page), at + page)], ['末', Math.max(0, total - page)],
         ] as const).map(([label, next]) => <Box key={label} flexShrink={0} onClick={() => setOffset(next)}><Text color="accent">{`[${label}] `}</Text></Box>)}
-        <Text dimColor wrap="truncate">{`${at + 1}-${Math.min(at + page, total)}/${total}`}</Text>
+        <Text dimColor wrap="truncate">{columns < 72 ? `${at + 1}/${total}` : `${at + 1}-${Math.min(at + page, total)}/${total}`}</Text>
       </Box>
     )
 

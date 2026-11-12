@@ -116,8 +116,9 @@
   "remainingP0": {
     "deleteConfirmation": {
       "source": "src/ui/ManagerScene.tsx",
-      "observed": "first 8 names/source labels only; full target scope/path missing",
-      "next": true
+      "next": false,
+      "observedBeforeFollowup": "first 8 names/source labels only; full target scope/path missing",
+      "status": "Implemented and locally verified in deleteConfirmationFollowup; full user acceptance pending"
     },
     "crossDeviceRecovery": {
       "source": "src/domain/skills/write.ts",
@@ -129,7 +130,8 @@
         ],
         "sourcePresent": true
       },
-      "observed": "rename fails safely with EXDEV; copy/verify/delete and alternative conflict destination flow missing"
+      "observed": "rename fails safely with EXDEV; copy/verify/delete and alternative conflict destination flow missing",
+      "next": true
     },
     "cleanupLifecycle": {
       "source": "src/host/manager-runtime.ts; src/domain/skills/write.ts",
@@ -153,5 +155,121 @@
     "Layout breakpoints versus original spec and all inline/fullscreen modes",
     "1000-skill and per-key search performance targets",
     "Existing KI-01..03 and unlocked web skill-group writes; keep real installation unchanged per user decision"
-  ]
+  ],
+  "deleteConfirmationFollowup": {
+    "date": "2026-11-12",
+    "baseline": "d9dbc82",
+    "modifiedSource": "src/ui/ManagerScene.tsx",
+    "modifiedFunctions": [
+      "askDelete",
+      "textPager"
+    ],
+    "behavior": [
+      "Every selected target is numbered and shows name/source/scope",
+      "Display actual locatorDir for directory move, plus skillFile; display skillFile for flat file move",
+      "Reuse terminal-cell wrapping and existing keyboard/pointer paging",
+      "Compact current/total progress below 72 columns prevents tested 40-column total truncation",
+      "Existing confirm/cancel and target set retained; no new dependency or deletion transaction changes"
+    ],
+    "regressionFiles": [
+      "scripts/ui-layout-smoke.mjs",
+      "scripts/ui-mouse-smoke.mjs",
+      "scripts/ui-interaction-smoke.mjs"
+    ],
+    "targetedChecks": {
+      "layout40x16": {
+        "exitCode": 0,
+        "assertions": 28
+      },
+      "mouse": {
+        "exitCode": 0,
+        "assertions": 67,
+        "viewports": [
+          "40x16",
+          "58x22",
+          "116x33"
+        ]
+      },
+      "realRuntimeInteraction": {
+        "exitCode": 0,
+        "cancelSkillBytesUnchanged": true,
+        "noTrashAfterCancel": true
+      }
+    },
+    "realTui": {
+      "method": "Actual isolated DSH CLI in owned PTY; real stdin navigation; ANSI output replayed with headless xterm for screen assertions; actual filesystem hashes and manifests checked",
+      "host": "0.19.0",
+      "kernel": "0.2.2-rc.1",
+      "terminal": "58x22",
+      "scene": "54x20",
+      "selectedTargets": 11,
+      "fixtureFiles": 12,
+      "allSelectedFilePathsRead": true,
+      "cases": [
+        "same name in workspace/global scopes",
+        "directory skill",
+        "flat .md.disabled skill",
+        "long Chinese paths with spaces",
+        "PgDn and Home/End"
+      ],
+      "cancel": {
+        "all12FileHashesUnchanged": true,
+        "noTrashCreated": true
+      },
+      "confirm": {
+        "journalCount": 1,
+        "journalEntries": 11,
+        "onlySelectedEntitiesMoved": true,
+        "unselectedProbePreserved": true
+      },
+      "undo": {
+        "all12FileHashesRestored": true,
+        "remainingSkillJournals": 0
+      },
+      "probeExitedBeforeFinalBuild": true,
+      "realUserDataChanged": false,
+      "modelRequestMade": false,
+      "installedThirdPartyChanged": false,
+      "screens": {
+        "confirmation-start": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 删除技能                                         │\n   │ 将移入回收站（可撤销）：共 11 个                 │\n   │ ↑/↓ 滚动 · PgUp/PgDn 翻页 · Home/End 首尾        │\n   │ 1. confirm-00                                    │\n   │ 作用域：工作区 · 来源：project/.dsh              │\n   │ 删除目录：<fixture>/project │\n   │ /.dsh/skills/confirm-00-路径 空格-路径 空格-路径 │\n   │  空格-路径 空格-路径 空格-路径 空格-路径 空格-路 │\n   │ 径 空格-                                         │\n   │ 技能文件：<fixture>/project │\n   │ /.dsh/skills/confirm-00-路径 空格-路径 空格-路径 │\n   │ [首] [上页] [下页] [末] 1/113                    │\n   │ [y 确认] [n / Esc 取消]                          │\n   ╰──────────────────────────────────────────────────╯\n                                                        \n                                                        \n                                                        \n",
+        "confirmation-end": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 删除技能                                         │\n   │ 11. confirm-09                                   │\n   │ 作用域：工作区 · 来源：project/.dsh              │\n   │ 删除目录：<fixture>/project │\n   │ /.dsh/skills/confirm-09-路径 空格-路径 空格-路径 │\n   │  空格-路径 空格-路径 空格-路径 空格-路径 空格-路 │\n   │ 径 空格-                                         │\n   │ 技能文件：<fixture>/project │\n   │ /.dsh/skills/confirm-09-路径 空格-路径 空格-路径 │\n   │  空格-路径 空格-路径 空格-路径 空格-路径 空格-路 │\n   │ 径 空格-/SKILL.md                                │\n   │ [首] [上页] [下页] [末] 103/113                  │\n   │ [y 确认] [n / Esc 取消]                          │\n   ╰──────────────────────────────────────────────────╯\n                                                        \n                                                        \n                                                        \n"
+      }
+    },
+    "limits": [
+      "Full user acceptance still pending",
+      "Cross-device and conflict recovery remain P0 gaps",
+      "Existing KI-01..03 remain open; no real-install compatibility patch applied",
+      "Long lists require paging; no new mandatory review-every-page gate"
+    ],
+    "finalReleaseCheck": {
+      "command": "pnpm check:release",
+      "exitCode": 0,
+      "tests": 103,
+      "passed": 103,
+      "failed": 0,
+      "layoutAssertions": 224,
+      "layoutSizes": 8,
+      "mouseAssertions": 67,
+      "mouseSizes": 3,
+      "manifest": "passed",
+      "renderSmoke": "passed",
+      "uiInteractionSmoke": "passed",
+      "mcpSmoke": "passed",
+      "mcpCrudSmokeColumns": [
+        120,
+        58
+      ],
+      "mcpGroupsSmokeColumns": [
+        120,
+        58
+      ],
+      "tarball": {
+        "version": "0.1.0-dev.0",
+        "fileCount": 65,
+        "bytes": 90564,
+        "sha256": "d829a499a337b52ee0a6b38b39fc03b41dcba9d09b018704ce644efe5744b8b7"
+      },
+      "scope": "Final stable source/tests/README; subsequent edits only to non-packed documentation/evidence"
+    }
+  }
 }

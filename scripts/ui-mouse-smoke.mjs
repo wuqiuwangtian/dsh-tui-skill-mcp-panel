@@ -29,7 +29,7 @@ class Runtime {
     scan: { scannedAt: 'mouse-fixture', cwd: '/fixture/project', projectRoot: '/fixture/project', dshHome: '/fixture/home', agentsHome: '/fixture/agents', roots: [], warnings: [],
       instances: Array.from({ length: 40 }, (_, i) => ({ id: `s${i}`, name: `mouse-${String(i).padStart(3, '0')}`, description: 'Mouse fixture',
         scope: 'workspace', source: 'project-dsh', rank: 100, providerOrder: i, form: 'directory', status: 'enabled', effective: true,
-        rootPath: '/fixture/project/.dsh/skills', path: `/fixture/project/.dsh/skills/mouse-${i}/SKILL.md`, skillFile: '/fixture/SKILL.md' })) },
+        locatorDir: `/fixture/project/.dsh/skills/mouse-${i}`, rootPath: '/fixture/project/.dsh/skills', path: `/fixture/project/.dsh/skills/mouse-${i}/SKILL.md`, skillFile: '/fixture/SKILL.md' })) },
     mcp: { profilePatchPath: profile, warnings: [], errors: [], rows: Array.from({ length: 30 }, (_, i) => ({ id: `m${i}`, entryId: `m${i}`, serverName: `mc-${String(i).padStart(3, '0')}`,
       layer: 'profile', transport: 'stdio', enabled: false, targetable: true, managed: i === 0, notes: [],
       config: { serverName: `mc-${String(i).padStart(3, '0')}`, transport: 'stdio', command: 'node', args: [],
@@ -116,6 +116,12 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
     assert.deepEqual(runtime.calls, ['toggle:s2']); passed('toggle targets selected skill')
     await check('toggle preserves the selected logical skill after scan ID changes', s => /❯.*mouse-002/u.test(s))
     await click(columns < 110 ? 'd删除' : 'd 删除')
+    const beforeWheel = (await screen()).join('\n'), range = beforeWheel.match(/(\d+)(?:-(\d+))?\/(\d+)/u)
+    const canScroll = Number(range?.[3]) > rows - 9
+    await wheel('删除技能')
+    await check('confirmation wheel respects bounds without deleting', s => s.includes('将移入回收站') === !canScroll && !runtime.calls.some(c => c.startsWith('delete:')))
+    await click('[末]')
+    await check('confirmation last page shows file path', s => s.replace(/[│\s]/gu, '').includes('/fixture/SKILL.md'))
     await click('n / Esc 取消')
     assert.ok(!runtime.calls.some(c => c.startsWith('delete:'))); passed('delete cancellation makes no delete call')
     await click(columns < 110 ? 'd删除' : 'd 删除')
