@@ -130,8 +130,10 @@
         ],
         "sourcePresent": true
       },
-      "observed": "rename fails safely with EXDEV; copy/verify/delete and alternative conflict destination flow missing",
-      "next": true
+      "next": false,
+      "observedBeforeFollowup": "rename fails safely with EXDEV; copy/verify/delete and alternative conflict destination flow missing",
+      "status": "Cross-device movement and undo protection implemented; conflict recovery choices remain P0",
+      "resolutionEvidence": "m5-skill-cross-device.json"
     },
     "cleanupLifecycle": {
       "source": "src/host/manager-runtime.ts; src/domain/skills/write.ts",
@@ -148,6 +150,11 @@
     "diagnosticVersions": {
       "source": "src/ui/ManagerScene.tsx:diagnosticLines",
       "observed": "capabilities/paths/stats/warnings shown; plugin/host/kernel/Node version summary missing"
+    },
+    "conflictRecoveryChoices": {
+      "source": "src/domain/skills/write.ts; src/host/manager-runtime.ts; src/ui/ManagerScene.tsx",
+      "next": true,
+      "observed": "Default skip/preserve on occupied target; no backup-overwrite or alternative-scope choices yet. Interrupted restores require explicit data inspection."
     }
   },
   "unverifiedOrExternal": [

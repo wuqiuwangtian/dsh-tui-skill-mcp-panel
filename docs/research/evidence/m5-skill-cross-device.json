@@ -1,0 +1,188 @@
+{
+  "date": "2026-11-12",
+  "baseline": "12cd947",
+  "version": "0.1.0-dev.0",
+  "authority": "docs/需求文档.md §14.1; docs/release-readiness.md §14",
+  "scope": {
+    "crossDeviceMovement": "implemented and locally verified",
+    "conflictRecoveryChoices": "pending P0; next step",
+    "realUserDataChanged": false,
+    "installedThirdPartyChanged": false,
+    "modelRequestsMade": false,
+    "published": false,
+    "fullUserAcceptance": "pending",
+    "AC15": "not passed"
+  },
+  "changes": {
+    "files": [
+      "src/domain/skills/move.ts",
+      "src/domain/skills/write.ts",
+      "test/domain/skill-move.test.js",
+      "README.md",
+      "AGENT.md",
+      "docs/需求文档.md",
+      "docs/release-readiness.md",
+      "docs/research/README.md",
+      "docs/research/evidence/m5-p0-scope-audit.json",
+      "docs/research/evidence/m5-skill-cross-device.json"
+    ],
+    "addedFiles": [
+      "src/domain/skills/move.ts",
+      "test/domain/skill-move.test.js",
+      "docs/research/evidence/m5-skill-cross-device.json"
+    ],
+    "deletedFiles": [],
+    "addedModule": "src/domain/skills/move.ts",
+    "modifiedWriteFunctions": [
+      "moveToTrash",
+      "deleteSkills",
+      "listTrash",
+      "undoTrash",
+      "isOwnedSkillTrashBatch"
+    ],
+    "deletedFunctions": [],
+    "newDependencies": []
+  },
+  "before": {
+    "priorAuditCrossDeviceProbe": {
+      "differentDevices": true,
+      "deleted": 0,
+      "failed": [
+        "EXDEV: cross-device link not permitted, rename '<source>/project/.dsh/skills/alpha' -> '<panel>/trash/20261112T055634Z-rdg2b4/workspace/alpha'"
+      ],
+      "sourcePresent": true
+    },
+    "partialUndoLoss": {
+      "baseline": "12cd947",
+      "scenario": "alpha conflicts, gamma directory restores in same workspace scope",
+      "restored": [
+        "gamma"
+      ],
+      "conflicts": 1,
+      "remainingJournalEntries": 1,
+      "conflictingTrashDataPreserved": false
+    }
+  },
+  "after": {
+    "fastPath": "rename when destination absent",
+    "fallbackOn": [
+      "EXDEV",
+      "EACCES",
+      "EPERM"
+    ],
+    "fallbackSteps": [
+      "snapshot source tree without following symlinks",
+      "copy to private nested staging entity",
+      "verify SHA256, tree structure, ordinary modes and literal link targets",
+      "reread source and reject detected changes",
+      "check destination and publish staging entity",
+      "remove source; if removal fails copy only missing nodes back and verify rollback"
+    ],
+    "failureHandling": [
+      "Changed existing rollback nodes are never overwritten",
+      "Failed rollback keeps published data and recovery journal",
+      "Copy cleanup failure reports that source was restored",
+      "recoveryPending and recoveryDirection survive reload and exclude batch from retention",
+      "Interrupted restore is not blindly retried from potentially incomplete trash after original destination disappears",
+      "Undo writes durable intent before moving and atomically writes remaining entries",
+      "Partial undo never recursively removes a restored directory entry parent scope"
+    ],
+    "regressions": [
+      "real cross-device delete and undo preserve directory assets, modes, empty dirs, links and disabled files",
+      "cross-device move of a root symlink preserves the literal link and never copies or deletes its target",
+      "cross-device copy ENOSPC aborts without removing source or keeping an ordinary deletion batch",
+      "corrupt copied bytes fail verification before source removal",
+      "source changes during copying are preserved and stop publication",
+      "partial source removal failure rolls the complete entity back before discarding its copy",
+      "failed rollback retains the verified copy and a durable recovery flag excluded from retention",
+      "permission-related rename failure uses the same verified fallback without forcing permissions",
+      "unrelated rename failure refuses the move without attempting a copy",
+      "undo treats a dangling symlink as an occupied destination and leaves both sides untouched",
+      "partial undo success never removes a conflicting sibling directory from the same scope",
+      "undo journal failure aborts before moving any entity",
+      "a destination created during copying is preserved and source is not removed",
+      "rollback never overwrites a source file that changed after partial removal",
+      "restore staging is nested and never discovered as an enabled skill before publication",
+      "failed post-restore manifest update keeps the durable pending journal out of retention",
+      "partial copy cleanup failure reports that the source was restored and retains the pending journal",
+      "interrupted undo never retries an unverified partial trash entity after the restored destination is moved away"
+    ]
+  },
+  "targetedValidation": {
+    "command": "pnpm build && node --test test/domain/skill-move.test.js test/domain/write.test.js test/domain/mcp-crud.test.js",
+    "exitCode": 0,
+    "tests": 45,
+    "passed": 45,
+    "failed": 0,
+    "skipped": 0,
+    "realDevicePrerequisite": "Writable /dev/shm and tmpdir on different devices; satisfied here; tests explicitly skip if unavailable elsewhere"
+  },
+  "realTui": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "terminal": "58x22",
+    "scene": "54x20",
+    "projectDevice": "/dev/shm",
+    "panelDevice": "/tmp",
+    "differentDevices": true,
+    "driver": "Actual isolated DSH CLI in owned PTY; stdin v/d/y/u; actual filesystem/journal checks",
+    "deletedSelected": [
+      "alpha directory",
+      "beta.md.disabled file",
+      "gamma directory"
+    ],
+    "unselectedProbePreserved": true,
+    "firstUndo": {
+      "restored": [
+        "beta",
+        "gamma"
+      ],
+      "conflict": "alpha occupied by replacement",
+      "conflictingTrashDataPreserved": true,
+      "replacementPreserved": true
+    },
+    "retryUndo": "After saving fixture replacement outside discovery roots, alpha restored; original 13 tree entries match types, SHA256, ordinary modes, empty directories and link targets; no remaining skill journal",
+    "finalGuardCoverage": "Normal real TUI flow ran before final recoveryDirection guard; affected interrupted-restore branch is covered by final domain regression. Normal flow unchanged.",
+    "probeExitedBeforeFinalReleaseBuild": true
+  },
+  "finalReleaseCheck": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "tests": 121,
+    "passed": 121,
+    "failed": 0,
+    "skipped": 0,
+    "layoutAssertions": 224,
+    "layoutSizes": 8,
+    "mouseAssertions": 67,
+    "mouseSizes": 3,
+    "manifest": "passed",
+    "renderSmoke": "passed",
+    "uiInteractionSmoke": "passed",
+    "mcpSmoke": "passed",
+    "mcpCrudSmokeColumns": [
+      120,
+      58
+    ],
+    "mcpGroupsSmokeColumns": [
+      120,
+      58
+    ],
+    "tarball": {
+      "version": "0.1.0-dev.0",
+      "fileCount": 68,
+      "bytes": 93031,
+      "sha256": "99eff4fbb5fc41fb5afbb35a84dfdea3c760069efa8e0d277d5a1f9e0ddd4f07"
+    },
+    "evidenceScope": "Final stable source/tests/README, after recoveryDirection guard. Prior complete run without this guard is not used as final evidence."
+  },
+  "limits": [
+    "Per-entity rollback; other successful batch items remain successful",
+    "Extra copy space and sequential hashing cost; performance targets not accepted by this run",
+    "Ordinary modes/content/link targets preserved; not ACL/xattr/owner/timestamp/hardlink topology preservation",
+    "No arbitrary concurrent-edit transaction or fsync/power-loss guarantee",
+    "Pending recovery data may exceed ordinary retention budget; old cleanup implementations ignore new flags",
+    "Backup-overwrite and alternative-scope recovery interaction remains pending P0",
+    "User full acceptance and existing external KI-01..03 remain open"
+  ]
+}

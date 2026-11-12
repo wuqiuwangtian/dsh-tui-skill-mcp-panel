@@ -9,6 +9,7 @@ import { copyFile, lstat, mkdir, readdir, readFile, rename, rm, stat, writeFile 
 import { randomUUID } from 'node:crypto'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { parseSkillDocument } from './frontmatter.js'
+import { entityExists, moveEntity, MoveRecoveryError } from './move.js'
 import type { SkillInstance, SkillStatus } from './types.js'
 import { trashRoot } from '../store.js'
 
@@ -34,6 +35,9 @@ export interface TrashEntry {
   entityPath: string
   /** Where the entity lives inside the trash batch. */
   trashPath: string
+  /** Keep interrupted moves out of automatic retention until explicitly recovered. */
+  recoveryPending?: boolean
+  recoveryDirection?: 'delete' | 'restore'
 }
 
 export interface TrashBatch {
@@ -145,8 +149,8 @@ async function moveToTrash(
   const baseName = sanitizeSegment(instance.name)
   const entityName = entryIndex === 0 ? baseName : `${baseName}-${entryIndex + 1}`
   const entityDir = join(batchDir, scopeKey, entityName)
-  await mkdir(entityDir, { recursive: true })
   const trashPath = instance.form === 'directory' ? entityDir : join(entityDir, basename(instance.skillFile))
+  await mkdir(dirname(trashPath), { recursive: true })
   const entry: TrashEntry = {
     entryId: `${now.getTime()}-${entryIndex}`,
     name: instance.name,
@@ -161,7 +165,7 @@ async function moveToTrash(
   }
   // Persist recovery metadata before moving anything away from its source.
   await beforeMove(entry)
-  await rename(entry.entityPath, trashPath)
+  await moveEntity(entry.entityPath, trashPath)
   return entry
 }
 
@@ -187,6 +191,7 @@ export async function deleteSkills(
   let ownsBatch = false
   let index = 0
   for (const instance of instances) {
+    let pending: TrashEntry | undefined
     if (instance.source === 'bundled') {
       failed.push({ id: instance.id, error: 'bundled（随包）技能只读，不能删除' })
       continue
@@ -201,12 +206,18 @@ export async function deleteSkills(
         await mkdir(batchDir, { mode: 0o700 })
         ownsBatch = true
       }
-      const entry = await moveToTrash(instance, batchDir, index, now, (pending) =>
-        writeTrashManifest(batchDir, { batchId, createdAt: now.toISOString(), entries: [...entries, pending] }))
+      const entry = await moveToTrash(instance, batchDir, index, now, async (next) => {
+        pending = { ...next, recoveryPending: true, recoveryDirection: 'delete' }
+        await writeTrashManifest(batchDir, { batchId, createdAt: now.toISOString(), entries: [...entries, pending] })
+      })
       index += 1
       entries.push(entry)
       deleted.push(instance.id)
     } catch (error) {
+      if (error instanceof MoveRecoveryError && pending !== undefined) {
+        entries.push(pending)
+        index += 1
+      }
       failed.push({ id: instance.id, error: errorMessage(error) })
     }
   }
@@ -264,6 +275,8 @@ export async function listTrash(panelHome: string): Promise<TrashBatch[]> {
           originalPath: entry.originalPath,
           entityPath: entry.entityPath,
           trashPath: entry.trashPath,
+          ...(entry.recoveryPending === true ? { recoveryPending: true } : {}),
+          ...(entry.recoveryDirection === 'delete' || entry.recoveryDirection === 'restore' ? { recoveryDirection: entry.recoveryDirection } : {}),
         })
       }
       if (entries.length === 0) continue
@@ -286,43 +299,41 @@ export async function undoTrash(panelHome: string, batchId?: string): Promise<Un
   const result: UndoResult = { restored: [], conflicts: [], failed: [] }
   if (target === undefined) return result
   result.batchId = target.batchId
+  const batchDir = join(trashRoot(panelHome), target.batchId)
+  try {
+    await writeTrashManifest(batchDir, { ...target, entries: target.entries.map((entry) => ({ ...entry, recoveryPending: true, recoveryDirection: 'restore' })) })
+  } catch (error) {
+    result.failed.push({ id: target.batchId, error: `写入恢复日志失败，未移动文件：${errorMessage(error)}` })
+    return result
+  }
   const remaining: TrashEntry[] = []
   for (const entry of target.entries) {
     const destination = entry.form === 'directory' ? entry.entityPath : entry.originalPath
     try {
-      if (await pathExists(destination)) {
+      if (await entityExists(destination)) {
         result.conflicts.push(`${entry.name}（${destination} 已存在）`)
         remaining.push(entry)
         continue
       }
-      await mkdir(dirname(destination), { recursive: true })
-      if (entry.form === 'directory') {
-        await rename(entry.trashPath, destination)
-      } else {
-        await rename(entry.trashPath, destination)
+      if (entry.recoveryPending === true && entry.recoveryDirection === 'restore') {
+        throw new Error(`此前撤销中断，回收站实体可能不完整，未自动恢复。请保留并检查原位置 ${destination} 与回收站 ${entry.trashPath}`)
       }
+      await mkdir(dirname(destination), { recursive: true })
+      await moveEntity(entry.trashPath, destination)
       result.restored.push(entry.name)
     } catch (error) {
       result.failed.push({ id: entry.entryId, error: errorMessage(error) })
-      remaining.push(entry)
+      remaining.push(error instanceof MoveRecoveryError ? { ...entry, recoveryPending: true, recoveryDirection: 'restore' } : entry)
     }
   }
-  const batchDir = join(trashRoot(panelHome), target.batchId)
   try {
     if (remaining.length === 0) {
       await rm(batchDir, { recursive: true, force: true })
     } else {
-      await writeFile(
-        join(batchDir, 'manifest.json'),
-        `${JSON.stringify({ version: 1, batchId: target.batchId, createdAt: target.createdAt, entries: remaining }, undefined, 2)}\n`,
-        'utf8',
-      )
-      for (const entry of target.entries) {
-        if (!remaining.includes(entry)) await rm(dirname(entry.trashPath), { recursive: true, force: true }).catch(() => undefined)
-      }
+      await writeTrashManifest(batchDir, { batchId: target.batchId, createdAt: target.createdAt, entries: remaining })
     }
-  } catch {
-    // manifest cleanup is best-effort; restored files are already back
+  } catch (error) {
+    result.failed.push({ id: target.batchId, error: `恢复文件已保留，但回收站清单更新失败：${errorMessage(error)}` })
   }
   return result
 }
@@ -340,6 +351,7 @@ async function isOwnedSkillTrashBatch(root: string, name: string): Promise<boole
     const record = parsed as Record<string, unknown>
     if (record.version !== 1 || record.batchId !== name || typeof record.createdAt !== 'string' || !Number.isFinite(Date.parse(record.createdAt))) return false
     if (!Array.isArray(record.entries) || record.entries.length === 0) return false
+    if (record.entries.some((raw: unknown) => raw !== null && typeof raw === 'object' && (raw as Record<string, unknown>).recoveryPending === true)) return false
     return record.entries.every((raw: unknown) => {
       if (raw === null || typeof raw !== 'object') return false
       const entry = raw as Record<string, unknown>
