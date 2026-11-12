@@ -1,8 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, writeFile, readFile, rm, stat, utimes } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, rm, stat, symlink, utimes } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import fs from 'node:fs/promises'
+import { syncBuiltinESMExports } from 'node:module'
 import { scanSkills } from '../../lib/types/domain/skills/index.js'
 import {
   addSkill,
@@ -154,6 +156,107 @@ test('deleteSkills refuses bundled skills and reports the rest', async () => {
   }
 })
 
+test('deleteSkills rechecks identity and validity without deleting a replacement', async () => {
+  const fx = await fixture()
+  try {
+    const alpha = await fx.find('alpha')
+    await writeFile(alpha.skillFile, skillDoc('replacement'))
+    let result = await deleteSkills([alpha], { panelHome: fx.panelHome })
+    assert.equal(result.deleted.length, 0)
+    assert.match(result.failed[0].error, /name=replacement.*刷新/u)
+    assert.equal(await readFile(alpha.skillFile, 'utf8'), skillDoc('replacement'))
+
+    await writeFile(alpha.skillFile, 'invalid document')
+    result = await deleteSkills([alpha], { panelHome: fx.panelHome })
+    assert.equal(result.deleted.length, 0)
+    assert.match(result.failed[0].error, /技能文件已变化/u)
+    const invalid = await fx.find('alpha')
+    assert.equal(invalid.status, 'invalid')
+    await writeFile(alpha.skillFile, skillDoc('repaired'))
+    result = await deleteSkills([invalid], { panelHome: fx.panelHome })
+    assert.equal(result.deleted.length, 0)
+    assert.match(result.failed[0].error, /已变为有效/u)
+    assert.equal(await readFile(alpha.skillFile, 'utf8'), skillDoc('repaired'))
+
+    await writeFile(alpha.skillFile, 'invalid document')
+    result = await deleteSkills([invalid], { panelHome: fx.panelHome })
+    assert.equal(result.deleted.length, 1, 'a still-invalid skill remains removable')
+    assert.equal(result.failed.length, 0)
+  } finally { await rm(fx.root, { recursive: true, force: true }) }
+})
+
+test('deleteSkills persists a private recovery journal before moving, and rejects failed journaling', async (t) => {
+  const fx = await fixture()
+  try {
+    const alpha = await fx.find('alpha'), originalWrite = fs.writeFile, originalRename = fs.rename
+    let journalObserved = false
+    const renameMock = t.mock.method(fs, 'rename', async (from, to) => {
+      if (from === alpha.locatorDir) {
+        const manifest = join(to, '../../manifest.json')
+        const journal = JSON.parse(await readFile(manifest, 'utf8'))
+        assert.equal(journal.entries[0].originalPath, alpha.skillFile)
+        assert.equal(journal.entries[0].trashPath, to)
+        assert.ok(await stat(alpha.skillFile), 'source still exists when journal is checked')
+        assert.equal((await stat(manifest)).mode & 0o777, 0o600)
+        journalObserved = true
+      }
+      return originalRename(from, to)
+    })
+    syncBuiltinESMExports()
+    try {
+      const result = await deleteSkills([alpha], { panelHome: fx.panelHome })
+      assert.equal(result.deleted.length, 1); assert.equal(result.failed.length, 0); assert(journalObserved)
+    } finally { renameMock.mock.restore(); syncBuiltinESMExports() }
+    await undoTrash(fx.panelHome)
+    const writeMock = t.mock.method(fs, 'writeFile', async (path, ...args) => {
+      if (String(path).includes('manifest.json.tmp-')) throw Object.assign(new Error('injected ENOSPC'), { code: 'ENOSPC' })
+      return originalWrite(path, ...args)
+    })
+    syncBuiltinESMExports()
+    try {
+      const result = await deleteSkills([await fx.find('alpha')], { panelHome: fx.panelHome })
+      assert.equal(result.deleted.length, 0)
+      assert.match(result.failed[0].error, /ENOSPC/u)
+      assert.equal(await readFile(alpha.skillFile, 'utf8'), skillDoc('alpha'))
+    } finally { writeMock.mock.restore(); syncBuiltinESMExports() }
+  } finally { await rm(fx.root, { recursive: true, force: true }) }
+})
+
+test('deleteSkills preserves earlier undo metadata when later journal updates fail', async (t) => {
+  const fx = await fixture()
+  try {
+    const alpha = await fx.find('alpha'), beta = await fx.find('beta'), originalWrite = fs.writeFile
+    const writeMock = t.mock.method(fs, 'writeFile', async (path, ...args) => {
+      if (String(path).includes('manifest.json.tmp-') && !await stat(alpha.skillFile).then(() => true, () => false)) throw new Error('injected post-move write failure')
+      return originalWrite(path, ...args)
+    })
+    syncBuiltinESMExports()
+    try {
+      const result = await deleteSkills([alpha, beta], { panelHome: fx.panelHome })
+      assert.equal(result.deleted.length, 1)
+      assert.ok(result.failed.some(x => x.error.includes('写前恢复日志')))
+      assert.equal(await readFile(beta.skillFile, 'utf8'), skillDoc('beta'))
+      assert.equal((await listTrash(fx.panelHome))[0].entries.length, 1)
+    } finally { writeMock.mock.restore(); syncBuiltinESMExports() }
+    const restored = await undoTrash(fx.panelHome)
+    assert.deepEqual(restored.restored, ['alpha'])
+    assert.equal(await readFile(alpha.skillFile, 'utf8'), skillDoc('alpha'))
+  } finally { await rm(fx.root, { recursive: true, force: true }) }
+})
+
+test('deleteSkills refuses an occupied batch directory without removing its data', async () => {
+  const fx = await fixture(), random = Math.random, date = new Date('2026-01-01T00:00:00Z')
+  try {
+    Math.random = () => 0.123456
+    const suffix = Math.random().toString(36).slice(2, 8), batch = join(trashRoot(fx.panelHome), `20260101T000000Z-${suffix}`)
+    await mkdir(batch, { recursive: true }); await writeFile(join(batch, 'keep.txt'), 'foreign data')
+    const result = await deleteSkills([await fx.find('alpha')], { panelHome: fx.panelHome, now: () => date })
+    assert.equal(result.deleted.length, 0); assert.match(result.failed[0].error, /EEXIST/u)
+    assert.equal(await readFile(join(batch, 'keep.txt'), 'utf8'), 'foreign data')
+    assert.equal(await readFile((await fx.find('alpha')).skillFile, 'utf8'), skillDoc('alpha'))
+  } finally { Math.random = random; await rm(fx.root, { recursive: true, force: true }) }
+})
+
 test('cleanupTrash drops old batches and excess batches', async () => {
   const fx = await fixture()
   try {
@@ -182,6 +285,45 @@ test('cleanupTrash drops old batches and excess batches', async () => {
   } finally {
     await rm(fx.root, { recursive: true, force: true })
   }
+})
+
+test('skill retention counts only owned batches and preserves foreign, corrupt and linked data', async () => {
+  const fx = await fixture()
+  try {
+    const first = await deleteSkills([await fx.find('alpha')], { panelHome: fx.panelHome, now: () => new Date('2026-01-01T00:00:00Z') })
+    const second = await deleteSkills([await fx.find('beta')], { panelHome: fx.panelHome, now: () => new Date('2026-01-02T00:00:00Z') })
+    const root = trashRoot(fx.panelHome), old = new Date('2020-01-01T00:00:00Z')
+    const protectedNames = ['mcp', 'foreign', '20260103T000000Z-broken', '20260104T000000Z-forged']
+    for (const name of protectedNames) {
+      await mkdir(join(root, name), { recursive: true })
+      await writeFile(join(root, name, 'keep.txt'), name)
+    }
+    await writeFile(join(root, protectedNames[2], 'manifest.json'), '{broken')
+    await writeFile(join(root, protectedNames[3], 'manifest.json'), await readFile(join(root, first.batchId, 'manifest.json')))
+    const outside = join(fx.root, 'outside')
+    await mkdir(outside); await writeFile(join(outside, 'keep.txt'), 'linked data')
+    await symlink(outside, join(root, '20260105T000000Z-linked'), 'dir')
+    for (const name of protectedNames) await utimes(join(root, name), old, old)
+    assert.equal(await cleanupTrash(fx.panelHome, { retentionDays: 90, maxBatches: 1, now: () => new Date('2026-01-03T00:00:00Z') }), 1)
+    await assert.rejects(stat(join(root, first.batchId)), { code: 'ENOENT' })
+    assert.ok(await stat(join(root, second.batchId)))
+    assert.equal(await cleanupTrash(fx.panelHome, { maxBatches: 0, now: () => new Date('2026-01-03T00:00:00Z') }), 1)
+    for (const name of protectedNames) assert.equal(await readFile(join(root, name, 'keep.txt'), 'utf8'), name)
+    assert.equal(await readFile(join(root, '20260105T000000Z-linked/keep.txt'), 'utf8'), 'linked data')
+    assert.equal(await readFile(join(outside, 'keep.txt'), 'utf8'), 'linked data')
+  } finally { await rm(fx.root, { recursive: true, force: true }) }
+})
+
+test('skill retention leaves a symlinked trash root untouched', async () => {
+  const fx = await fixture()
+  try {
+    await mkdir(fx.panelHome, { recursive: true })
+    const outside = join(fx.root, 'outside')
+    await mkdir(outside); await writeFile(join(outside, 'keep.txt'), 'outside')
+    await symlink(outside, trashRoot(fx.panelHome), 'dir')
+    assert.equal(await cleanupTrash(fx.panelHome, { maxBatches: 0 }), 0)
+    assert.equal(await readFile(join(outside, 'keep.txt'), 'utf8'), 'outside')
+  } finally { await rm(fx.root, { recursive: true, force: true }) }
 })
 
 test('addSkill imports flat files and directory bundles into the target root', async () => {

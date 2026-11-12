@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { addManagedMcp, deleteManagedMcp, editManagedMcp, managedMcpEntries, MCP_BLOCK_BEGIN, MCP_BLOCK_END } from '../../lib/types/domain/mcp/managed.js'
@@ -8,6 +8,7 @@ import { configChanges, environmentReference, fieldDisplay, patchMcpField, valid
 import { isJsValue, jsValue, parsePatchText, upsertManagedToggle } from '../../lib/types/domain/mcp/patch.js'
 import { deleteMcpEntry, listMcpDeletions, openMcpEditor, restoreMcpEntry, saveMcpEditor } from '../../lib/types/domain/mcp/crud.js'
 import { PatchConflictError, readPatchSnapshot } from '../../lib/types/domain/mcp/write.js'
+import { cleanupTrash } from '../../lib/types/domain/skills/write.js'
 
 const ORIGINAL = '# retain exactly\n- insert:\n    - id: existing\n      name: "@deepseek-ai/dsh-mcp-client"\n      config: {serverName: existing, transport: stdio, command: node}\n'
 const CONFIG = { serverName: 'local', transport: 'stdio', command: 'node', args: ['server.js'], env: { TOKEN: jsValue('process.env.TOKEN') }, future: { nested: jsValue('process.env.FUTURE') } }
@@ -193,5 +194,22 @@ test('backup or trash journal failures abort deletion without damaging the sourc
   await mkdir(dirname(fx.trashDir), { recursive: true })
   await writeFile(fx.trashDir, 'not a directory')
   await assert.rejects(deleteMcpEntry({ session, backupRoot: fx.backupRoot, trashDir: fx.trashDir }), /清单写入失败/u)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), original)
+})
+
+test('skill retention never removes MCP deletion journals or prevents MCP undo', async (t) => {
+  const original = addManagedMcp(ORIGINAL, 'mcp-local', CONFIG)
+  const fx = await fixture(t, original)
+  const session = await fx.open({ id: 'mcp-local', serverName: 'local' })
+  const removed = await deleteMcpEntry({ session, backupRoot: fx.backupRoot, trashDir: fx.trashDir })
+  const manifest = join(fx.trashDir, removed.value.batchId, 'manifest.json')
+  const bytes = await readFile(manifest)
+  const old = new Date('2020-01-01T00:00:00Z')
+  await utimes(fx.trashDir, old, old)
+  assert.equal(await cleanupTrash(fx.root, { retentionDays: 7 }), 0)
+  assert.equal(await cleanupTrash(fx.root, { maxBatches: 0 }), 0)
+  assert.deepEqual(await readFile(manifest), bytes)
+  assert.equal((await listMcpDeletions(fx.trashDir, fx.patchPath)).length, 1)
+  await restoreMcpEntry({ files: await fx.files(), backupRoot: fx.backupRoot, trashDir: fx.trashDir, batchId: removed.value.batchId })
   assert.equal(await readFile(fx.patchPath, 'utf8'), original)
 })

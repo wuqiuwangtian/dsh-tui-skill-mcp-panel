@@ -1,0 +1,157 @@
+{
+  "date": "2026-11-12",
+  "baseline": "adcbbcb",
+  "version": "0.1.0-dev.0",
+  "decision": {
+    "id": "D-13",
+    "confirmedByUser": true,
+    "scope": "Defer all P1; complete existing P0, defect fixes and acceptance first",
+    "authority": "docs/需求文档.md §14.1"
+  },
+  "boundaries": {
+    "projectRuntimeChanged": true,
+    "installedThirdPartyChanged": false,
+    "realProfileOrSkillsChanged": false,
+    "modelRequestsMade": false,
+    "published": false,
+    "tagCreated": false,
+    "fullUserAcceptance": "pending",
+    "AC15": "not passed"
+  },
+  "beforeFix": {
+    "retention": {
+      "fixture": "MCP journal under aged panel/trash/mcp; skill cleanup with normal retention",
+      "removed": 1,
+      "mcpUndoMetadataPreserved": false,
+      "redRegressionTests": 3,
+      "passed": 0,
+      "failed": 3
+    },
+    "staleSelection": {
+      "fixture": "scan alpha then replace frontmatter name with beta at same path",
+      "deleted": 1,
+      "replacementStillPresent": false
+    },
+    "manifestFailure": {
+      "injection": "manifest.json is a directory in owned fixture, causing EISDIR",
+      "deleted": 1,
+      "failed": [
+        "写入回收站清单失败：EISDIR: illegal operation on a directory, open '<fixture>/panel/trash/20261112T000000Z-4fzyo8/manifest.json'"
+      ],
+      "undoBatches": 0,
+      "sourcePresent": false
+    }
+  },
+  "afterFix": {
+    "source": "src/domain/skills/write.ts",
+    "modifiedFunctions": [
+      "moveToTrash",
+      "deleteSkills",
+      "cleanupTrash"
+    ],
+    "addedPrivateFunctions": [
+      "writeTrashManifest",
+      "isOwnedSkillTrashBatch"
+    ],
+    "deletedFunctions": [],
+    "regressionsAdded": 7,
+    "testFiles": [
+      "test/domain/write.test.js",
+      "test/domain/mcp-crud.test.js"
+    ],
+    "coveredBehaviors": [
+      "MCP journal bytes survive skill time/count retention and MCP undo restores original patch",
+      "Only valid owned skill batches count toward cleanup; preserve foreign, malformed, identity-mismatched and linked data",
+      "Symlinked trash root does not trigger cleanup of external data",
+      "Stale name or validity change refuses deletion; still-invalid skill remains removable",
+      "Private manifest is readable before source rename; failed initial journal leaves source intact",
+      "Later journal failure leaves earlier moved skill restorable",
+      "Occupied batch is rejected without deleting existing batch or source"
+    ],
+    "limits": [
+      "No fsync/power-loss guarantee",
+      "No arbitrary concurrent-edit transaction guarantee",
+      "Cross-device movement and conflict destination choices still pending",
+      "Unknown or malformed trash retained and excluded from owned-batch budget"
+    ]
+  },
+  "validation": {
+    "targeted": {
+      "command": "pnpm build && node --test test/domain/write.test.js test/domain/mcp-crud.test.js",
+      "exitCode": 0,
+      "tests": 27,
+      "passed": 27,
+      "failed": 0
+    },
+    "finalReleaseCheck": {
+      "command": "pnpm check:release",
+      "exitCode": 0,
+      "tests": 103,
+      "passed": 103,
+      "failed": 0,
+      "layoutAssertions": 176,
+      "mouseAssertions": 61,
+      "manifest": "passed",
+      "tarball": "passed",
+      "renderSmoke": "passed",
+      "uiInteractionSmoke": "passed",
+      "mcpSmoke": "passed",
+      "mcpCrudSmokeColumns": [
+        120,
+        58
+      ],
+      "mcpGroupsSmokeColumns": [
+        120,
+        58
+      ]
+    },
+    "tarball": {
+      "fileCount": 65,
+      "bytes": 90448,
+      "sha256": "82e5cae6dfc4380a661ce59dd33d2bbc5262593620d942eb5a42dd74ce8c43b0",
+      "published": false
+    },
+    "method": "Temporary filesystem fixtures and existing headless UI suites; no live TUI/model request acceptance. Final full run started after source/tests/README stabilized; earlier run was not used as final evidence."
+  },
+  "remainingP0": {
+    "deleteConfirmation": {
+      "source": "src/ui/ManagerScene.tsx",
+      "observed": "first 8 names/source labels only; full target scope/path missing",
+      "next": true
+    },
+    "crossDeviceRecovery": {
+      "source": "src/domain/skills/write.ts",
+      "probe": {
+        "differentDevices": true,
+        "deleted": 0,
+        "failed": [
+          "EXDEV: cross-device link not permitted, rename '<source>/project/.dsh/skills/alpha' -> '<panel>/trash/20261112T055634Z-rdg2b4/workspace/alpha'"
+        ],
+        "sourcePresent": true
+      },
+      "observed": "rename fails safely with EXDEV; copy/verify/delete and alternative conflict destination flow missing"
+    },
+    "cleanupLifecycle": {
+      "source": "src/host/manager-runtime.ts; src/domain/skills/write.ts",
+      "observed": "before-delete cleanup only; startup/diagnostic and strict post-delete 7-day/100-batch semantics pending"
+    },
+    "viewPersistenceAndWorkspace": {
+      "source": "src/ui/ManagerScene.tsx; src/domain/store.ts; src/host/manager-runtime.ts",
+      "observed": "initial skills/all; no saved tab; tuiWorkspaces capability probe only"
+    },
+    "fullSkillDetails": {
+      "source": "src/ui/ManagerScene.tsx:skillDetailLines",
+      "observed": "width truncation and first 400 body lines"
+    },
+    "diagnosticVersions": {
+      "source": "src/ui/ManagerScene.tsx:diagnosticLines",
+      "observed": "capabilities/paths/stats/warnings shown; plugin/host/kernel/Node version summary missing"
+    }
+  },
+  "unverifiedOrExternal": [
+    "Full user acceptance checklist",
+    "Layout breakpoints versus original spec and all inline/fullscreen modes",
+    "1000-skill and per-key search performance targets",
+    "Existing KI-01..03 and unlocked web skill-group writes; keep real installation unchanged per user decision"
+  ]
+}

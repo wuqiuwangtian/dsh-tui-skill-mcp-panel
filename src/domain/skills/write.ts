@@ -6,6 +6,7 @@
  * per-item results so batch callers can report partial success.
  */
 import { copyFile, lstat, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { parseSkillDocument } from './frontmatter.js'
 import type { SkillInstance, SkillStatus } from './types.js'
@@ -131,23 +132,22 @@ async function moveToTrash(
   batchDir: string,
   entryIndex: number,
   now: Date,
+  beforeMove: (entry: TrashEntry) => Promise<void>,
 ): Promise<TrashEntry> {
+  const parsed = parseSkillDocument(await readFile(instance.skillFile, 'utf8'))
+  if (instance.status === 'invalid') {
+    if (parsed.ok) throw new Error('技能文件已变为有效，请刷新后重试')
+  } else {
+    if (!parsed.ok) throw new Error(`技能文件已变化：${parsed.reason}，请刷新后重试`)
+    if (parsed.frontmatter.name !== instance.name) throw new Error(`技能文件已变化（当前 name=${parsed.frontmatter.name}），请刷新后重试`)
+  }
   const scopeKey = instance.scope === 'global' ? 'global' : 'workspace'
   const baseName = sanitizeSegment(instance.name)
   const entityName = entryIndex === 0 ? baseName : `${baseName}-${entryIndex + 1}`
   const entityDir = join(batchDir, scopeKey, entityName)
   await mkdir(entityDir, { recursive: true })
-  let trashPath: string
-  if (instance.form === 'directory') {
-    const entityPath = instance.locatorDir
-    trashPath = entityDir
-    await rename(entityPath, trashPath)
-  } else {
-    const fileName = basename(instance.skillFile)
-    trashPath = join(entityDir, fileName)
-    await rename(instance.skillFile, trashPath)
-  }
-  return {
+  const trashPath = instance.form === 'directory' ? entityDir : join(entityDir, basename(instance.skillFile))
+  const entry: TrashEntry = {
     entryId: `${now.getTime()}-${entryIndex}`,
     name: instance.name,
     source: instance.source,
@@ -159,6 +159,18 @@ async function moveToTrash(
     entityPath: instance.form === 'directory' ? instance.locatorDir : instance.skillFile,
     trashPath,
   }
+  // Persist recovery metadata before moving anything away from its source.
+  await beforeMove(entry)
+  await rename(entry.entityPath, trashPath)
+  return entry
+}
+
+async function writeTrashManifest(batchDir: string, batch: TrashBatch): Promise<void> {
+  const temp = join(batchDir, `manifest.json.tmp-${randomUUID()}`)
+  try {
+    await writeFile(temp, `${JSON.stringify({ version: 1, ...batch }, undefined, 2)}\n`, { flag: 'wx', mode: 0o600 })
+    await rename(temp, join(batchDir, 'manifest.json'))
+  } finally { await rm(temp, { force: true }).catch(() => undefined) }
 }
 
 /** Soft-delete skills into a timestamped trash batch with a manifest. */
@@ -172,6 +184,7 @@ export async function deleteSkills(
   const deleted: string[] = []
   const failed: { id: string; error: string }[] = []
   const entries: TrashEntry[] = []
+  let ownsBatch = false
   let index = 0
   for (const instance of instances) {
     if (instance.source === 'bundled') {
@@ -183,7 +196,13 @@ export async function deleteSkills(
       continue
     }
     try {
-      const entry = await moveToTrash(instance, batchDir, index, now)
+      if (!ownsBatch) {
+        await mkdir(trashRoot(options.panelHome), { recursive: true, mode: 0o700 })
+        await mkdir(batchDir, { mode: 0o700 })
+        ownsBatch = true
+      }
+      const entry = await moveToTrash(instance, batchDir, index, now, (pending) =>
+        writeTrashManifest(batchDir, { batchId, createdAt: now.toISOString(), entries: [...entries, pending] }))
       index += 1
       entries.push(entry)
       deleted.push(instance.id)
@@ -192,14 +211,14 @@ export async function deleteSkills(
     }
   }
   if (entries.length === 0) {
-    await rm(batchDir, { recursive: true, force: true }).catch(() => undefined)
+    if (ownsBatch) await rm(batchDir, { recursive: true, force: true }).catch(() => undefined)
     return { deleted, failed }
   }
   const batch: TrashBatch = { batchId, createdAt: now.toISOString(), entries }
   try {
-    await writeFile(join(batchDir, 'manifest.json'), `${JSON.stringify({ version: 1, ...batch }, undefined, 2)}\n`, 'utf8')
+    await writeTrashManifest(batchDir, batch)
   } catch (error) {
-    failed.push({ id: batchId, error: `写入回收站清单失败：${errorMessage(error)}` })
+    failed.push({ id: batchId, error: `更新回收站清单失败，已保留写前恢复日志：${errorMessage(error)}` })
   }
   return { batchId, deleted, failed, batch }
 }
@@ -308,7 +327,30 @@ export async function undoTrash(panelHome: string, batchId?: string): Promise<Un
   return result
 }
 
-/** Remove old/excess trash batches. Default policy: 7 days or 100 batches (whichever first). */
+/** Only confirmed skill batches belong to skill retention, never sibling namespaces. */
+async function isOwnedSkillTrashBatch(root: string, name: string): Promise<boolean> {
+  if (!/^\d{8}T\d{6}Z-[a-z0-9]{1,6}$/u.test(name)) return false
+  try {
+    const directory = join(root, name)
+    if (!(await lstat(directory)).isDirectory()) return false
+    const manifest = join(directory, 'manifest.json')
+    if (!(await lstat(manifest)).isFile()) return false
+    const parsed = JSON.parse(await readFile(manifest, 'utf8')) as unknown
+    if (parsed === null || typeof parsed !== 'object') return false
+    const record = parsed as Record<string, unknown>
+    if (record.version !== 1 || record.batchId !== name || typeof record.createdAt !== 'string' || !Number.isFinite(Date.parse(record.createdAt))) return false
+    if (!Array.isArray(record.entries) || record.entries.length === 0) return false
+    return record.entries.every((raw: unknown) => {
+      if (raw === null || typeof raw !== 'object') return false
+      const entry = raw as Record<string, unknown>
+      return (entry.form === 'directory' || entry.form === 'file') &&
+        ['entryId', 'name', 'source', 'scope', 'scopeKey', 'rootPath', 'originalPath', 'entityPath', 'trashPath']
+          .every((key) => typeof entry[key] === 'string')
+    })
+  } catch { return false } // Unknown or corrupt data stays available for manual recovery.
+}
+
+/** Remove old/excess owned skill batches. Default: 7 days or 100 batches (whichever first). */
 export async function cleanupTrash(
   panelHome: string,
   options: { retentionDays?: number; maxBatches?: number; now?: () => Date } = {},
@@ -316,7 +358,12 @@ export async function cleanupTrash(
   const root = trashRoot(panelHome)
   let names: string[]
   try {
-    names = (await readdir(root)).sort((left, right) => right.localeCompare(left))
+    if (!(await lstat(root)).isDirectory()) return 0
+    const candidates = (await readdir(root)).sort((left, right) => right.localeCompare(left))
+    names = []
+    for (const name of candidates) {
+      if (await isOwnedSkillTrashBatch(root, name)) names.push(name)
+    }
   } catch {
     return 0
   }
@@ -335,8 +382,10 @@ export async function cleanupTrash(
       }
     }
     if (remove) {
-      await rm(join(root, name), { recursive: true, force: true }).catch(() => undefined)
-      removed += 1
+      try {
+        await rm(join(root, name), { recursive: true, force: true })
+        removed += 1
+      } catch { /* Keep failed cleanup data; a later operation may retry. */ }
     }
   }
   return removed
