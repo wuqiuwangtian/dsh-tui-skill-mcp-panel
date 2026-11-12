@@ -7,7 +7,7 @@
  */
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { scanSkills } from '../domain/skills/index.js'
 import type { SkillInstance, SkillScanResult } from '../domain/skills/types.js'
@@ -20,7 +20,9 @@ import {
   undoTrash,
   type AddSkillResult,
   type TrashBatch,
+  type UndoResult,
 } from '../domain/skills/write.js'
+import { openSkillRecovery, commitSkillRecovery, type SkillRecoverySession, type SkillRecoveryResult } from '../domain/skills/recovery.js'
 import {
   deleteGroup as deleteGroupOp,
   groupIdsForSkill,
@@ -424,22 +426,58 @@ export class ManagerRuntime {
   }
 
   /** Undo the most recent trash batch. */
-  async undoLastDelete(): Promise<void> {
-    await this.withBusy(async () => {
-      const result = await undoTrash(this.panelHomePath)
-      await this.refresh('undo')
-      if (result.batchId === undefined) {
-        this.setStatus('回收站为空，没有可撤销的删除', 'info')
-        return
+  async undoLastDelete(): Promise<UndoResult | undefined> {
+    return this.withBusy(async () => {
+      try {
+        const result = await undoTrash(this.panelHomePath)
+        await this.refresh('undo')
+        if (result.batchId === undefined) {
+          this.setStatus('回收站为空，没有可撤销的删除', 'info')
+          return result
+        }
+        if (result.restored.length === 0 && result.conflicts.length === 0 && result.failed.length === 0) {
+          this.setStatus('没有恢复任何技能', 'warning')
+          return result
+        }
+        const parts = [`已恢复 ${result.restored.length} 个`]
+        if (result.conflicts.length > 0) parts.push(`冲突 ${result.conflicts.length}（${result.conflicts[0] ?? ''}）`)
+        if (result.failed.length > 0) parts.push(`失败 ${result.failed.length}`)
+        this.setStatus(parts.join('；'), result.conflicts.length > 0 || result.failed.length > 0 ? 'warning' : 'success')
+        return result
+      } catch (error) {
+        this.setStatus(`恢复失败：${error instanceof Error ? error.message : String(error)}`, 'error')
+        return undefined
       }
-      if (result.restored.length === 0 && result.conflicts.length === 0 && result.failed.length === 0) {
-        this.setStatus('没有恢复任何技能', 'warning')
-        return
+    })
+  }
+
+  private recoveryRoot(scope: 'global' | 'workspace'): string {
+    return scope === 'global' ? join(this.dshHomePath(), 'skills') : join(this.state.scan?.projectRoot ?? process.cwd(), '.dsh', 'skills')
+  }
+
+  async openSkillRecovery(batchId: string, entryId: string, kind: 'replace' | 'scope', scope: 'global' | 'workspace'): Promise<SkillRecoverySession | undefined> {
+    try {
+      return await openSkillRecovery(this.panelHomePath, batchId, entryId,
+        kind === 'replace' ? { kind } : { kind, scope, rootPath: this.recoveryRoot(scope) })
+    } catch (error) {
+      this.setStatus(`无法准备恢复：${error instanceof Error ? error.message : String(error)}`, 'error')
+      return undefined
+    }
+  }
+
+  async recoverSkill(session: SkillRecoverySession): Promise<SkillRecoveryResult | undefined> {
+    return this.withBusy(async () => {
+      try {
+        if (session.panelHome !== resolve(this.panelHomePath) || (session.choice.kind === 'scope' && resolve(this.recoveryRoot(session.choice.scope)) !== session.choice.rootPath)) throw new Error('当前恢复路径已变化，请重新选择')
+        const result = await commitSkillRecovery(session)
+        await this.refresh('recover-conflict')
+        this.setStatus(`已恢复 → ${result.destination}${result.backupPath ? `；覆盖前备份：${result.backupPath}` : ''}${result.warnings.length ? `；${result.warnings.join('；')}` : ''}`, result.warnings.length ? 'warning' : 'success')
+        return result
+      } catch (error) {
+        await this.refresh('recover-conflict-error')
+        this.setStatus(`恢复失败：${error instanceof Error ? error.message : String(error)}`, 'error')
+        return undefined
       }
-      const parts = [`已恢复 ${result.restored.length} 个`]
-      if (result.conflicts.length > 0) parts.push(`冲突 ${result.conflicts.length}（${result.conflicts[0] ?? ''}）`)
-      if (result.failed.length > 0) parts.push(`失败 ${result.failed.length}`)
-      this.setStatus(parts.join('；'), result.conflicts.length > 0 || result.failed.length > 0 ? 'warning' : 'success')
     })
   }
 

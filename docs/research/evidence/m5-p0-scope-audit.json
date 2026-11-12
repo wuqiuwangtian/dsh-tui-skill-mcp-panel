@@ -137,7 +137,8 @@
     },
     "cleanupLifecycle": {
       "source": "src/host/manager-runtime.ts; src/domain/skills/write.ts",
-      "observed": "before-delete cleanup only; startup/diagnostic and strict post-delete 7-day/100-batch semantics pending"
+      "observed": "before-delete cleanup only; startup/diagnostic and strict post-delete 7-day/100-batch semantics pending",
+      "next": true
     },
     "viewPersistenceAndWorkspace": {
       "source": "src/ui/ManagerScene.tsx; src/domain/store.ts; src/host/manager-runtime.ts",
@@ -153,8 +154,10 @@
     },
     "conflictRecoveryChoices": {
       "source": "src/domain/skills/write.ts; src/host/manager-runtime.ts; src/ui/ManagerScene.tsx",
-      "next": true,
-      "observed": "Default skip/preserve on occupied target; no backup-overwrite or alternative-scope choices yet. Interrupted restores require explicit data inspection."
+      "next": false,
+      "observedBeforeFollowup": "Default skip/preserve on occupied target; no backup-overwrite or alternative-scope choices yet. Interrupted restores require explicit data inspection.",
+      "status": "Implemented and locally verified; complete user acceptance pending",
+      "resolutionEvidence": "m5-skill-conflict-recovery.json"
     }
   },
   "unverifiedOrExternal": [

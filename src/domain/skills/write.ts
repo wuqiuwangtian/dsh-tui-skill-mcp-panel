@@ -12,6 +12,7 @@ import { parseSkillDocument } from './frontmatter.js'
 import { entityExists, moveEntity, MoveRecoveryError } from './move.js'
 import type { SkillInstance, SkillStatus } from './types.js'
 import { trashRoot } from '../store.js'
+import { withPatchLock } from '../mcp/write.js'
 
 export interface SkillWriteResult {
   ok: boolean
@@ -38,6 +39,8 @@ export interface TrashEntry {
   /** Keep interrupted moves out of automatic retention until explicitly recovered. */
   recoveryPending?: boolean
   recoveryDirection?: 'delete' | 'restore'
+  recoveryBackupPath?: string
+  recoveryDestination?: string
 }
 
 export interface TrashBatch {
@@ -57,6 +60,7 @@ export interface UndoResult {
   batchId?: string
   restored: string[]
   conflicts: string[]
+  conflictEntries?: TrashEntry[]
   failed: { id: string; error: string }[]
 }
 
@@ -169,7 +173,7 @@ async function moveToTrash(
   return entry
 }
 
-async function writeTrashManifest(batchDir: string, batch: TrashBatch): Promise<void> {
+export async function writeTrashManifest(batchDir: string, batch: TrashBatch): Promise<void> {
   const temp = join(batchDir, `manifest.json.tmp-${randomUUID()}`)
   try {
     await writeFile(temp, `${JSON.stringify({ version: 1, ...batch }, undefined, 2)}\n`, { flag: 'wx', mode: 0o600 })
@@ -277,6 +281,8 @@ export async function listTrash(panelHome: string): Promise<TrashBatch[]> {
           trashPath: entry.trashPath,
           ...(entry.recoveryPending === true ? { recoveryPending: true } : {}),
           ...(entry.recoveryDirection === 'delete' || entry.recoveryDirection === 'restore' ? { recoveryDirection: entry.recoveryDirection } : {}),
+          ...(typeof entry.recoveryBackupPath === 'string' ? { recoveryBackupPath: entry.recoveryBackupPath } : {}),
+          ...(typeof entry.recoveryDestination === 'string' ? { recoveryDestination: entry.recoveryDestination } : {}),
         })
       }
       if (entries.length === 0) continue
@@ -292,10 +298,47 @@ export async function listTrash(panelHome: string): Promise<TrashBatch[]> {
   return batches
 }
 
+/** Read a mutation-ready v1 batch without discarding unknown metadata or corrupt siblings. */
+export async function readTrashBatch(home: string, batchId: string): Promise<TrashBatch> {
+  if (!/^\d{8}T\d{6}Z-[a-z0-9]{1,6}$/u.test(batchId)) throw new Error('无效恢复批次')
+  const batchDir = join(trashRoot(home), batchId)
+  const path = join(batchDir, 'manifest.json')
+  if (!(await lstat(trashRoot(home))).isDirectory() || !(await lstat(batchDir)).isDirectory() || !(await lstat(path)).isFile()) throw new Error('回收站和清单必须是普通目录/文件')
+  const raw: unknown = JSON.parse(await readFile(path, 'utf8'))
+  if (raw === null || typeof raw !== 'object') throw new Error('恢复清单损坏，原文保留')
+  const record = raw as Record<string, unknown>
+  if (record.version !== 1 || record.batchId !== batchId || typeof record.createdAt !== 'string' || !Number.isFinite(Date.parse(record.createdAt)) ||
+    !Array.isArray(record.entries) || record.entries.length === 0) throw new Error('恢复清单版本或结构无效，原文保留')
+  const ids = new Set<string>(), trashPaths = new Set<string>(), entityPaths = new Set<string>()
+  for (const item of record.entries as unknown[]) {
+    if (item === null || typeof item !== 'object') throw new Error('恢复条目损坏，原文保留')
+    const entry = item as Record<string, unknown>
+    if (!['entryId', 'name', 'source', 'scope', 'scopeKey', 'rootPath', 'originalPath', 'entityPath', 'trashPath'].every(key => typeof entry[key] === 'string') ||
+      !['directory', 'file'].includes(String(entry.form)) || !['global', 'workspace'].includes(String(entry.scope)) ||
+      (entry.recoveryPending !== undefined && typeof entry.recoveryPending !== 'boolean') ||
+      (entry.recoveryDirection !== undefined && !['delete', 'restore'].includes(String(entry.recoveryDirection))) ||
+      ['recoveryBackupPath', 'recoveryDestination'].some(key => entry[key] !== undefined && typeof entry[key] !== 'string') ||
+      ids.has(String(entry.entryId)) || trashPaths.has(String(entry.trashPath)) || entityPaths.has(String(entry.entityPath))) throw new Error('恢复条目损坏或身份/实体重复，原文保留')
+    ids.add(String(entry.entryId))
+    trashPaths.add(String(entry.trashPath)); entityPaths.add(String(entry.entityPath))
+  }
+  // Unlike the permissive history list, mutation must not skip malformed
+  // siblings or drop unknown metadata when rewriting a private journal.
+  return record as unknown as TrashBatch
+}
+
 /** Restore a trash batch (latest when `batchId` is omitted). Conflicts are skipped, not overwritten. */
 export async function undoTrash(panelHome: string, batchId?: string): Promise<UndoResult> {
   const batches = await listTrash(panelHome)
   const target = batchId === undefined ? batches[0] : batches.find((batch) => batch.batchId === batchId)
+  if (target === undefined) return { restored: [], conflicts: [], failed: [] }
+  return withPatchLock(join(trashRoot(panelHome), target.batchId, 'manifest.json'), async () => {
+    const current = await readTrashBatch(panelHome, target.batchId)
+    return undoTrashBatch(panelHome, current)
+  }, { resourceName: '技能恢复清单' })
+}
+
+async function undoTrashBatch(panelHome: string, target: TrashBatch | undefined): Promise<UndoResult> {
   const result: UndoResult = { restored: [], conflicts: [], failed: [] }
   if (target === undefined) return result
   result.batchId = target.batchId
@@ -312,6 +355,8 @@ export async function undoTrash(panelHome: string, batchId?: string): Promise<Un
     try {
       if (await entityExists(destination)) {
         result.conflicts.push(`${entry.name}（${destination} 已存在）`)
+        result.conflictEntries ??= []
+        result.conflictEntries.push(entry)
         remaining.push(entry)
         continue
       }
@@ -330,7 +375,7 @@ export async function undoTrash(panelHome: string, batchId?: string): Promise<Un
     if (remaining.length === 0) {
       await rm(batchDir, { recursive: true, force: true })
     } else {
-      await writeTrashManifest(batchDir, { batchId: target.batchId, createdAt: target.createdAt, entries: remaining })
+      await writeTrashManifest(batchDir, { ...target, entries: remaining })
     }
   } catch (error) {
     result.failed.push({ id: target.batchId, error: `恢复文件已保留，但回收站清单更新失败：${errorMessage(error)}` })

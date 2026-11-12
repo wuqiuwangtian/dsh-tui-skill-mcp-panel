@@ -1,0 +1,241 @@
+{
+  "date": "2026-11-12",
+  "baseline": "5388d7b",
+  "version": "0.1.0-dev.0",
+  "authority": "docs/需求文档.md §14.1 / FR-5; docs/release-readiness.md §15",
+  "scope": {
+    "implemented": "Explicit conflicting skill recovery choices: cancel, verified backup then replace, or other scope without overwrite",
+    "realUserDataChanged": false,
+    "installedThirdPartyChanged": false,
+    "modelRequestsMade": false,
+    "tagCreated": false,
+    "published": false,
+    "userCompleteAcceptance": "pending",
+    "AC15": "not passed",
+    "nextP0": "Skill trash startup/diagnostic/retention lifecycle"
+  },
+  "changes": {
+    "files": [
+      "src/domain/skills/recovery.ts",
+      "test/domain/skill-recovery.test.js",
+      "src/domain/skills/move.ts",
+      "src/domain/skills/write.ts",
+      "src/host/manager-runtime.ts",
+      "src/ui/ManagerScene.tsx",
+      "scripts/ui-interaction-smoke.mjs",
+      "scripts/ui-layout-smoke.mjs",
+      "scripts/ui-mouse-smoke.mjs",
+      "README.md",
+      "AGENT.md",
+      "docs/需求文档.md",
+      "docs/release-readiness.md",
+      "docs/research/README.md",
+      "docs/research/evidence/m5-p0-scope-audit.json",
+      "docs/research/evidence/m5-skill-conflict-recovery.json"
+    ],
+    "addedFiles": [
+      "src/domain/skills/recovery.ts",
+      "test/domain/skill-recovery.test.js",
+      "docs/research/evidence/m5-skill-conflict-recovery.json"
+    ],
+    "deletedFiles": [],
+    "deletedFeatures": [],
+    "newDomainFunctions": [
+      "openSkillRecovery",
+      "commitSkillRecovery",
+      "readTrashBatch",
+      "copyEntityVerified",
+      "entityFingerprint",
+      "undoTrashBatch"
+    ],
+    "modifiedFunctions": [
+      "undoTrash",
+      "writeTrashManifest",
+      "listTrash",
+      "moveEntity",
+      "ManagerRuntime.undoLastDelete"
+    ],
+    "newRuntimeMethods": [
+      "openSkillRecovery",
+      "recoverSkill",
+      "recoveryRoot"
+    ],
+    "newDependencies": [],
+    "newUiFunctions": [
+      "runUndoSkills"
+    ]
+  },
+  "before": {
+    "domain": "Only conflict strings returned; occupying entities/trash preserved but no explicit resolution choices",
+    "runtime": "Returned void after status reporting",
+    "ui": "Keyboard and pointer undo ignored structured recovery outcomes",
+    "metadata": "Permissive list skipped malformed siblings; partial undo rebuilt a manifest from known top-level fields and could discard unknown metadata"
+  },
+  "behavior": {
+    "cancel": "Choice defaults to cancel; preparing/declining preview does not create backups or move conflict entities. Nonconflicting items already restored by ordinary undo remain restored.",
+    "preview": "Full name/scope/trash/destination/planned backup path, with wrapping and keyboard/pointer paging; n returns to choices; backup directory allocated as a path only until final y",
+    "replace": [
+      "Bind journal, trash tree and occupying entity fingerprints including root identity",
+      "Create private 0700 backup batch, verified copy, 0600 backup manifest",
+      "Recheck session after backup; write pending recovery intent; recheck entities and backup",
+      "Displace occupant only after backup verified, then move deleted entity to destination",
+      "On restore failure return displaced occupant only if destination vacant; retain copies/intent on failed rollback",
+      "On success preserve verified backup and remove redundant displaced copy only after fingerprint checks",
+      "Report final journal failures as warnings with restored files retained"
+    ],
+    "scope": "Current other workspace/global root only, preserve original filename/disabled state; occupied path or same frontmatter name in target root refuses; original occupying entity remains intact",
+    "metadata": "Strict v1 batch parser used by ordinary undo and conflict sessions; unknown fields preserved; malformed siblings, duplicate identities/entities and unknown versions refuse mutation",
+    "recoveryPending": "Unfinished records refuse automatic conflict recovery; retained source/destination/backup paths survive reload and are excluded from skill retention",
+    "concurrency": "Ordinary undo and conflict commit share per-batch manifest lock; stale confirmed sessions refuse. Does not claim arbitrary external-writer isolation."
+  },
+  "domainValidation": {
+    "command": "pnpm build && node --test test/domain/skill-recovery.test.js test/domain/skill-move.test.js test/domain/write.test.js",
+    "exitCode": 0,
+    "tests": 67,
+    "passed": 67,
+    "failed": 0,
+    "skipped": 0,
+    "newTopLevelCases": 22,
+    "newCasesIncludingSubtests": 35,
+    "cases": [
+      "replace recovery verifies a private backup and preserves directory content, modes and empty dirs",
+      "replace recovery preserves a disabled flat filename and exact occupying bytes in backup",
+      "workspace to global recovery leaves original occupant intact and creates no overwrite backup",
+      "global disabled file can recover to the current workspace without overwriting either scope",
+      "preparing then cancelling a choice does not create backups or change any source or journal bytes",
+      "stale destination, trash or journal snapshots refuse commits before any backup or replacement",
+      "new target entity or same-name skill created after preview refuses alternate-scope recovery",
+      "failed backup copy or backup journal does not move the occupying entity or trash",
+      "failed recovery intent leaves both original entities intact and keeps the verified backup",
+      "destination changes after backup or intent are preserved and stop displacement",
+      "restore failure after displacement rolls occupying data back and leaves trash retryable",
+      "failed rollback preserves backup, displaced data, trash and a durable pending record",
+      "final journal cleanup failure reports restored files and retains intent and backup",
+      "symlink occupant backup keeps the link and does not modify its external target",
+      "system, same-scope, linked roots and malformed trash paths are rejected",
+      "linked backup root is refused before copying or displacing any data",
+      "two competing recovery sessions cannot both replace the same entry",
+      "replacement also verifies backup and restores correctly across real devices",
+      "backup corruption after intent is detected before displacing the occupant",
+      "single-entry recovery preserves other directory entries in the same trash batch",
+      "malformed siblings, duplicate IDs or unknown journal versions refuse recovery without rewriting data",
+      "recovering one entry preserves unknown journal and sibling metadata"
+    ],
+    "actualDifferentDeviceBackupReplacement": true
+  },
+  "uiValidation": {
+    "realRuntimeHeadless": "default cancel, preview decline, stale target refusal, exact occupant backup, other-scope preservation",
+    "layoutAssertions": 280,
+    "layoutSizes": 8,
+    "mouseAssertions": 82,
+    "mouseSizes": 3,
+    "mouseMethod": "Actual SGR press/release reports through host hit testing; same-target independent clicks separated from host 500ms multi-click selection window"
+  },
+  "realTui": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "terminal": "58x22",
+    "scene": "54x20",
+    "sourceDevice": "/dev/shm",
+    "trashAndBackupDevice": "/tmp",
+    "differentDevices": true,
+    "driver": "Actual isolated DSH CLI in owned PTY; stdin and ANSI replay; actual filesystem hashes/modes/journal checks",
+    "cancel": {
+      "defaultCancelPreservedOccupantAndTrash": true,
+      "declinedPreviewReturnedToChoices": true,
+      "noBackupCreated": true
+    },
+    "stalePreview": {
+      "externalOccupantEditAfterPreview": true,
+      "refusedOnY": true,
+      "externalBytesPreserved": true,
+      "noBackupCreated": true
+    },
+    "replace": {
+      "freshPreviewRequired": true,
+      "originalSkillHashesModesEmptyDirAndRelativeLinkRestored": true,
+      "exactChangedOccupantAndExtraFileBackedUp": true,
+      "backupManifestMode": "0600",
+      "trashEntryRemoved": true
+    },
+    "scope": {
+      "workspaceOccupantPreserved": true,
+      "originalSkillTreeRecoveredGlobally": true,
+      "noAdditionalOverwriteBackup": true
+    },
+    "screens": [
+      {
+        "label": "conflict-choices",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 恢复冲突 · alpha                                 │\n   │ ❯ 取消（保留回收站与占用对象）                   │\n   │   覆盖前备份，再恢复到原位置…                    │\n   │   恢复到全局…                                    │\n   │ ↑↓ ↵确认 · 1/3 [Esc 取消]                        │\n   ╰──────────────────────────────────────────────────╯\n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                        \n   已恢复 0 个；冲突 1（alpha（/dev/shm/skill-recovery… \n                                                        \n"
+      },
+      {
+        "label": "replace-preview",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 确认恢复技能                                     │\n   │ 技能：alpha                                      │\n   │ 原作用域：工作区                                 │\n   │ 回收站：<fixture>/panel/tra │\n   │ sh/20261112T085644Z-ur29lm/workspace/alpha       │\n   │ 恢复到：<source>/pr │\n   │ oject/.dsh/skills/alpha-路径 空格-路径           │\n   │ 覆盖前备份：<fixture>/panel │\n   │ /backups/skills/restore-1794473819193-003b13f6-0 │\n   │ 5fb-428f-916d-8c0d60aec786/entity                │\n   │ 确认后先复制并校验备份，再移走占用对象；备份失败 │\n   │ 不开始替换。                                     │\n   │ [首] [上页] [下页] [末] 1/13                     │\n   │ [y 确认] [n / Esc 取消]                          │\n   ╰──────────────────────────────────────────────────╯ \n   已恢复 0 个；冲突 1（alpha（/dev/shm/skill-recovery… \n                                                        \n"
+      },
+      {
+        "label": "replace-preview-end",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 确认恢复技能                                     │\n   │ 回收站：<fixture>/panel/tra │\n   │ sh/20261112T085644Z-ur29lm/workspace/alpha       │\n   │ 恢复到：<source>/pr │\n   │ oject/.dsh/skills/alpha-路径 空格-路径           │\n   │ 覆盖前备份：<fixture>/panel │\n   │ /backups/skills/restore-1794473819193-003b13f6-0 │\n   │ 5fb-428f-916d-8c0d60aec786/entity                │\n   │ 确认后先复制并校验备份，再移走占用对象；备份失败 │\n   │ 不开始替换。                                     │\n   │ 写入前重查源、目标和清单；发生变化会停止。其他冲 │\n   │ 突保持原状。                                     │\n   │ [首] [上页] [下页] [末] 3/13                     │\n   │ [y 确认] [n / Esc 取消]                          │\n   ╰──────────────────────────────────────────────────╯ \n   已恢复 0 个；冲突 1（alpha（/dev/shm/skill-recovery… \n                                                        \n"
+      },
+      {
+        "label": "stale-error-end",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 恢复未完成                                       │\n   │ 恢复到：<source>/pr │\n   │ oject/.dsh/skills/alpha-路径 空格-路径           │\n   │ 回收站：<fixture>/panel/tra │\n   │ sh/20261112T085644Z-ur29lm/workspace/alpha       │\n   │ 计划备份位置：<fixture>/pan │\n   │ el/backups/skills/restore-1794473865040-0fbfa6f4 │\n   │ -046e-44b9-a1c8-e1da210b6f84                     │\n   │ 恢复失败：恢复源或目标已变化，请重新按 u；未覆盖 │\n   │ 外部改动                                         │\n   │ [首] [上页] [下页] [末] 1/9                      │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯\n                                                       \n                                                        \n   恢复失败：恢复源或目标已变化，请重新按 u；未覆盖外…  \n                                                        \n"
+      },
+      {
+        "label": "replace-result-end",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 恢复结果                                         │\n   │ 已恢复：<source>/pr │\n   │ oject/.dsh/skills/alpha-路径 空格-路径           │\n   │ 覆盖前备份：<fixture>/panel │\n   │ /backups/skills/restore-1794473884336-c5f7cfc7-d │\n   │ c64-419a-b220-bfa5ce6b6ee1/entity                │\n   │ 其他冲突可关闭后按 u 继续处理。                  │\n   │ [首] [上页] [下页] [末] 1/6                      │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯\n                                                       \n                                                       \n                                                       \n                                                       \n                                                        \n                                                        \n                                                        \n"
+      },
+      {
+        "label": "scope-preview",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 确认恢复技能                                     │\n   │ 技能：alpha                                      │\n   │ 原作用域：工作区                                 │\n   │ 回收站：<fixture>/panel/tra │\n   │ sh/20261112T085836Z-l5bxl1/workspace/alpha       │\n   │ 恢复到：<fixture>/dsh/skill │\n   │ s/alpha-路径 空格-路径                           │\n   │ 目标作用域不同，原占用对象保留；目标已存在或同名 │\n   │ 时拒绝。                                         │\n   │ 写入前重查源、目标和清单；发生变化会停止。其他冲 │\n   │ 突保持原状。                                     │\n   │ [首] [上页] [下页] [末] 1/10                     │\n   │ [y 确认] [n / Esc 取消]                          │\n   ╰──────────────────────────────────────────────────╯\n                                                        \n   已恢复 0 个；冲突 1（alpha（/dev/shm/skill-recovery… \n                                                        \n"
+      },
+      {
+        "label": "scope-preview-end",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 确认恢复技能                                     │\n   │ 技能：alpha                                      │\n   │ 原作用域：工作区                                 │\n   │ 回收站：<fixture>/panel/tra │\n   │ sh/20261112T085836Z-l5bxl1/workspace/alpha       │\n   │ 恢复到：<fixture>/dsh/skill │\n   │ s/alpha-路径 空格-路径                           │\n   │ 目标作用域不同，原占用对象保留；目标已存在或同名 │\n   │ 时拒绝。                                         │\n   │ 写入前重查源、目标和清单；发生变化会停止。其他冲 │\n   │ 突保持原状。                                     │\n   │ [首] [上页] [下页] [末] 1/10                     │\n   │ [y 确认] [n / Esc 取消]                          │\n   ╰──────────────────────────────────────────────────╯\n                                                        \n   已恢复 0 个；冲突 1（alpha（/dev/shm/skill-recovery… \n                                                        \n"
+      },
+      {
+        "label": "scope-result",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 恢复结果                                         │\n   │ 已恢复：<fixture>/dsh/skill │\n   │ s/alpha-路径 空格-路径                           │\n   │ 其他冲突可关闭后按 u 继续处理。                  │\n   │ [首] [上页] [下页] [末] 1/3                      │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯\n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                        \n   已恢复 → <fixture>/dsh/skills/… \n                                                        \n"
+      }
+    ],
+    "probeExitedBeforeFinalBuild": true,
+    "coverageBoundary": "Normal real TUI paths executed before final strict journal parsing/metadata preservation supplement; final domain and actual-runtime UI regressions exercise final reader and new malformed/unknown metadata branches. Full user acceptance remains pending."
+  },
+  "finalReleaseCheck": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "tests": 156,
+    "passed": 156,
+    "failed": 0,
+    "skipped": 0,
+    "layoutAssertions": 280,
+    "mouseAssertions": 82,
+    "manifest": "passed",
+    "renderSmoke": "passed",
+    "uiInteractionSmoke": "passed",
+    "mcpSmoke": "passed",
+    "mcpCrudSmokeColumns": [
+      120,
+      58
+    ],
+    "mcpGroupsSmokeColumns": [
+      120,
+      58
+    ],
+    "tarball": {
+      "version": "0.1.0-dev.0",
+      "fileCount": 71,
+      "bytes": 99404,
+      "sha256": "1d2e7a3cd28786b089e921a106b116c909fc0e3ced188883558e551768230c6a"
+    },
+    "scope": "Final stable source/tests/README after strict reader and metadata preservation fixes; earlier complete run not used as final evidence"
+  },
+  "limits": [
+    "No arbitrary concurrent-writer transaction or fsync/power-loss guarantee",
+    "Directory chains containing symbolic links refuse automatic recovery; an entity itself may be a literal symlink",
+    "Normal modes/content/link targets, not ACL/xattr/owner/timestamp/hardlink topology preservation",
+    "Private overwrite backups persist; extra copy and hashing cost; no new automatic backup cleanup policy",
+    "Interrupted records need inspection of retained locations; no forced retry",
+    "Other conflicts require another u; successful nonconflicting restores are not rolled back by cancel",
+    "Remaining P0, full user acceptance and external KI-01..03 still open"
+  ]
+}

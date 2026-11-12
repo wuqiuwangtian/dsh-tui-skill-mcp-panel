@@ -53,7 +53,18 @@ class Runtime {
     this.notify()
   }
   async deleteSkillInstances(rows) { this.calls.push(`delete:${rows[0].id}`) }
-  async undoLastDelete() { this.calls.push('undo') }
+  async undoLastDelete() {
+    this.calls.push('undo')
+    if (this.recoveryFixture) return { batchId: 'fixture', conflictEntries: [{ name: 'mouse-002', scope: 'workspace', entryId: 'conflict' }] }
+  }
+  async openSkillRecovery(batchId, entryId, kind) {
+    return { kind, entry: { name: 'mouse-002', scope: 'workspace', trashPath: '/fixture/trash/mouse-002' }, destination: '/fixture/restored-mouse',
+      ...(kind === 'replace' ? { backupDir: '/fixture/backup' } : {}) }
+  }
+  async recoverSkill(session) {
+    this.calls.push(`recover:${session.kind}`)
+    return { destination: session.destination, ...(session.backupDir ? { backupPath: session.backupDir + '/entity' } : {}), warnings: [] }
+  }
   async setGroupMembershipForInstances(id) { this.calls.push(`membership:${id}`) }
   async createGroup(name) { this.calls.push(`create-group:${name}`) }
   async openMcpForm(id) { return { id, config: { serverName: 'new-server', transport: 'stdio', command: 'node', args: [] }, patchPath: profile } }
@@ -129,6 +140,23 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
     assert.ok(runtime.calls.includes('delete:s2.disabled')); passed('delete confirmation targets selected skill')
     await click(columns < 110 ? 'u撤销' : 'u 撤销')
     assert.ok(runtime.calls.includes('undo')); passed('undo button invokes undo')
+    runtime.recoveryFixture = true
+    await sleep(550) // Host groups same-target presses within 500ms as multi-click selection.
+    await click(columns < 110 ? 'u撤销' : 'u 撤销')
+    await click('取消（保留')
+    assert.ok(!runtime.calls.some(call => call.startsWith('recover:'))); passed('recovery choice mouse cancellation does not write')
+    await click(columns < 110 ? 'u撤销' : 'u 撤销')
+    await click('覆盖前备份')
+    await check('mouse replacement preview', s => s.includes('确认恢复技能') && s.includes('[y 确认]'))
+    await click('n / Esc 取消')
+    await check('mouse preview cancellation returns to safe choices', s => s.includes('恢复冲突') && !runtime.calls.some(call => call.startsWith('recover:')))
+    await click('覆盖前备份'); await click('y 确认'); await click('[末]')
+    await check('mouse replacement result exposes backup path', s => s.replace(/[│\s]/gu, '').includes('/fixture/backup/entity') && runtime.calls.includes('recover:replace'))
+    await click('Enter/Esc 关闭')
+    await click(columns < 110 ? 'u撤销' : 'u 撤销'); await click('恢复到全局'); await click('y 确认')
+    assert.ok(runtime.calls.includes('recover:scope')); passed('mouse alternative scope invokes explicit recovery')
+    await click('Enter/Esc 关闭')
+    runtime.recoveryFixture = false
     await click(columns < 110 ? 'g分组' : 'g 分组')
     await wheel('Mouse group 000')
     await check('picker wheel moves active item', s => /❯.*Mouse group 001/u.test(s))

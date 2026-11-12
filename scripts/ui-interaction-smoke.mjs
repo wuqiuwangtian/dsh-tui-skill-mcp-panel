@@ -7,7 +7,7 @@
 import { createRequire } from 'node:module'
 import { EventEmitter } from 'node:events'
 import { Readable } from 'node:stream'
-import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, rm, stat, readdir, rename } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -148,6 +148,47 @@ try {
   await press('u')
   await sleep(400)
   check('undo restores alpha', existsSync(join(project, '.dsh', 'skills', 'alpha', 'SKILL.md')))
+
+  // Conflict recovery uses the real scene/runtime and temporary filesystem.
+  const alphaDir = join(project, '.dsh', 'skills', 'alpha')
+  const conflict = async () => {
+    await press('1'); await press('\x1b[H'); await press('d'); await press('y'); await sleep(180)
+    await mkdir(alphaDir, { recursive: true }); await writeFile(join(alphaDir, 'SKILL.md'), SKILL('replacement'))
+    await press('u'); await sleep(150)
+  }
+  await conflict()
+  screen = await screenText()
+  check('conflict defaults to cancel', screen.includes('恢复冲突') && /❯\s*取消/u.test(screen))
+  const conflictManifest = join(panel, 'trash', runtime.snapshot().latestTrash.batchId, 'manifest.json')
+  const conflictBytes = await readFile(conflictManifest)
+  await press('\r')
+  check('cancel preserves occupant and trash journal', await readFile(join(alphaDir, 'SKILL.md'), 'utf8') === SKILL('replacement') && (await readFile(conflictManifest)).equals(conflictBytes))
+  check('cancel does not create skill backups', !existsSync(join(panel, 'backups', 'skills')))
+  await press('u'); await press('\x1b[B'); await press('\r'); await sleep(150)
+  check('replace preview shows paths and backup plan', (await screenText()).includes('确认恢复技能') && (await screenText()).includes('覆盖前备份：'))
+  await press('n')
+  check('declining preview returns to choices without backup', (await screenText()).includes('恢复冲突') && !existsSync(join(panel, 'backups', 'skills')))
+  await press('\x1b')
+  await press('u'); await press('\x1b[B'); await press('\r'); await sleep(150)
+  await writeFile(join(alphaDir, 'SKILL.md'), SKILL('outside-new'))
+  await press('y'); await sleep(200)
+  check('stale recovery preview fails visibly without replacing data', (await screenText()).includes('恢复未完成') && (await screenText()).includes('已变化') && await readFile(join(alphaDir, 'SKILL.md'), 'utf8') === SKILL('outside-new'))
+  await press('\r')
+  await press('u'); await press('\x1b[B'); await press('\r'); await sleep(150); await press('y'); await sleep(250)
+  check('confirmed replace restores original skill', await readFile(join(alphaDir, 'SKILL.md'), 'utf8') === SKILL('alpha'))
+  const backupDirs = await readdir(join(panel, 'backups', 'skills'))
+  check('replace saves exact external occupant backup', backupDirs.length === 1 && await readFile(join(panel, 'backups', 'skills', backupDirs[0], 'entity', 'SKILL.md'), 'utf8') === SKILL('outside-new'))
+  check('result shows backup location', (await screenText()).includes('恢复结果') && (await screenText()).includes('覆盖前备份：'))
+  await press('\r')
+  await conflict()
+  await press('\x1b[B'); await press('\x1b[B'); await press('\r'); await sleep(150)
+  check('alternate-scope preview names global destination', (await screenText()).includes(join(home, 'skills', 'alpha')))
+  await press('y'); await sleep(250)
+  check('alternate scope restores without overwriting occupant', await readFile(join(home, 'skills', 'alpha', 'SKILL.md'), 'utf8') === SKILL('alpha') && await readFile(join(alphaDir, 'SKILL.md'), 'utf8') === SKILL('replacement'))
+  await press('\r')
+  // Reset only these fixture skills so later existing group scenarios stay unchanged.
+  await rm(alphaDir, { recursive: true }); await rename(join(home, 'skills', 'alpha'), alphaDir)
+  await runtime.refresh('after-recovery-scenarios')
 
   // add via a -> path -> scope
   await press('a')

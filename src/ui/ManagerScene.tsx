@@ -593,6 +593,52 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       })
     }
 
+    const runUndoSkills = (): void => {
+      void (async () => {
+        const outcome = await runtime.undoLastDelete()
+        const entry = outcome?.conflictEntries?.[0]
+        if (entry === undefined || outcome?.batchId === undefined) return
+        const batchId = outcome.batchId
+        const otherScope = entry.scope === 'global' ? 'workspace' : 'global'
+        const showChoices = (): void => setModal({
+          kind: 'select', title: `恢复冲突 · ${entry.name}`, index: 0,
+          options: [
+            { id: 'cancel', label: '取消（保留回收站与占用对象）' },
+            { id: 'replace', label: '覆盖前备份，再恢复到原位置…' },
+            { id: 'scope', label: `恢复到${SCOPE_LABELS[otherScope]}…` },
+          ],
+          onSubmit: (choice) => {
+            if (choice === 'cancel') return
+            void (async () => {
+              const session = await runtime.openSkillRecovery(batchId, entry.entryId, choice === 'replace' ? 'replace' : 'scope', otherScope)
+              if (session === undefined) {
+                setModal({ kind: 'info', title: '无法准备恢复', lines: [runtime.snapshot().statusMessage?.text ?? '请重新按 u 并检查恢复记录'] })
+                return
+              }
+              setModal({ kind: 'confirm', title: '确认恢复技能', danger: choice === 'replace',
+                message: [`技能：${session.entry.name}`, `原作用域：${SCOPE_LABELS[session.entry.scope as 'global' | 'workspace']}`,
+                  `回收站：${session.entry.trashPath}`, `恢复到：${session.destination}`,
+                  ...(session.backupDir === undefined ? ['目标作用域不同，原占用对象保留；目标已存在或同名时拒绝。']
+                    : [`覆盖前备份：${session.backupDir}/entity`, '确认后先复制并校验备份，再移走占用对象；备份失败不开始替换。']),
+                  '写入前重查源、目标和清单；发生变化会停止。其他冲突保持原状。'],
+                onCancel: showChoices,
+                onConfirm: () => {
+                  void runtime.recoverSkill(session).then((result) => {
+                    setModal({ kind: 'info', title: result === undefined ? '恢复未完成' : '恢复结果', lines: result === undefined
+                      ? [`恢复到：${session.destination}`, `回收站：${session.entry.trashPath}`,
+                        ...(session.backupDir ? [`计划备份位置：${session.backupDir}`] : []), runtime.snapshot().statusMessage?.text ?? '请检查恢复记录和备份']
+                      : [`已恢复：${result.destination}`, ...(result.backupPath ? [`覆盖前备份：${result.backupPath}`] : []),
+                        ...result.warnings, '其他冲突可关闭后按 u 继续处理。'] })
+                  })
+                },
+              })
+            })()
+          },
+        })
+        showChoices()
+      })()
+    }
+
     const openAdd = (): void => {
       setModal({
         kind: 'input',
@@ -1055,7 +1101,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (char === '4') return goTab('diagnostics')
       if (char === 'u') {
         if (tab === 'mcp') void runtime.undoMcpDelete()
-        else void runtime.undoLastDelete()
+        else runUndoSkills()
         return
       }
       if (char === 'x') {
@@ -1791,7 +1837,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         else if (id === 'toggle') runToggle()
         else if (id === 'mark') pressMark()
         else if (id === 'delete') askDelete()
-        else if (id === 'undo') void runtime.undoLastDelete()
+        else if (id === 'undo') runUndoSkills()
         else if (id === 'create') openAdd()
         else if (id === 'group') openGroupPicker()
         else if (id === 'search') setSearchMode(true)

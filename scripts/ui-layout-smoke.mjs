@@ -60,7 +60,18 @@ class Runtime {
   async dumpNow() {}
   async toggleSkills() { this.calls.push('toggle') }
   async deleteSkillInstances() { this.calls.push('delete') }
-  async undoLastDelete() {}
+  async undoLastDelete() {
+    if (!this.recoveryFixture) return
+    return { batchId: 'fixture', conflictEntries: [{ name: 'skill-000', scope: 'workspace', entryId: 'conflict' }] }
+  }
+  async openSkillRecovery(batchId, entryId, kind) {
+    return { entry: { name: 'skill-000', scope: 'workspace', trashPath: `/fixture/trash/${word}/TRASH-END` }, kind,
+      destination: `/fixture/${word}/RECOVERY-DEST-END`, ...(kind === 'replace' ? { backupDir: `/fixture/backups/${word}/RECOVERY-BACKUP-END` } : {}) }
+  }
+  async recoverSkill(session) {
+    this.calls.push(`recover:${session.kind}`)
+    return { destination: session.destination, ...(session.backupDir ? { backupPath: session.backupDir + '/entity' } : {}), warnings: [] }
+  }
   async undoMcpDelete() {}
   async toggleMcp() { this.calls.push('toggle-mcp') }
   async deleteMcp() { this.calls.push('delete-mcp') }
@@ -169,6 +180,24 @@ for (const [columns, rows] of sizes) {
     await press('d')
     await check('batch-confirm-reopen-starts-at-top', s => s.includes('将移入回收站'))
     await press('\x1b'); await press('x')
+    runtime.recoveryFixture = true
+    await press('u')
+    await check('recovery-choices-default-cancel', s => s.includes('恢复冲突') && /❯\s*取消/u.test(s))
+    await press('\r')
+    await check('recovery-default-cancel-no-call', () => !runtime.calls.some(call => call.startsWith('recover:')))
+    await press('u'); await press('\x1b[B'); await press('\r'); await press('\x1b[F')
+    await check('recovery-preview-long-path-footer', s => s.includes('确认恢复技能') && s.includes('[y 确认]') && s.includes('其他冲突'))
+    await press('n')
+    await check('recovery-preview-cancel-keeps-choice', s => s.includes('恢复冲突') && !runtime.calls.some(call => call.startsWith('recover:')))
+    await press('\x1b'); await press('u'); await press('\x1b[B'); await press('\r'); await press('y'); await press('\x1b[F')
+    await check('recovery-result-backup-tail', s => s.replace(/[│\s]/gu, '').includes('RECOVERY-BACKUP-END/entity') && runtime.calls.includes('recover:replace'))
+    await press('\r')
+    await press('u'); await press('\x1b[B'); await press('\x1b[B'); await press('\r'); await press('\x1b[F')
+    await check('recovery-other-scope-preview', s => s.includes('原占用对象保留') && s.includes('[y 确认]'))
+    await press('y')
+    await check('recovery-other-scope-commit', () => runtime.calls.includes('recover:scope'))
+    await press('\r')
+    runtime.recoveryFixture = false; runtime.calls = []
     await press('2'); await press('\x1b[H'); await press('i'); await press('\x1b[F')
     await check('mcp-detail-end', (s) => s.includes('MCP-DETAIL-END'))
     await press('\x1b'); await press('2'); await press('/'); await press('no-such-server'); await press('\r')
