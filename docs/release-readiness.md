@@ -382,7 +382,7 @@ node scripts/check-runtime-candidates.mjs "<输出 root>/runtime-candidates.json
 
 ### 11.4 真实环境变更与恢复清单（提案，2026-11-11）
 
-**状态：可审阅、已在隔离目录演练，未获真实安装更新授权、未实施。** 本节形成需求 §14 的下一项准备结果；§11.2/§11.3 的候选验证不等于用户已经选择部署方式。私有评审包由准备命令输出，包含原文件、候选文件、逐文件哈希/权限、计划及演练报告；脱敏结果见 [m5-compat-rollout.json](research/evidence/m5-compat-rollout.json)。本轮推荐的临时方案编号为 `9a27a2a35acd4248`，后续批准针对这个内容快照，执行前仍须重读状态。
+**状态：历史提案，已在隔离目录演练；用户于 2026-11-12 决定保持现状，不实施。** 后续排障入口见 §11.5。 本节形成需求 §14 的下一项准备结果；§11.2/§11.3 的候选验证不等于用户已经选择部署方式。私有评审包由准备命令输出，包含原文件、候选文件、逐文件哈希/权限、计划及演练报告；脱敏结果见 [m5-compat-rollout.json](research/evidence/m5-compat-rollout.json)。本轮推荐的临时方案编号为 `9a27a2a35acd4248`，后续批准针对这个内容快照，执行前仍须重读状态。
 
 **原始现象与根因沿 §11.2。** web 空值卡片来自返回 envelope 解包错误，多行 flow 操作失败来自编辑区间漏掉闭合符，冷启动 MCP 关闭后输入异常来自继承的终端 stderr；三项不能靠改本面板配置或反复刷新一并解决。本节仅选择部署边界，不增加产品运行时补丁。
 
@@ -436,4 +436,46 @@ node scripts/rehearse-compat-rollout.mjs "<输出 root>/review-plan.json"
 
 本轮另将同一 payload 链入新隔离 DSH profile，用实际 2.3.7 网页与原宿主验证冷启动 flow 停用（0 工具、disposed、raw）和 TUI 启用（1 工具、active、raw），无整页重载或手动恢复，正常退出 0。此前 §11.2/§11.3 的编辑/删除、自动重连与日志证据继续有效，当前 pilot 不冒充用户真实 MCP 全测。两个脚本语法、路径拒绝反例、原安装/保留数据未变和 npm dry-run 均核对通过；dry-run 为 65 文件，不包含工具/文档，本轮未重跑构建或 `check:release`。
 
-**下一项是用户的部署选择与授权。** 选择临时方案后，按上述范围准备持久备份、停机窗口和执行时重新核验；选择等上游，则保持真实安装不变，后续可整理上游评审材料但不擅自发送。真实写入必须遵守 AGENT.md §2 和需求 §14 的既有边界；本轮没有新增审批规则。开发版本仍为 `0.1.0-dev.0`，AC-15、完整人工验收与发布继续待完成。
+**2026-11-12 决定：保持真实安装现状，不实施本提案。** 本节保留作为未来排障时的候选与恢复资料，不再是待批准、待执行的部署任务。根因及证据继续保留，未来按 §11.5 从现象和版本重新确认；不擅自发送上游消息。开发版本仍为 `0.1.0-dev.0`，AC-15、完整人工验收与发布继续待完成。
+
+### 11.5 已知问题速查与处理入口（2026-11-12）
+
+**当前决定：用户已选择保持真实安装现状，不实施 §11.4 的临时兼容方案。** 以下问题继续登记为“已定位、真实环境未修复”；该决定不表示问题已关闭、AC-15 通过或发布条件放宽。补丁、源文件摘要和验证脚本保留在仓库，未来处理不依赖会被清理的 `/tmp` 评审目录。只有实际遇到问题、评估上游修复或用户明确改变决定时，才重新核对方案；临时补丁不再是默认待执行项。
+
+以下版本是 **2026-11-11 的实测快照**：web 2.3.7、宿主 0.19.0、内核 0.2.2-rc.1、Node v26.3.0 / libuv 1.52.1，Linux/WSL2。未来版本须重新确认，不能照版本号相近直接套旧补丁。
+
+| 编号 / 搜索词 | 已知现象与确认线索 | 临时处理与长期入口 |
+| --- | --- | --- |
+| **KI-01：web 卡片消失 / `reading 'ok'` / `serverCard`** | MCP 开关后网页卡片或主面板消失，错误可能为 `Cannot read properties of null (reading 'ok')`。2.3.7 把 `{ server, reconciled }` 整体当卡片保存；后台启停可能已经成功。 | 停止连点开关；可整页刷新恢复页面，再等待 HMR 收敛，用 TUI 大写 `R` 和 loader/工具状态核对真实结果。刷新不等于修复。根因/位置见 §11.2；已检查的官方 2.3.12 在 `applyToggle` 解包并校验卡片，但不能据此保证整包安装兼容。2.3.7 回移补丁见下表，不能叠加到 2.3.12。 |
+| **KI-02：flow / `]`、`}` / YAML 拒写** | 部分手写多行 flow map/seq 在 web 启停、编辑或删除时失败；`nodeContentEndOf()` 漏算闭合符，导致候选 YAML 错误。已检查的 2.3.12 编辑器仍有此问题。 | 暂避 web 对该行的写操作，先保留原文和备份。确需手工处理时只定点修改并验证 YAML，保留注释与 `!!js`；不要整份重输出、批量转换格式或反复重试。原始行在本面板仍仅提供允许的启停，编辑/删除边界不扩大。源码 `lib/patch-editor.js:484`，修复原理为 flow 使用 `range[1]`，详见 §11.2。 |
+| **KI-03：停用 MCP 后按键失效 / 回显 / canonical / raw mode** | 重点确认：Node stdio MCP 是否在宿主进入 raw 前已启用，退出时 stderr 是否继承同一终端。已捕获其 fd 2 的 `TCSETS2` 恢复 canonical/echo；宿主重复 `setRawMode(true)` 又因缓存而失效。其他原因也可能产生相似症状。 | 先停止连续输入，避免缓冲按键在恢复后误触发命令。可从另一终端只读检查受影响进程的 TTY，按下文记录线索。恢复会话优先正常退出并重新启动；确认已经回到 shell 后，终端仍异常才执行 `stty sane`。这不会修复继承来源。内核 stderr 隔离/有界诊断候选见 §11.3；宿主 false→true 周期实验有回显观察，不推荐直接部署。 |
+
+**KI-03 的只读确认与临时恢复。** 在另一终端先将 `DSH_PID` 设为受影响 DSH 进程的真实 PID，再查看其 stdin 指向；不要猜 PID，也不要把新终端自身的模式当成故障终端的模式：
+
+```sh
+readlink "/proc/${DSH_PID}/fd/0"
+# 核对输出确为受影响的 /dev/pts/N，再将该路径赋给 PANEL_AFFECTED_TTY：
+stty -F "$PANEL_AFFECTED_TTY" -a
+```
+
+这两条命令只读。TUI 活动期间出现 `icanon echo` 与症状相符，可作为线索；正常 shell 本来就可能具有这些标志。`stdin.isRaw === true` 也不能证明内核终端模式正确。不要在仍运行的 TUI 上盲目执行 `stty sane` 或切换其他终端的 raw 模式；退出宿主并确认当前窗口回到 shell 提示符后，才可在**该窗口**运行：
+
+```sh
+stty sane
+```
+
+退出可能中断正在进行的工具调用，应先保存可保存的工作；无法正常退出时先保留现场，再针对明确的进程处理，不批量结束 Node/DSH 进程。以上恢复步骤是故障发生后的操作指引，本轮没有对真实终端执行它们，也未验证每种终端模拟器的恢复效果。
+
+**快速定位所需的最少信息。** 记录日期、Node/宿主/内核/web 版本、`serverName + entryId`、操作方向（启用/停用/编辑/删除）、是否冷启动已启用、脱敏报错和实际 loader/工具状态。KI-03 再记录目标 TTY 的 `icanon/echo` 标志；KI-02 保留能复现的最小配置结构。不要把 env/header 值、完整进程环境或网页认证链接贴入日志或提交仓库。
+
+| 要查什么 | 仓库内的稳定入口 |
+| --- | --- |
+| 三项根因、源码位置、系统调用证据与版本差异 | §11.2；[m5-interop-root-causes.json](research/evidence/m5-interop-root-causes.json) |
+| 内核候选、原宿主组合验证与宿主实验副作用 | §11.3；[m5-runtime-candidates.json](research/evidence/m5-runtime-candidates.json) |
+| 未来确需局部部署时的备份、执行前核验、回退和停止条件 | §11.4；[m5-compat-rollout.json](research/evidence/m5-compat-rollout.json)，属于历史提案，必须按届时版本重新生成 |
+| 2.3.7 的卡片与 flow 回移补丁 | [web-2.3.7-compat-backport.patch](research/evidence/web-2.3.7-compat-backport.patch)；仅适用哈希匹配的原 2.3.7 |
+| 已检查的 2.3.12 flow 补丁 | [web-2.3.12-flow-span.patch](research/evidence/web-2.3.12-flow-span.patch)；不包含旧 adapter 修复 |
+| 内核 stderr 预防候选 | [dsh-mcp-client-0.2.2-rc.1-stderr.patch](research/evidence/dsh-mcp-client-0.2.2-rc.1-stderr.patch)；需重新核对版本和诊断策略 |
+| 在自建 PTY 复核 raw 缓存与 stderr 继承链路 | `node scripts/tty-raw-recovery-probe.mjs`、`node scripts/mcp-stdio-tty-probe.mjs`；只操作临时文件和自建 PTY，需要 Python 3，后者还需本机 DSH SDK |
+
+**再次处理时的顺序。** 先按 KI 编号匹配现象并确认版本 → 在隔离夹具重现 → 比对上游实现与现有候选 → 选最小修复并重验 → 明确真实环境变更范围后再按届时用户指令实施。旧补丁锚点、版本或哈希不匹配时停止，保留证据；不强行套用，也不自动安装候选。共享技能分组并发限制仍独立见 §6。
