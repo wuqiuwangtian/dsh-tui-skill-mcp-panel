@@ -151,12 +151,15 @@
     },
     "fullSkillDetails": {
       "source": "src/ui/ManagerScene.tsx:skillDetailLines",
-      "observed": "width truncation and first 400 body lines",
-      "next": true
+      "next": false,
+      "observedBeforeFollowup": "width truncation and first 400 body lines",
+      "status": "Implemented and locally verified; full user acceptance pending",
+      "resolutionEvidence": "m5-skill-text.json"
     },
     "diagnosticVersions": {
       "source": "src/ui/ManagerScene.tsx:diagnosticLines",
-      "observed": "capabilities/paths/stats/warnings shown; plugin/host/kernel/Node version summary missing"
+      "observed": "capabilities/paths/stats/warnings shown; plugin/host/kernel/Node version summary missing",
+      "next": true
     },
     "conflictRecoveryChoices": {
       "source": "src/domain/skills/write.ts; src/host/manager-runtime.ts; src/ui/ManagerScene.tsx",

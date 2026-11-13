@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { writeFile } from 'node:fs/promises'
+import { wrapTextLines as wrapSkillText } from '../lib/types/shared/format.js'
 import { createManagerScene } from '../lib/types/ui/ManagerScene.js'
 import { cellWidth } from '../lib/types/shared/format.js'
 
@@ -39,6 +40,18 @@ class Runtime {
   subscribe(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn) }
   notify() { for (const fn of this.listeners) fn() }
   async ensureFresh() {}
+  async openSkillText(row, width, rows) {
+    this.fullLines = wrapSkillText((this.state.detail.content ?? body).replace(/\r\n?/gu, '\n').split('\n'), width)
+    this.state.fullText = { id: row.id, status: 'ready', lines: [], offset: 0, totalRows: this.fullLines.length, bytesRead: 0, bytes: 0 }
+    await this.readSkillTextPage(0, rows)
+  }
+  async readSkillTextPage(offset, rows) {
+    if (!this.state.fullText) return
+    offset = Math.max(0, Math.min(offset, Math.max(0, this.fullLines.length - rows)))
+    this.state.fullText = { ...this.state.fullText, offset, lines: this.fullLines.slice(offset, offset + rows) }; this.notify()
+  }
+  closeSkillText() { this.state.fullText = undefined; this.notify() }
+
   async syncSessionCwd() {}
   async rememberTab(tab) { this.state.activeTab = tab; this.notify() }
   async refreshWorkspaces() {
@@ -196,6 +209,19 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
     await check('input cancellation keeps original field', s => !s.includes('DO-NOT-SAVE'))
     await click('Esc 取消')
     await check('field-list cancellation closes the form', s => !s.includes('新增 MCP') && s.includes('筛选:'))
+    await press('1')
+    await click(columns < 110 ? '[i全文]' : '[i 全文]')
+    await click('[末]')
+    await check('full reader pointer last page', s => s.includes('MOUSE-BODY-099') && s.includes('Enter/Esc 关闭'))
+    await click('[首]')
+    const readerOffset = runtime.state.fullText.offset
+    await wheel('技能全文')
+    assert.ok(runtime.state.fullText.offset > readerOffset); passed('full reader pointer wheel scrolls')
+    await click('Enter/Esc 关闭')
+    await click(columns < 110 ? '[p路径]' : '[p 路径]')
+    await click('[末]')
+    await check('path copy help pointer last page', s => s.includes('终端选择复制路径'))
+    await click('Enter/Esc 关闭')
     await click(columns < 72 ? '分组' : 'Groups 分组')
     await wheel('Mouse group 000')
     await check('group wheel advances selected row', s => /❯.*Mouse group 001/u.test(s))

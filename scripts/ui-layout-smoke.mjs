@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { wrapTextLines as wrapSkillText } from '../lib/types/shared/format.js'
 import { createManagerScene } from '../lib/types/ui/ManagerScene.js'
 const require = createRequire(import.meta.url)
 const host = require.resolve('@deepseek-harness-tui/dsh-tui/package.json')
@@ -50,6 +51,18 @@ class Runtime {
   subscribe(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn) }
   notify() { for (const fn of this.listeners) fn() }
   async ensureFresh() {}
+  async openSkillText(row, width, rows) {
+    this.fullLines = wrapSkillText((this.state.detail.content ?? body).replace(/\r\n?/gu, '\n').split('\n'), width)
+    this.state.fullText = { id: row.id, status: 'ready', lines: [], offset: 0, totalRows: this.fullLines.length, bytesRead: 0, bytes: 0 }
+    await this.readSkillTextPage(0, rows)
+  }
+  async readSkillTextPage(offset, rows) {
+    if (!this.state.fullText) return
+    offset = Math.max(0, Math.min(offset, Math.max(0, this.fullLines.length - rows)))
+    this.state.fullText = { ...this.state.fullText, offset, lines: this.fullLines.slice(offset, offset + rows) }; this.notify()
+  }
+  closeSkillText() { this.state.fullText = undefined; this.notify() }
+
   async syncSessionCwd() {}
   async rememberTab(tab) { this.state.activeTab = tab; this.notify() }
   async refreshWorkspaces() {
@@ -139,6 +152,20 @@ for (const [columns, rows] of sizes) {
     await sleep(80)
     await press('\x1b[F')
     await check('large-body-preview-disclosed', (s) => s.includes('仅预览前400行'))
+    await press('i'); await press('\x1b[F')
+    await check('fulltext-past-400-lines', s => s.includes('large-line-449') && s.includes('Enter/Esc 关闭'))
+    await press('\x1b[H'); await check('fulltext-home', s => s.includes('large-line-0'))
+    await press('\r')
+    await press('p'); await press('\x1b[F')
+    await check('full-path-copy-help', s => s.includes('终端选择复制路径') && s.includes('Enter/Esc 关闭'))
+    await press('\x1b[H')
+    let pathPages = await screen()
+    for (let page = 0; page < 7; page++) { await press('\x1b[6~'); pathPages += await screen() }
+    await check('full-path-file-tail', () => pathPages.replace(/[│\s]/gu, '').includes('SKILL.md'))
+    await press('\r')
+    runtime.state.detail = { ...loadedDetail, content: '---\ndescription: ' + 'x'.repeat(17000), truncated: true }; runtime.notify()
+    await press('\x1b[F')
+    await check('oversized-frontmatter-not-body', s => s.includes('frontmatter 超出预览范围'))
     runtime.state.detail = loadedDetail; runtime.notify()
     await press('\x1b')
     await press('?'); await press('\x1b[F')

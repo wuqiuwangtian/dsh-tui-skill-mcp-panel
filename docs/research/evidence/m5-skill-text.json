@@ -1,0 +1,204 @@
+{
+  "date": "2026-11-13",
+  "baseline": "e0f2b66",
+  "version": "0.1.0-dev.0",
+  "requirements": [
+    "FR-3",
+    "§6.1",
+    "D-13"
+  ],
+  "before": {
+    "detail": "paths and body lines truncated by cells; max 400 body lines; no full view or directory copy text",
+    "runtime": "entire skill readFile + unbounded Map keyed by id; no refresh invalidation or late-request guard"
+  },
+  "files": {
+    "added": [
+      "src/domain/skills/text-reader.ts",
+      "test/domain/text-reader.test.js",
+      "scripts/prepare-skill-text-probe.mjs",
+      "docs/research/evidence/m5-skill-text.json"
+    ],
+    "modified": [
+      "AGENT.md",
+      "README.md",
+      "docs/release-readiness.md",
+      "docs/research/README.md",
+      "docs/research/evidence/m5-p0-scope-audit.json",
+      "docs/需求文档.md",
+      "scripts/ui-interaction-smoke.mjs",
+      "scripts/ui-layout-smoke.mjs",
+      "scripts/ui-mouse-smoke.mjs",
+      "src/host/manager-runtime.ts",
+      "src/ui/ManagerScene.tsx"
+    ],
+    "deleted": [],
+    "featuresRemoved": [],
+    "internalReplacement": "unbounded full-content cache replaced by bounded preview and disk pager"
+  },
+  "implementation": {
+    "previewBytes": 16384,
+    "previewLogicalLines": 400,
+    "fullReadChunkBytes": 32768,
+    "maximumSparseCheckpointsIncludingStart": 4097,
+    "fullFileKeptInMemory": false,
+    "allWrappedRowsKeptInMemory": false,
+    "indexLookup": "binary search by wrapped row then decode nearest byte checkpoint",
+    "decoding": "strict UTF-8 full reader; supports CRLF/CR, split multibyte sequences, CJK/emoji through shared cell-width helper; strips C0/C1 controls and expands tab to space",
+    "fullText": "original file including frontmatter; no 400-line cap",
+    "paths": "scan path, real path, containing directory and root as scrollable text; terminal copy instructions",
+    "refresh": "scan object change invalidates preview; late preview/full/page generations ignored",
+    "identity": "dev/ino/size/mtimeMs/ctimeMs for opened ordinary file and path; verify after index and around page reads",
+    "lifecycle": "abort controller and close on cancel, width change, replacement and runtime disposal; progress throttled to 150ms",
+    "keyboard": [
+      "i full text",
+      "p complete paths",
+      "Home/End/PageUp/PageDown/arrows/j/k",
+      "r explicit reread",
+      "Enter/Esc/q close"
+    ],
+    "mouse": "footer buttons, pager and wheel, actual SGR press/release verified"
+  },
+  "regression": {
+    "command": "pnpm build && node --test test/domain/text-reader.test.js",
+    "tests": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "coverage": [
+      "empty/trailing empty rows",
+      "CRLF/tab/control characters",
+      "UTF-8 disk chunk and checkpoint boundaries",
+      "long CJK/emoji line and >400-line tail",
+      "responsive indexing and bounded page",
+      "16KiB preview and partial UTF-8 tail",
+      "in-place write/path replacement/deletion detection",
+      "abort and close",
+      "regular symlink/directory/invalid UTF-8/non-finite arguments",
+      "runtime refresh/reread",
+      "superseded reads and disposal"
+    ]
+  },
+  "verificationCorrections": [
+    {
+      "case": "wide pointer target",
+      "finding": "test matched plain i 全文 preview hint instead of [i 全文] button",
+      "resolution": "use bracketed footer target; speculative layout/hit-area changes reverted; actual pointer path passed"
+    },
+    {
+      "case": "64x24 and 93x24 path tail",
+      "finding": "test assumed one PageDown and unbroken SKILL.md substring",
+      "resolution": "read successive pages and normalize visible wraps/borders; both sizes independently rechecked before full rerun"
+    }
+  ],
+  "realTui": {
+    "command": "node scripts/prepare-skill-text-probe.mjs <CLI-installed host 0.19.0>",
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "fixtureBytes": 203489,
+    "fixtureSha256": "8cc9a566c81a0e135dddb5aeb748630dab2cfc930944e68c0dc671526a266cea",
+    "longSingleLineBytes": 180013,
+    "subsequentNumberedLines": 900,
+    "initialPty": "58x24",
+    "initialScene": "54x22",
+    "resizePty": [
+      "44x20",
+      "44x18",
+      "58x24"
+    ],
+    "resizeScene": [
+      "40x18",
+      "40x16",
+      "54x22"
+    ],
+    "originalFullRowsAt48Cells": 3156,
+    "fullTail": "FULL-FILE-END",
+    "fullPathTail": "ENTITY-END/SKILL.md",
+    "sourceHashAfterReadMatchesOriginal": true,
+    "externalChangeByTestOnly": "append REAL-EXTERNAL-END; then restore exact original",
+    "oldViewRejectedAfterExternalChange": true,
+    "explicitRereadSeesExternalTail": true,
+    "mouseHomeReadsFrontmatter": true,
+    "readerDeleteAndToggleKeysDoNotWrite": true,
+    "skillTrashBatchCount": 0,
+    "restoredSourceSha256": "8cc9a566c81a0e135dddb5aeb748630dab2cfc930944e68c0dc671526a266cea",
+    "firstRunExitCode": 0,
+    "frameAssertions": 13,
+    "screens": {
+      "paths-first": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能完整路径（只读）                             │\n   │ 技能：probe-skill                                │\n   │ 文件（扫描路径）：                               │\n   │ <fixture>/长路径 空格-长路  │\n   │ 径 空格-长路径 空格-长路径 空格-长路径 空格-长路 │\n   │ 径 空格-长路径 空格-长路径 空格-/中文目录-中文目 │\n   │ 录-中文目录-中文目录-中文目录-中文目录-中文目录- │\n   │ 中文目录-/project-PATH-END/.dsh/skills/技能路径- │\n   │ 技能路径-技能路径-技能路径-技能路径-技能路径-技  │\n   │ 能路径-技能路径-ENTITY-END/SKILL.md              │\n   │ 文件（实际路径）：                               │\n   │ <fixture>/长路径 空格-长路  │\n   │ 径 空格-长路径 空格-长路径 空格-长路径 空格-长路 │\n   │ 径 空格-长路径 空格-长路径 空格-/中文目录-中文目 │\n   │ [首] [上页] [下页] [末] 1/33                     │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "paths-next": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能完整路径（只读）                             │\n   │ 录-中文目录-中文目录-中文目录-中文目录-中文目录- │\n   │ 中文目录-/project-PATH-END/.dsh/skills/技能路径- │\n   │ 技能路径-技能路径-技能路径-技能路径-技能路径-技  │\n   │ 能路径-技能路径-ENTITY-END/SKILL.md              │\n   │ 所在目录（可复制文本）：                         │\n   │ <fixture>/长路径 空格-长路  │\n   │ 径 空格-长路径 空格-长路径 空格-长路径 空格-长路 │\n   │ 径 空格-长路径 空格-长路径 空格-/中文目录-中文目 │\n   │ 录-中文目录-中文目录-中文目录-中文目录-中文目录- │\n   │ 中文目录-/project-PATH-END/.dsh/skills/技能路径- │\n   │ 技能路径-技能路径-技能路径-技能路径-技能路径-技  │\n   │ 能路径-技能路径-ENTITY-END                       │\n   │ 作用域发现根：                                   │\n   │ [首] [上页] [下页] [末] 14/33                    │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "paths-last": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能完整路径（只读）                             │\n   │ 径 空格-长路径 空格-长路径 空格-/中文目录-中文目 │\n   │ 录-中文目录-中文目录-中文目录-中文目录-中文目录- │\n   │ 中文目录-/project-PATH-END/.dsh/skills/技能路径- │\n   │ 技能路径-技能路径-技能路径-技能路径-技能路径-技  │\n   │ 能路径-技能路径-ENTITY-END                       │\n   │ 作用域发现根：                                   │\n   │ <fixture>/长路径 空格-长路  │\n   │ 径 空格-长路径 空格-长路径 空格-长路径 空格-长路 │\n   │ 径 空格-长路径 空格-长路径 空格-/中文目录-中文目 │\n   │ 录-中文目录-中文目录-中文目录-中文目录-中文目录- │\n   │ 中文目录-/project-PATH-END/.dsh/skills           │\n   │ 用终端选择复制路径；长路径折行时请合并续行。此入 │\n   │ 口不打开系统文件管理器。                         │\n   │ [首] [上页] [下页] [末] 21/33                    │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "full-first": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能全文 · probe-skill                           │\n   │ 原文件含 frontmatter · 只读 · r 重读             │\n   │ ---                                              │\n   │ name: probe-skill                                │\n   │ description: Read-only text fixture              │\n   │ ---                                              │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ [首] [上页] [下页] [末] 1/3156                   │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "full-last": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能全文 · probe-skill                           │\n   │ 原文件含 frontmatter · 只读 · r 重读             │\n   │ text-line-0889 中文😀                            │\n   │ text-line-0890 中文😀                            │\n   │ text-line-0891 中文😀                            │\n   │ text-line-0892 中文😀                            │\n   │ text-line-0893 中文😀                            │\n   │ text-line-0894 中文😀                            │\n   │ text-line-0895 中文😀                            │\n   │ text-line-0896 中文😀                            │\n   │ text-line-0897 中文😀                            │\n   │ text-line-0898 中文😀                            │\n   │ text-line-0899 中文😀                            │\n   │ FULL-FILE-END                                    │\n   │ [首] [上页] [下页] [末] 3145/3156                │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "mouse-full-home": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能全文 · probe-skill                           │\n   │ 原文件含 frontmatter · 只读 · r 重读             │\n   │ ---                                              │\n   │ name: probe-skill                                │\n   │ description: Read-only text fixture              │\n   │ ---                                              │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ 中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀 │\n   │ [首] [上页] [下页] [末] 1/3156                   │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "changed-file-error": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能全文 · probe-skill                           │\n   │ 原文件含 frontmatter · 只读 · r 重读             │\n   │ 读取失败：技能文件已变化；按 r 重新读取，或关闭  │\n   │ 后刷新列表                                       │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │ Esc 关闭 · r 重新读取                            │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "reread-tail": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能全文 · probe-skill                           │\n   │ 原文件含 frontmatter · 只读 · r 重读             │\n   │ text-line-0890 中文😀                            │\n   │ text-line-0891 中文😀                            │\n   │ text-line-0892 中文😀                            │\n   │ text-line-0893 中文😀                            │\n   │ text-line-0894 中文😀                            │\n   │ text-line-0895 中文😀                            │\n   │ text-line-0896 中文😀                            │\n   │ text-line-0897 中文😀                            │\n   │ text-line-0898 中文😀                            │\n   │ text-line-0899 中文😀                            │\n   │ FULL-FILE-END                                    │\n   │ REAL-EXTERNAL-END                                │\n   │ [首] [上页] [下页] [末] 3146/3157                │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "narrow-44x20-tail": "\n   Skill / MCP manager    skill-mcp-panel\n\n   ╭────────────────────────────────────╮\n   │ 技能全文 · probe-skill             │\n   │ 原文件含 frontmatter · 只读 · r …  │\n   │ text-line-0894 中文😀              │\n   │ text-line-0895 中文😀              │\n   │ text-line-0896 中文😀              │\n   │ text-line-0897 中文😀              │\n   │ text-line-0898 中文😀              │\n   │ text-line-0899 中文😀              │\n   │ FULL-FILE-END                      │\n   │ REAL-EXTERNAL-END                  │\n   │ [首] [上页] [下页] [末] 4077/4084  │\n   │ [Enter/Esc 关闭]                   │\n   ╰────────────────────────────────────╯\n\n\n",
+      "minimum-44x18-tail": "\n   Skill / MCP manager    skill-mcp-panel\n\n   ╭────────────────────────────────────╮\n   │ 技能全文 · probe-skill             │\n   │ 原文件含 frontmatter · 只读 · r …  │\n   │ text-line-0896 中文😀              │\n   │ text-line-0897 中文😀              │\n   │ text-line-0898 中文😀              │\n   │ text-line-0899 中文😀              │\n   │ FULL-FILE-END                      │\n   │ REAL-EXTERNAL-END                  │\n   │ [首] [上页] [下页] [末] 4079/4084  │\n   │ [Enter/Esc 关闭]                   │\n   ╰────────────────────────────────────╯\n\n\n",
+      "restored-58x24-tail": "\n   Skill / MCP manager                  skill-mcp-panel\n\n   ╭──────────────────────────────────────────────────╮\n   │ 技能全文 · probe-skill                           │\n   │ 原文件含 frontmatter · 只读 · r 重读             │\n   │ text-line-0890 中文😀                            │\n   │ text-line-0891 中文😀                            │\n   │ text-line-0892 中文😀                            │\n   │ text-line-0893 中文😀                            │\n   │ text-line-0894 中文😀                            │\n   │ text-line-0895 中文😀                            │\n   │ text-line-0896 中文😀                            │\n   │ text-line-0897 中文😀                            │\n   │ text-line-0898 中文😀                            │\n   │ text-line-0899 中文😀                            │\n   │ FULL-FILE-END                                    │\n   │ REAL-EXTERNAL-END                                │\n   │ [首] [上页] [下页] [末] 3146/3157                │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯\n\n\n",
+      "preview-tail": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 1 项\n   目标（当前工作区） <fixture>/… \n    作用域  全部(1)  工作区(1)  全局(0)                \n   ╭──────────────────────────────────────────────────╮\n   │ 详情  probe-skill  ↕215/224                      │\n   │ 😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文 │\n   │ 😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文 │\n   │ 😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文 │\n   │ 😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文 │\n   │ 😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文 │\n   │ 😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文 │\n   │ 😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文 │\n   │ 😀中文😀中文😀中文😀中文😀中文😀中文😀中文😀中文 │\n   │ 😀                                               │\n   │ （仅预览前400行或16KiB；按 i 查看全文）          │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区] [i全文]       \n   [p路径] [←返回]                                     \n   已写入 <fixture>/dump.json\n\n",
+      "final-preview-tail": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 1 项\n   目标（当前工作区） <fixture>/…\n    作用域  全部(1)  工作区(1)  全局(0) \n   ╭──────────────────────────────────────────────────╮\n   │ 详情  probe-skill  ↕11/20                        │\n   │ 根 <fixture>/长路径 空格-长 │\n   │ 路径 空格-长路径 空格-长路径 空格-长路径 空格-长 │\n   │ 路径 空格-长路径 空格-长路径 空格-/中文目录-中文 │\n   │ 目录-中文目录-中文目录-中文目录-中文目录-中文目  │\n   │ 录-中文目录-/project-PATH-END/.dsh/skills        │\n   │ description Refreshed text fixture               │\n   │ 正文预览（只读）· i 全文 · p 路径                │\n   │   REFRESH-VISIBLE-END                            │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] \n   [/搜索] [x清除] [r刷新] [?] [o工作区] [i全文]       \n   [p路径] [←返回]                                      \n   已写入 <fixture>/dump.json      \n                                                        \n",
+      "final-full": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能全文 · probe-skill                           │\n   │ 原文件含 frontmatter · 只读 · r 重读             │\n   │ ---                                              │\n   │ name: probe-skill                                │\n   │ description: Refreshed text fixture              │\n   │ ---                                              │\n   │ REFRESH-VISIBLE-END                              │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │ [首] [上页] [下页] [末] 1/6                      │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n"
+    },
+    "runs": 2,
+    "exitCodes": [
+      0,
+      0
+    ],
+    "finalBuildSameSkillRefreshReplacesOldPreview": true,
+    "finalBuildFullReaderVerified": true
+  },
+  "finalReleaseCheck": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "tests": 202,
+    "passed": 202,
+    "failed": 0,
+    "skipped": 0,
+    "layoutAssertions": 360,
+    "layoutSizes": 8,
+    "mouseAssertions": 109,
+    "mouseSizes": 3,
+    "manifest": "passed",
+    "renderSmoke": "passed",
+    "interactionSmoke": "passed",
+    "mcpSmoke": "passed",
+    "crudColumns": [
+      120,
+      58
+    ],
+    "groupColumns": [
+      120,
+      58
+    ],
+    "tarball": {
+      "version": "0.1.0-dev.0",
+      "fileCount": 86,
+      "bytes": 114476,
+      "sha256": "418cfdcc77c405baf14cebfd2d2da5dda43c9d7c2bbedbe07cc3678468bf5bfb",
+      "unpackAndImport": "passed"
+    },
+    "scope": "Final source, tests and packed README; subsequent updates only non-packed docs/evidence"
+  },
+  "boundaries": {
+    "realUserProfilesOrSkillsChanged": false,
+    "installedThirdPartyChanged": false,
+    "ownLinkedPluginBuildChanged": true,
+    "modelRequestsMade": false,
+    "published": false,
+    "tagCreated": false,
+    "fullUserAcceptance": "pending",
+    "AC15": "not passed; existing KI-01..03 unchanged"
+  },
+  "limits": [
+    "First full open/width change performs a cancelable O(file bytes) index scan; resizing restarts at first page",
+    "Existing skill discovery still reads/parses files; this is not proof of end-to-end huge-file/1000-skill performance",
+    "UTF-8 ordinary files only; no content editing, file-manager invocation or automatic clipboard write",
+    "Long copy text wraps visually and needs manual joining of continuation lines",
+    "File identity checks are not an atomic snapshot or a guarantee against arbitrary metadata-preserving concurrent writes"
+  ],
+  "next": {
+    "source": "docs/需求文档.md §14.1",
+    "item": "FR-18 actual diagnostic versions, then layout/mode/performance and full user acceptance",
+    "P1": "deferred"
+  }
+}

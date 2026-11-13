@@ -5,12 +5,13 @@
  *
  * No React here; the scene subscribes to `snapshot()`.
  */
-import { appendFile, lstat, mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { appendFile, lstat, mkdir, stat, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { scanSkills } from '../domain/skills/index.js'
 import { findProjectRoot } from '../domain/skills/discovery.js'
+import { readSkillPreview, SkillTextReader } from '../domain/skills/text-reader.js'
 import type { SkillInstance, SkillScanResult } from '../domain/skills/types.js'
 import {
   addSkill as addSkillOp,
@@ -156,6 +157,18 @@ export interface ManagerDetailState {
   status: 'idle' | 'loading' | 'ready' | 'error'
   content?: string
   error?: string
+  truncated?: boolean
+}
+
+export interface ManagerFullTextState {
+  id: string
+  status: 'loading' | 'ready' | 'error'
+  lines: string[]
+  offset: number
+  totalRows: number
+  bytesRead: number
+  bytes: number
+  error?: string
 }
 
 export interface ManagerState {
@@ -169,6 +182,7 @@ export interface ManagerState {
   services: ManagerServiceInfo[]
   paths: ManagerPaths
   detail: ManagerDetailState
+  fullText?: ManagerFullTextState
   mcp: McpPanelState
   groups: SkillGroups
   groupsWarning?: string
@@ -194,7 +208,11 @@ export class ManagerRuntime {
   private readonly dumpPath: string | undefined
   private readonly renderDumpPath: string | undefined
   private renderFrames = 0
-  private readonly detailCache = new Map<string, string>()
+  private detailRequest = 0
+  private fullTextRequest = 0
+  private pageRequest = 0
+  private textReader: SkillTextReader | undefined
+  private textAbort: AbortController | undefined
   private sceneService: TuiSceneServiceLike | undefined
   private readonly panelHomePath: string
   private state: ManagerState
@@ -372,7 +390,8 @@ export class ManagerRuntime {
       const scan = await scanSkills({ cwd })
       if (this.disposed || generation !== this.refreshGeneration) return
       this.captureCapabilities()
-      this.patchState({ status: 'ready', scan, error: undefined, refreshing: false })
+      this.detailRequest++
+      this.patchState({ status: 'ready', scan, error: undefined, refreshing: false, detail: { status: 'idle' } })
       await this.loadMetadata(scan.dshHome)
       await this.loadMcp()
       if (generation !== this.refreshGeneration) return
@@ -1134,22 +1153,15 @@ export class ManagerRuntime {
   }
 
   async loadDetail(instance: SkillInstance): Promise<void> {
-    if (this.state.detail.id === instance.id && this.state.detail.status !== 'error') {
-      if (this.state.detail.status === 'ready') return
-    }
+    if (this.state.detail.id === instance.id && ['ready', 'loading'].includes(this.state.detail.status)) return
+    const request = ++this.detailRequest
     this.patchState({ detail: { id: instance.id, status: 'loading' } })
-    const cached = this.detailCache.get(instance.id)
-    if (cached !== undefined) {
-      this.patchState({ detail: { id: instance.id, status: 'ready', content: cached } })
-      return
-    }
     try {
-      const content = await readFile(instance.skillFile, 'utf8')
-      if (this.disposed) return
-      this.detailCache.set(instance.id, content)
-      this.patchState({ detail: { id: instance.id, status: 'ready', content } })
+      const preview = await readSkillPreview(instance.skillFile)
+      if (this.disposed || request !== this.detailRequest) return
+      this.patchState({ detail: { id: instance.id, status: 'ready', ...preview } })
     } catch (error) {
-      if (this.disposed) return
+      if (this.disposed || request !== this.detailRequest) return
       this.patchState({
         detail: {
           id: instance.id,
@@ -1157,6 +1169,54 @@ export class ManagerRuntime {
           error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
         },
       })
+    }
+  }
+
+  closeSkillText(): void {
+    this.fullTextRequest++; this.pageRequest++
+    this.textAbort?.abort(); this.textAbort = undefined
+    if (this.textReader !== undefined) void this.textReader.close().catch(() => undefined)
+    this.textReader = undefined
+    if (!this.disposed) this.patchState({ fullText: undefined })
+  }
+
+  async openSkillText(instance: SkillInstance, width: number, rows: number): Promise<void> {
+    this.closeSkillText()
+    if (this.disposed) return
+    const request = this.fullTextRequest
+    const controller = new AbortController(); this.textAbort = controller
+    let lastProgressAt = 0
+    this.patchState({ fullText: { id: instance.id, status: 'loading', lines: [], offset: 0, totalRows: 0, bytesRead: 0, bytes: 0 } })
+    try {
+      const reader = await SkillTextReader.create(instance.skillFile, width, { signal: controller.signal, progress: (bytesRead, bytes) => {
+        if (Date.now() - lastProgressAt < 150 && bytesRead !== bytes) return
+        lastProgressAt = Date.now()
+        if (request === this.fullTextRequest && this.state.fullText !== undefined) this.patchState({ fullText: { ...this.state.fullText, bytesRead, bytes } })
+      } })
+      if (this.disposed || request !== this.fullTextRequest) { await reader.close(); return }
+      this.textReader = reader
+      await this.readSkillTextPage(0, rows)
+    } catch (error) {
+      if (this.disposed || request !== this.fullTextRequest) return
+      this.fullTextFailure(error)
+    }
+  }
+
+  private fullTextFailure(error: unknown): void {
+    if (this.state.fullText === undefined) return
+    this.patchState({ fullText: { ...this.state.fullText, status: 'error', lines: [], error: error instanceof Error ? error.message : String(error) } })
+  }
+
+  async readSkillTextPage(offset: number, rows: number): Promise<void> {
+    const reader = this.textReader, request = ++this.pageRequest
+    if (reader === undefined) return
+    try {
+      const page = await reader.page(offset, rows, this.textAbort?.signal)
+      if (this.disposed || request !== this.pageRequest || this.state.fullText === undefined) return
+      this.patchState({ fullText: { ...this.state.fullText, ...page, status: 'ready' } })
+    } catch (error) {
+      if (this.disposed || request !== this.pageRequest) return
+      this.fullTextFailure(error)
     }
   }
 
@@ -1222,6 +1282,7 @@ export class ManagerRuntime {
 
   dispose(): void {
     if (this.disposed) return
+    this.closeSkillText()
     this.disposed = true
     if (this.capabilityTimer !== undefined) clearTimeout(this.capabilityTimer)
     if (this.statusTimer !== undefined) clearTimeout(this.statusTimer)

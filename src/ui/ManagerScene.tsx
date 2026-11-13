@@ -26,6 +26,7 @@ const SKILL_ACTIONS = [
   ['undo', 'u 撤销', 'u撤销'], ['create', 'a 添加', 'a添加'], ['group', 'g 分组', 'g分组'],
   ['search', '/ 搜索', '/搜索'], ['clear', 'x 清除', 'x清除'], ['refresh', 'r 刷新', 'r刷新'], ['help', '? 帮助', '?'],
   ['workspace', 'o 工作区', 'o工作区'],
+  ['fulltext', 'i 全文', 'i全文'], ['paths', 'p 路径', 'p路径'],
 ] as const
 const GROUP_ACTIONS = [
   ['create', 'a 新建', 'a新建'], ['rename', 'r 重命名', 'r改名'], ['delete', 'd 删除', 'd删除'],
@@ -129,6 +130,7 @@ const HELP_LINES = [
   '  u                  撤销最近一次删除',
   '  a                  添加技能（本地路径导入）',
   '  o                  选择面板管理工作区；不切换聊天会话',
+  '  i / p              原文件全文 / 完整路径（只读，可滚动）',
   '  g                  把选中/标记技能加入或移出分组',
   '  x                  清除分组过滤 / 清除标记',
   '  MCP 页              ↑/↓ 选择 · 空格 启停（仅改 disabled）· r 重新读取 · m 迁移旧启停配置',
@@ -350,9 +352,12 @@ function skillDetailLines(instance: SkillInstance | undefined, state: ManagerSta
   if (instance === undefined) {
     return ['（未选择技能）', '', '用 ↑/↓ 选择左侧列表中的技能。']
   }
+  if (state.detail.id === instance.id && state.detail.status === 'error') {
+    return wrapTextLines([`读取失败：${state.detail.error ?? 'unknown'}`, '按 r 刷新列表；p 查看完整路径。'], width)
+  }
   const lines: string[] = []
   const push = (line: string): void => {
-    lines.push(displayLine(line, width))
+    lines.push(...wrapTextLines([line], width))
   }
   push(
     `状态 ${STATUS_LABELS[instance.status]} · 来源 ${SOURCE_LABELS[instance.source]} · rank ${instance.rank} · ${instance.scope === 'workspace' ? '工作区' : '全局'}`,
@@ -365,28 +370,28 @@ function skillDetailLines(instance: SkillInstance | undefined, state: ManagerSta
   if (instance.userInvocable === false) push('用户不可调用（user-invocable: false）')
   if (instance.invalidReason !== undefined) push(`无效原因 ${instance.invalidReason}`)
   if (instance.whenToUse !== undefined && instance.whenToUse.length > 0) {
-    push(`whenToUse ${oneLine(instance.whenToUse, width - 12)}`)
+    push(`whenToUse ${instance.whenToUse.slice(0, 4096)}${instance.whenToUse.length > 4096 ? '（预览；i 全文）' : ''}`)
   }
-  push(`description ${oneLine(instance.description, width - 13)}`)
+  push(`description ${instance.description.slice(0, 4096)}${instance.description.length > 4096 ? '（预览；i 全文）' : ''}`)
   const metadataKeys = instance.metadata === undefined ? [] : Object.keys(instance.metadata)
-  if (metadataKeys.length > 0) push(`metadata keys ${metadataKeys.join(', ')}`)
+  if (metadataKeys.length > 0) push(`metadata keys ${metadataKeys.slice(0, 128).map(key => key.slice(0, 128)).join(', ')}${metadataKeys.length > 128 ? '（预览；i 全文）' : ''}`)
   push('')
-  push('正文 Body（只读）')
+  push('正文预览（只读）· i 全文 · p 路径')
   const content = state.detail.id === instance.id ? state.detail.content : undefined
   if (state.detail.id === instance.id && state.detail.status === 'loading' && content === undefined) {
     push('  (读取中…)')
     return lines
   }
-  if (state.detail.id === instance.id && state.detail.status === 'error') {
-    push(`  读取失败：${state.detail.error ?? 'unknown'}`)
-    return lines
-  }
   const raw = content ?? instance.bodyPreview ?? ''
   const split = splitFrontmatter(raw)
+  if (split === undefined && state.detail.truncated && /^---\r?\n/u.test(raw)) {
+    push('frontmatter 超出预览范围；按 i 查看原文件全文')
+    return lines
+  }
   const body = split?.body ?? raw
   const preview = firstLines(body, 401)
   for (const line of preview.slice(0, 400)) push(`  ${line}`)
-  if (preview.length > 400) push('（仅预览前400行；完整正文请查看技能文件）')
+  if (preview.length > 400 || state.detail.truncated) push('（仅预览前400行或16KiB；按 i 查看全文）')
   return lines
 }
 
@@ -400,6 +405,7 @@ type Modal =
   | { kind: 'input'; title: string; label: string; value: string; hint?: string; secret?: boolean; multiline?: boolean; preserveWhitespace?: boolean; validate?: (value: string) => string | undefined; onSubmit: (value: string) => void; onCancel?: () => void }
   | { kind: 'select'; title: string; options: { id: string; label: string; hint?: string }[]; index: number; onSubmit: (id: string) => void; onCancel?: () => void }
   | { kind: 'info'; title: string; lines: string[] }
+  | { kind: 'reader'; title: string; instance: SkillInstance }
 
 function mcpDetailLines(row: McpRowView | undefined, width: number): string[] {
   if (row === undefined) {
@@ -521,11 +527,11 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
       if (selected.id !== selectedId) setSelectedId(selected.id)
       void runtime.loadDetail(selected)
-    }, [selected?.id])
+    }, [selected?.id, scan])
 
     React.useEffect(() => {
       setDetailOffset(0)
-    }, [selected?.id])
+    }, [selected?.id, state.detail.status])
     React.useEffect(() => { setModalOffset(0) }, [modal?.kind, modal?.title])
     React.useEffect(() => {
       setMarked(new Set())
@@ -577,7 +583,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         : contentWidth
     const listInner = listWidth - 6
     const nameWidth = Math.max(8, Math.min(28, listInner - 22))
-    const detailLines = skillDetailLines(selected, state, detailWidth - 4)
+    const detailLines = React.useMemo(() => skillDetailLines(selected, state, detailWidth - 4), [selected, state.detail, detailWidth])
     const detailAt = Math.min(detailOffset, Math.max(0, detailLines.length - bodyRows))
     const bodyLines = diagnosticLines(state, contentWidth - 4)
     const diagAt = Math.min(diagOffset, Math.max(0, bodyLines.length - bodyRows))
@@ -586,9 +592,15 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const helpAt = Math.min(helpOffset, Math.max(0, helpLines.length - helpRows))
     const modalWidth = Math.max(20, Math.min(contentWidth, 100))
     const modalRows = Math.max(1, rows - 9)
+    const readerRows = Math.max(1, rows - 10)
     const modalLines = modal?.kind === 'confirm' ? wrapTextLines(modal.message, modalWidth - 4)
       : modal?.kind === 'info' ? wrapTextLines(modal.lines, modalWidth - 4) : []
     const modalAt = Math.min(modalOffset, Math.max(0, modalLines.length - modalRows))
+    React.useEffect(() => {
+      if (modal?.kind !== 'reader' || tooSmall) return
+      void runtime.openSkillText(modal.instance, modalWidth - 4, readerRows)
+      return () => runtime.closeSkillText()
+    }, [modal?.kind, modal?.kind === 'reader' ? modal.instance : undefined, modalWidth, readerRows, tooSmall])
 
     // ── shared actions ──────────────────────────────────────────────────────
     const targetInstances = (): SkillInstance[] =>
@@ -708,6 +720,18 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           })
         },
       })
+    }
+
+    const openFullText = (): void => {
+      if (selected !== undefined) setModal({ kind: 'reader', title: `技能全文 · ${selected.name}`, instance: selected })
+    }
+    const openSkillPaths = (): void => {
+      if (selected === undefined) return
+      setModal({ kind: 'info', title: '技能完整路径（只读）', lines: [
+        `技能：${selected.name}`, '文件（扫描路径）：', selected.skillFile, '文件（实际路径）：', selected.path,
+        '所在目录（可复制文本）：', dirname(selected.skillFile), '作用域发现根：', selected.rootPath,
+        '用终端选择复制路径；长路径折行时请合并续行。此入口不打开系统文件管理器。',
+      ] })
     }
 
     const showMcpForm = (session: McpEditSession, config: McpConfig, index = 0): void => {
@@ -1026,7 +1050,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
     const cancelModal = (): void => {
       setModal(undefined)
-      if (modal !== undefined && modal.kind !== 'info') modal.onCancel?.()
+      if (modal !== undefined && 'onCancel' in modal) modal.onCancel?.()
     }
 
     const submitInputModal = (target: Extract<Modal, { kind: 'input' }>): void => {
@@ -1061,6 +1085,16 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       const char = text.length > 0 ? (text[0]?.toLowerCase() ?? '') : ''
 
       if (modal !== undefined) {
+        if (modal.kind === 'reader') {
+          if (key.escape || key.return || char === 'q') { cancelModal(); return }
+          if (char === 'r') { void runtime.openSkillText(modal.instance, modalWidth - 4, readerRows); return }
+          const text = state.fullText
+          if (text?.status === 'ready') {
+            const next = textOffset(key, char, text.offset, text.totalRows, readerRows)
+            if (next !== undefined) void runtime.readSkillTextPage(next, readerRows)
+          }
+          return
+        }
         if (modal.kind === 'confirm') {
           const next = textOffset(key, char, modalAt, modalLines.length, modalRows)
           if (next !== undefined) { setModalOffset(next); return }
@@ -1267,6 +1301,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       // skills-tab actions (available regardless of focus)
+      if (char === 'i') return openFullText()
+      if (char === 'p') return openSkillPaths()
       if (char === 'o') return openWorkspaces()
       if (char === 'r') {
         void runtime.refresh('manual')
@@ -1418,6 +1454,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       `mcpGroups(${mcpGroupEntries.length}): ${mcpGroupEntries.map(([id, group]) => `${id}:${group.name}:${group.members.length}`).join(' ')}`,
       `trash=${state.latestTrash?.batchId ?? '-'} status=${state.statusMessage?.text ?? '-'}`,
       `detail=${state.detail.status}${state.detail.error === undefined ? '' : ` error=${state.detail.error}`}`,
+      `fullText=${state.fullText?.status ?? '-'} offset=${state.fullText?.offset ?? 0} rows=${state.fullText?.totalRows ?? 0}`,
       ...(tab === 'mcp'
         ? [MCP_SCOPE_NOTICE, ...mcpDetailLines(selectedMcp, contentWidth)]
         : tab === 'diagnostics'
@@ -1430,7 +1467,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         `tab=${tab} scope=${scope} focus=${focus}${helpOpen ? ' help' : ''}${modal === undefined ? '' : ` modal=${modal.kind}`}`,
         verificationFrame,
       )
-    }, [tab, scope, focus, selected?.id, selectedMcp?.id, state.mcp, state.groupsFingerprint, state.groupsWarning, state.config, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.statusMessage?.at, modal?.kind, marked, groupFilter])
+    }, [tab, scope, focus, selected?.id, selectedMcp?.id, state.mcp, state.groupsFingerprint, state.groupsWarning, state.config, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.fullText, state.statusMessage?.at, modal?.kind, marked, groupFilter])
 
     const textPager = (at: number, total: number, page: number, setOffset: (value: number) => void): ReactNode => (
       <Box flexDirection="row" height={1}>
@@ -1452,6 +1489,20 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     if (modal !== undefined) {
       const modalDanger = modal.kind === 'confirm' && modal.danger === true
       const modalBody = ((): ReactNode => {
+        if (modal.kind === 'reader') {
+          const text = state.fullText
+          return <>
+            <Text dimColor wrap="truncate">原文件含 frontmatter · 只读 · r 重读</Text>
+            <Box flexDirection="column" height={readerRows}>
+              {text?.status === 'ready' ? text.lines.map((line, index) => <Text key={`${text.offset}-${index}`} wrap="truncate">{line || ' '}</Text>)
+                : wrapTextLines([text?.status === 'error' ? `读取失败：${text.error ?? 'unknown'}` : `建立全文索引… ${text?.bytesRead ?? 0}/${text?.bytes ?? 0} bytes`], modalWidth - 4)
+                  .slice(0, readerRows).map((line, index) => <Text key={index} wrap="truncate">{line}</Text>)}
+            </Box>
+            {text?.status === 'ready' ? textPager(text.offset, text.totalRows, readerRows, offset => { void runtime.readSkillTextPage(offset, readerRows) })
+              : <Text dimColor wrap="truncate">Esc 关闭 · r 重新读取</Text>}
+            <Box onClick={cancelModal}><Text color="accent">[Enter/Esc 关闭]</Text></Box>
+          </>
+        }
         if (modal.kind === 'confirm') {
           return (
             <>
@@ -1552,7 +1603,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
               paddingX={1}
               onWheel={(event: { deltaY: number }) => {
                 const step = Math.sign(event.deltaY)
-                if (modal.kind === 'select') setModal({ ...modal, index: Math.max(0, Math.min(modal.options.length - 1, modal.index + step)) })
+                if (modal.kind === 'reader' && state.fullText?.status === 'ready') void runtime.readSkillTextPage(state.fullText.offset + step, readerRows)
+                else if (modal.kind === 'select') setModal({ ...modal, index: Math.max(0, Math.min(modal.options.length - 1, modal.index + step)) })
                 else if (modalLines.length > 0) setModalOffset(Math.max(0, Math.min(Math.max(0, modalLines.length - modalRows), modalAt + step)))
               }}
             >
@@ -1909,6 +1961,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (id === 'clear') { clearFilters(); return }
       if (id === 'trash') { setModal({ kind: 'info', title: '技能回收站清理记录', lines: trashCleanupLines(state) }); return }
       if (tab === 'skills') {
+        if (id === 'fulltext') { openFullText(); return }
+        if (id === 'paths') { openSkillPaths(); return }
         if (id === 'workspace') { openWorkspaces(); return }
         if (id === 'back') setFocus('list')
         else if (id === 'toggle') runToggle()
