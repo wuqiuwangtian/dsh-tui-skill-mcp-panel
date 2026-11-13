@@ -1,0 +1,176 @@
+{
+  "date": "2026-11-13",
+  "baseline": "0a2985e",
+  "version": "0.1.0-dev.0",
+  "requirement": "FR-18",
+  "before": {
+    "UI": "service probes/paths/statistics/warnings only; no four-part version summary",
+    "dump": "Node field only; no version provenance"
+  },
+  "files": {
+    "added": [
+      "src/host/versions.ts",
+      "test/domain/versions.test.js",
+      "docs/research/evidence/m5-diagnostic-versions.json"
+    ],
+    "modified": [
+      "AGENT.md",
+      "README.md",
+      "docs/release-readiness.md",
+      "docs/research/README.md",
+      "docs/research/evidence/m5-p0-scope-audit.json",
+      "docs/需求文档.md",
+      "scripts/release/tarball.mjs",
+      "scripts/ui-interaction-smoke.mjs",
+      "scripts/ui-layout-smoke.mjs",
+      "scripts/ui-mouse-smoke.mjs",
+      "src/host/manager-runtime.ts",
+      "src/ui/ManagerScene.tsx"
+    ],
+    "deleted": [],
+    "featuresRemoved": []
+  },
+  "sources": {
+    "plugin": "package.json belonging to loaded plugin module; name+exact version validation",
+    "host": "public tuiPluginHost.hostDescriptor().hostVersion; dsh-tui identity; 0.0.0 placeholder rejected",
+    "kernel": "current process entry realpath must match confirmed @deepseek-ai/dsh package bin.dsh; read app-boot package metadata resolved from that CLI entry; never import/execute the library",
+    "node": "process.versions.node"
+  },
+  "guards": [
+    "exact SemVer only; no dependency ranges, PATH or dev-peer fallback",
+    "stop at first package boundary, maximum 16 levels",
+    "ordinary JSON metadata files, nonblocking open, maximum 64KiB",
+    "generic read-failure reasons do not echo JSON/provider errors",
+    "missing/disposed host clears stale data after refresh",
+    "version request generation/disposal guard",
+    "no persistence to private config; no new grants/dependencies/subscriptions"
+  ],
+  "regression": {
+    "command": "pnpm build && node --test test/domain/versions.test.js",
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "scope": [
+      "exact versions/ranges/controls",
+      "differing CLI and app-boot versions; execute guards",
+      "host absence/denial/invalid/async/placeholder",
+      "corrupt/wrong-name/directory/oversized metadata",
+      "non-CLI/wrong-bin/relative entry/no fallback",
+      "entry symlink and metadata refresh",
+      "headless actual plugin/Node; unavailable host/kernel",
+      "runtime service disappearance/dump/config bytes/disposal"
+    ]
+  },
+  "packagedVersionCheck": "actual archive is unpacked and collector must report extracted package version/source, current Node, absent host/kernel unavailable",
+  "realTui": {
+    "command": "node scripts/prepare-tui-probe.mjs <CLI-installed dsh-TUI 0.19.0>",
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "pty": "58x24",
+    "scene": "54x22",
+    "minimumPty": "44x18",
+    "minimumScene": "40x16",
+    "versions": {
+      "plugin": {
+        "value": "0.1.0-dev.0",
+        "source": "<repo>/package.json"
+      },
+      "host": {
+        "value": "0.19.0",
+        "source": "tuiPluginHost.hostDescriptor().hostVersion"
+      },
+      "kernel": {
+        "value": "0.2.2-rc.1",
+        "source": "<node-install>/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app-boot/package.json"
+      },
+      "node": {
+        "value": "26.3.0",
+        "source": "process.versions.node"
+      }
+    },
+    "sourceViewer": "keyboard/pager/real SGR entry, wheel, home/end and narrow close checked",
+    "readOnlyFileHashes": 4,
+    "files": [
+      "profile patch",
+      "home patch",
+      "probe skill",
+      "private panel config after diagnostic tab selection"
+    ],
+    "exitCode": 0,
+    "frameAssertions": 10,
+    "screens": {
+      "diagnostics": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                             \n   ╭──────────────────────────────────────────────────╮\n   │ 诊断 Diagnostics  扫描 2026-11-13T07:29:24.860Z  │\n   │ 运行版本 Versions                                │\n   │ 插件: 0.1.0-dev.0                                │\n   │ 宿主: 0.19.0                                     │\n   │ DSH 内核: 0.2.2-rc.1                             │\n   │ Node: 26.3.0                                     │\n   │ 宿主能力 Host seams                              │\n   │   present: tuiScenes, tuiDialogs, tuiToast, tui… │\n   │   missing: (none)                                │\n   │ 路径 Paths                                       │\n   │   cwd: <fixture>/project    │\n   │   DSH_HOME: <fixture>/dsh   │\n   │   AGENTS_HOME: <fixture>/a… │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [v版本] [c清理] [r刷新] [?]                          \n   已写入 <fixture>/dump.json      \n                                                        \n",
+      "sources-first": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 运行版本与来源（只读）                           │\n   │ 运行版本 Versions                                │\n   │ 插件: 0.1.0-dev.0                                │\n   │ 来源：<repo>/pa │\n   │ ckage.json                                       │\n   │ 宿主: 0.19.0                                     │\n   │ 来源：tuiPluginHost.hostDescriptor().hostVersion │\n   │ DSH 内核: 0.2.2-rc.1                             │\n   │ 来源：<node-install>/lib/node_modules/@d │\n   │ eepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app │\n   │ -boot/package.json                               │\n   │ Node: 26.3.0                                     │\n   │ 来源：process.versions.node                      │\n   │ 内核项读取当前已启动 DSH CLI 解析的 app-boot 包  │\n   │ [首] [上页] [下页] [末] 1/16                     │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "sources-last": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 运行版本与来源（只读）                           │\n   │ ckage.json                                       │\n   │ 宿主: 0.19.0                                     │\n   │ 来源：tuiPluginHost.hostDescriptor().hostVersion │\n   │ DSH 内核: 0.2.2-rc.1                             │\n   │ 来源：<node-install>/lib/node_modules/@d │\n   │ eepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app │\n   │ -boot/package.json                               │\n   │ Node: 26.3.0                                     │\n   │ 来源：process.versions.node                      │\n   │ 内核项读取当前已启动 DSH CLI 解析的 app-boot 包  │\n   │ 元数据；嵌入/无法确认入口时 unavailable。        │\n   │ 包元数据不等于代码校验；不从兼容范围、PATH 或本  │\n   │ 插件的开发依赖猜测宿主/内核版本。                │\n   │ [首] [上页] [下页] [末] 4/16                     │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "source-mouse-open": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 运行版本与来源（只读）                           │\n   │ 运行版本 Versions                                │\n   │ 插件: 0.1.0-dev.0                                │\n   │ 来源：<repo>/pa │\n   │ ckage.json                                       │\n   │ 宿主: 0.19.0                                     │\n   │ 来源：tuiPluginHost.hostDescriptor().hostVersion │\n   │ DSH 内核: 0.2.2-rc.1                             │\n   │ 来源：<node-install>/lib/node_modules/@d │\n   │ eepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app │\n   │ -boot/package.json                               │\n   │ Node: 26.3.0                                     │\n   │ 来源：process.versions.node                      │\n   │ 内核项读取当前已启动 DSH CLI 解析的 app-boot 包  │\n   │ [首] [上页] [下页] [末] 1/16                     │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "source-wheel": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 运行版本与来源（只读）                           │\n   │ 插件: 0.1.0-dev.0                                │\n   │ 来源：<repo>/pa │\n   │ ckage.json                                       │\n   │ 宿主: 0.19.0                                     │\n   │ 来源：tuiPluginHost.hostDescriptor().hostVersion │\n   │ DSH 内核: 0.2.2-rc.1                             │\n   │ 来源：<node-install>/lib/node_modules/@d │\n   │ eepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app │\n   │ -boot/package.json                               │\n   │ Node: 26.3.0                                     │\n   │ 来源：process.versions.node                      │\n   │ 内核项读取当前已启动 DSH CLI 解析的 app-boot 包  │\n   │ 元数据；嵌入/无法确认入口时 unavailable。        │\n   │ [首] [上页] [下页] [末] 2/16                     │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "source-mouse-home": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 运行版本与来源（只读）                           │\n   │ 运行版本 Versions                                │\n   │ 插件: 0.1.0-dev.0                                │\n   │ 来源：<repo>/pa │\n   │ ckage.json                                       │\n   │ 宿主: 0.19.0                                     │\n   │ 来源：tuiPluginHost.hostDescriptor().hostVersion │\n   │ DSH 内核: 0.2.2-rc.1                             │\n   │ 来源：<node-install>/lib/node_modules/@d │\n   │ eepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app │\n   │ -boot/package.json                               │\n   │ Node: 26.3.0                                     │\n   │ 来源：process.versions.node                      │\n   │ 内核项读取当前已启动 DSH CLI 解析的 app-boot 包  │\n   │ [首] [上页] [下页] [末] 1/16                     │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "source-mouse-end": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 运行版本与来源（只读）                           │\n   │ ckage.json                                       │\n   │ 宿主: 0.19.0                                     │\n   │ 来源：tuiPluginHost.hostDescriptor().hostVersion │\n   │ DSH 内核: 0.2.2-rc.1                             │\n   │ 来源：<node-install>/lib/node_modules/@d │\n   │ eepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app │\n   │ -boot/package.json                               │\n   │ Node: 26.3.0                                     │\n   │ 来源：process.versions.node                      │\n   │ 内核项读取当前已启动 DSH CLI 解析的 app-boot 包  │\n   │ 元数据；嵌入/无法确认入口时 unavailable。        │\n   │ 包元数据不等于代码校验；不从兼容范围、PATH 或本  │\n   │ 插件的开发依赖猜测宿主/内核版本。                │\n   │ [首] [上页] [下页] [末] 4/16                     │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯ \n                                                        \n                                                        \n",
+      "minimum-44x18-sources-end": "\n   Skill / MCP manager    skill-mcp-panel\n\n   ╭────────────────────────────────────╮\n   │ 运行版本与来源（只读）             │\n   │ 来源：process.versions.node        │\n   │ 内核项读取当前已启动 DSH CLI 解析  │\n   │ 的 app-boot 包元数据；嵌入/无法确  │\n   │ 认入口时 unavailable。             │\n   │ 包元数据不等于代码校验；不从兼容范 │\n   │ 围、PATH 或本插件的开发依赖猜测宿  │\n   │ 主/内核版本。                      │\n   │ [首] [上页] [下页] [末] 14/20      │\n   │ [Enter/Esc 关闭]                   │\n   ╰────────────────────────────────────╯\n\n\n",
+      "summary-home": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断 \n   ╭──────────────────────────────────────────────────╮\n   │ 诊断 Diagnostics  扫描 2026-11-13T07:31:07.238Z  │\n   │ 运行版本 Versions                                │\n   │ 插件: 0.1.0-dev.0                                │\n   │ 宿主: 0.19.0                                     │\n   │ DSH 内核: 0.2.2-rc.1                             │\n   │ Node: 26.3.0                                     │\n   │ 宿主能力 Host seams                              │\n   │   present: tuiScenes, tuiDialogs, tuiToast, tui… │\n   │   missing: (none)                                │\n   │ 路径 Paths                                       │\n   │   cwd: <fixture>/project    │\n   │   DSH_HOME: <fixture>/dsh   │\n   │   AGENTS_HOME: <fixture>/a… │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [v版本] [c清理] [r刷新] [?]                         \n   已写入 <fixture>/dump.json\n\n"
+    }
+  },
+  "finalReleaseCheck": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "tests": 210,
+    "passed": 210,
+    "failed": 0,
+    "skipped": 0,
+    "layoutAssertions": 392,
+    "layoutSizes": 8,
+    "mouseAssertions": 115,
+    "mouseSizes": 3,
+    "manifest": "passed",
+    "renderSmoke": "passed",
+    "interactionSmoke": "passed",
+    "mcpSmoke": "passed",
+    "crudColumns": [
+      120,
+      58
+    ],
+    "groupColumns": [
+      120,
+      58
+    ],
+    "tarball": {
+      "version": "0.1.0-dev.0",
+      "fileCount": 89,
+      "bytes": 117044,
+      "sha256": "fc254e56edb064eb4f9276eb0590207f2a1fa481248635c983383a68ff3978c0",
+      "unpackAndImport": "passed",
+      "diagnosticVersionSmoke": "plugin metadata from extracted package; Node actual; absent host/kernel unavailable"
+    },
+    "scope": "Final source/tests/packed README; subsequent edits only non-packed docs/evidence"
+  },
+  "limits": [
+    "Package metadata and public service reports are not a code-integrity/immutable-binary proof",
+    "Changing installed metadata in a live process can change the reported metadata without proving code reload",
+    "Embedded or unconfirmed launchers legitimately report kernel unavailable",
+    "No version polling subscription; normal startup/delayed capability probe/manual refresh update the snapshot"
+  ],
+  "boundaries": {
+    "realUserConfigOrSkillsChanged": false,
+    "installedThirdPartyChanged": false,
+    "ownLinkedPluginBuildChanged": true,
+    "modelRequestsMade": false,
+    "newPermissions": false,
+    "newDependencies": false,
+    "published": false,
+    "tagCreated": false,
+    "fullUserAcceptance": "pending",
+    "AC15": "not passed; KI-01..03 unchanged"
+  },
+  "newAuditGap": {
+    "requirement": "FR-2",
+    "kind": "original P0, not deferred P1",
+    "finding": "filterInstances supports scope + name/description query; group applied separately; SKILL_ACTIONS has no enabled/disabled/invalid filter",
+    "evidence": "static inspection of src/ui/ManagerScene.tsx filterInstances and SKILL_ACTIONS",
+    "status": "recorded only; not implemented in this batch"
+  },
+  "next": {
+    "source": "docs/需求文档.md §14.1",
+    "item": "skill status filter and combined search/group validation, then layout/mode/performance and complete acceptance"
+  }
+}

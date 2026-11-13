@@ -158,8 +158,10 @@
     },
     "diagnosticVersions": {
       "source": "src/ui/ManagerScene.tsx:diagnosticLines",
-      "observed": "capabilities/paths/stats/warnings shown; plugin/host/kernel/Node version summary missing",
-      "next": true
+      "next": false,
+      "observedBeforeFollowup": "capabilities/paths/stats/warnings shown; plugin/host/kernel/Node version summary missing",
+      "status": "Implemented and locally verified; full user acceptance pending",
+      "resolutionEvidence": "m5-diagnostic-versions.json"
     },
     "conflictRecoveryChoices": {
       "source": "src/domain/skills/write.ts; src/host/manager-runtime.ts; src/ui/ManagerScene.tsx",
@@ -167,6 +169,13 @@
       "observedBeforeFollowup": "Default skip/preserve on occupied target; no backup-overwrite or alternative-scope choices yet. Interrupted restores require explicit data inspection.",
       "status": "Implemented and locally verified; complete user acceptance pending",
       "resolutionEvidence": "m5-skill-conflict-recovery.json"
+    },
+    "skillStatusFilter": {
+      "source": "src/ui/ManagerScene.tsx:filterInstances and SKILL_ACTIONS",
+      "requirement": "FR-2",
+      "observed": "scope + name/description search + group only; no skill enabled/disabled/invalid filter UI",
+      "status": "Newly identified original P0 gap; not deferred P1",
+      "next": true
     }
   },
   "unverifiedOrExternal": [

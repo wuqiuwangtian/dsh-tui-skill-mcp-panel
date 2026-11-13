@@ -119,9 +119,17 @@ export async function checkTarball(root = repoRoot) {
     assert.equal(entry.name, pkg.name, 'Cordis plugin name export')
     assert.ok(entry.Config, 'Cordis Config export')
     assert.equal(typeof entry.apply, 'function', 'Cordis apply export')
+    const diagnostics = await import(pathToFileURL(join(extracted, 'lib/types/host/versions.js')).href)
+    const versions = await diagnostics.collectVersions({ processEntry: process.execPath })
+    assert.equal(versions.plugin.value, extractedPkg.version, 'diagnostics uses extracted plugin metadata')
+    assert.equal(versions.plugin.source, join(extracted, 'package.json'), 'no checkout metadata fallback')
+    assert.equal(versions.node.value, process.versions.node)
+    assert.equal(versions.host.value, undefined, 'headless archive import has no live host')
+    assert.equal(versions.kernel.value, undefined, 'headless archive import has no confirmed DSH CLI')
     return { name: pkg.name, version: pkg.version, fileCount: packed.files.length, bytes: bytes.length,
       sha256: sha256(bytes), npmIntegrity: packed.integrity, dryRunFileCount: dry.files.length,
       manifestId: manifest.id, importSmoke: 'Cordis name/Config/apply from extracted archive with checkout dependencies',
+      diagnosticVersionSmoke: 'plugin metadata from extracted package; Node actual; absent host/kernel unavailable',
       limits: 'not published; no registry-install, provenance or Verified claim; needs npm + tar' }
   } finally { await rm(temp, { recursive: true, force: true }) }
 }

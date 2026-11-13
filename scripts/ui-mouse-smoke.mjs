@@ -229,6 +229,11 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
     await press('mouse-created'); await click('Enter 提交')
     assert.ok(runtime.calls.includes('create-group:mouse-created')); passed('input submit invokes group creation')
     await click(columns < 72 ? '诊断' : 'Diagnostics 诊断')
+    const versionCalls = runtime.calls.length
+    await click(columns < 110 ? '[v版本]' : '[v 版本来源]')
+    await check('version source pointer unavailable', s => s.includes('运行版本与来源') && s.includes('unavailable'))
+    await click('[末]'); await click('Enter/Esc 关闭')
+    assert.equal(runtime.calls.length, versionCalls); passed('version source pointer view is read only')
     const beforeCleanup = runtime.calls.length
     await click(columns < 110 ? 'c清理' : 'c 清理记录')
     await click('[末]')

@@ -760,4 +760,53 @@ node scripts/prepare-skill-text-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@
 
 隔离真实 TUI（host 0.19.0、DSH 0.2.2-rc.1）两次均退出码 0；203,489 bytes 夹具包含 180,013 bytes 单行、随后 900 行和文件末尾标记。58×24 终端/54×22 场景完成完整路径首尾、全文 End、真实鼠标首屏、变化拒读和 r 重读；缩到 44×20/40×18、44×18/40×16，再恢复 58×24，重建后均能到尾部。全文内 d/空格不创建回收站数据；查看前后与恢复后的源 SHA256 按预期核对。最终构建再次验证同 ID 刷新后的新预览与全文；13 项 ANSI 帧回放断言通过。无模型回合、真实用户配置或第三方安装变更，自己的源码链接插件构建产物按预期更新。完整文件清单、专项覆盖、测试定位修正和脱敏屏幕见 [m5-skill-text.json](research/evidence/m5-skill-text.json)。版本仍 0.1.0-dev.0；本轮实现与局部验证不等同于用户完整验收、AC-15 通过或正式发布。
 
-下一项按需求 §14.1 补 **FR-18 诊断版本**，展示可验证的插件/宿主/内核/Node 实际版本；不可读时显示 unavailable。之后仍需核对布局/模式和性能，再交由用户完整验收；P1、KI-01～03 和真实第三方安装的既有决定不变。
+本批完成时的下一项为 **FR-18 诊断版本**（后续已在 §19 补齐；当前下一项以需求 §14.1 为准），展示可验证的插件/宿主/内核/Node 实际版本；不可读时显示 unavailable。之后仍需核对布局/模式和性能，再交由用户完整验收；P1、KI-01～03 和真实第三方安装的既有决定不变。
+
+## 19. 诊断运行版本与来源（2026-11-13）
+
+**对应 FR-18，按 D-13 补齐 P0。** 诊断页顶部汇总插件、宿主、DSH 内核与 Node 版本；按 v 或点击版本来源，查看完整来源及 unavailable 原因，支持窄屏分页/首尾/滚轮。r 刷新重新采集，启动与宿主接缝延迟就绪时也采集。不修改配置或安装，不请求新权限、不增加依赖。
+
+### 19.1 现象、溯源与具体修改
+
+原有诊断只有服务能力、路径、统计和警告；dump 顶层虽然有 Node，但 UI 无四项版本汇总。`package.json.peerDependencies`、manifest.compat 和开发机装着的版本都无法证明当前加载的是哪一个宿主/内核，尤其插件采用源码链接、profile 可能使用另一个安装时，直接从插件依赖解析会误报。
+
+- 新增 `src/host/versions.ts`：采集四项值、来源和不可读原因；版本字段只接受精确 SemVer，拒绝范围/控制字符/unknown。读取 JSON 有 64 KiB 上限，限制查找深度并在第一个包边界停止；普通文件/非阻塞打开，错误不回显原文或服务异常细节。
+- `src/host/manager-runtime.ts`：启动/手动刷新/延迟能力探测更新内存快照；代次与 dispose 防止旧任务回填，服务消失后不保留旧宿主版本。dump 增加 versions 来源字段；不持久化到 config.json。
+- `src/ui/ManagerScene.tsx`：版本汇总按 cell 折行，v 提供完整来源和原因的只读 info 页面；缺失明确 unavailable。原技能页 v 标记功能保留，版本快捷键仅在诊断页生效。
+- `scripts/release/tarball.mjs`：实际解包后运行版本采集，断言插件来源是解包目录的 package.json；Node 等于进程值，无真实宿主/确认 CLI 时必须 unavailable。证明不回退到 checkout，同时仍不冒充全新 registry 安装。
+- 新增 `test/domain/versions.test.js` 和 `docs/research/evidence/m5-diagnostic-versions.json`；修改布局、鼠标、真实 runtime 交互回归及 README/AGENT/需求/研究索引/范围审计。文件删除：无；功能移除：无。
+
+### 19.2 来源与影响边界
+
+| 项 | 采用的来源 | 不可用时的行为 |
+| --- | --- | --- |
+| 插件 | 当前加载模块对应的插件包根 package.json；核对 name/version | unavailable；不引用硬编码或仓库外的同名包 |
+| 宿主 | 软探测公开 `tuiPluginHost.hostDescriptor().hostVersion`，核对 hostId=dsh-tui | 服务缺失/拒绝/格式或版本无效均 unavailable；0.19 的 readOwnPackageVersion 失败会返回 0.0.0，该占位值也拒绝 |
+| DSH 内核 | 验证当前 process.argv[1] 的真实入口，首个包必须是 @deepseek-ai/dsh，且与该包 bin.dsh 一致；只解析该入口的 @deepseek-ai/dsh-app-boot 包并读取其 package.json | 不是已确认 CLI、入口/包不可读、身份或精确版本无效时 unavailable；不搜索 PATH 或插件开发依赖，不导入/执行 app-boot 代码 |
+| Node | 当前进程 `process.versions.node` | 值无效时 unavailable，不用 engines 范围替代 |
+
+【本机已验证事实】CLI 的 bin.js 从 app-boot 导入 getDshRuntimeVersion；该函数读取自己包根的 version，因此此版本来源采用 app-boot 而非 CLI package.version。单测特意让两者不同，以避免误用。宿主的公共 descriptor 与实际进程均在隔离 TUI 核对。
+
+这些是当前采样时可验证的服务报告/包元数据和 Node 进程值，不是运行时代码完整性或不可变二进制证明；运行中外部直接修改包元数据时，r 会读到该元数据，不能据此声称已经热加载新代码。嵌入运行或其他启动器没有可确认 CLI 时，内核 unavailable 属于诚实降级；不会为补齐数字而调用外部命令、升级安装或引入内核硬依赖。来源读取失败只影响诊断，不阻断技能/MCP 操作。未增加常驻监听，版本随现有刷新时机更新；没有承诺跨进程同时改包的原子快照。
+
+### 19.3 验证与验收入口
+
+8 项专项覆盖：精确版本/范围/控制字符；包身份与真实 descriptor 优先；缺失/拒绝/格式异常/异步返回/0.0.0 占位；损坏/超长/目录元数据不泄露且不写源；错误 bin/非 CLI/相对入口不回退其他安装；入口符号链接和元数据刷新；正常 headless 环境的真实插件/Node 与 host/kernel unavailable；runtime 中服务消失、dump 来源、配置字节保留和卸载后的迟到结果保护。
+
+```sh
+pnpm build
+node --test test/domain/versions.test.js
+pnpm test:ui:layout
+pnpm test:ui:mouse
+pnpm test:ui:interaction
+pnpm check:release
+node scripts/prepare-tui-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui
+```
+
+请先退出真实 TUI 验证进程再构建。运行最后命令输出的独立 run.sh，`/skill-mcp` → 4：顶部应列四项版本；v 依次查看来源，Home/End/PgUp/PgDown 和鼠标入口均可用；关闭后 r 应重新采集。该隔离基线实际为插件 0.1.0-dev.0、宿主 0.19.0、app-boot 0.2.2-rc.1、Node 26.3.0，Node 应以运行探针的当前进程为准，不要求用户机器硬匹配该数字。headless 单测/无法确认的启动器应明确 unavailable，不能显示兼容范围。查看来源不改 profile/home patch、技能或插件配置，用户完整人工验收仍待执行。
+
+最终 `pnpm check:release` 退出码 0：210 项域层/发布测试、392 项布局断言/8 尺寸、115 项鼠标断言/3 尺寸，以及渲染、真实 runtime 交互、MCP、120/58 列 CRUD 与分组冒烟全部通过，零失败、零跳过。实际打包/解包/入口导入及解包版本来源断言通过；开发包 89 文件、117,044 bytes，SHA256 `fc254e56edb064eb4f9276eb0590207f2a1fa481248635c983383a68ff3978c0`。
+
+隔离真实 TUI 的公开 host descriptor 和当前 CLI app-boot 来源均读取成功，四项分别为 0.1.0-dev.0 / 0.19.0 / 0.2.2-rc.1 / 26.3.0。58×24 终端/54×22 场景完成键盘与真实 SGR 鼠标来源入口、滚轮、首尾；缩到 44×18/40×16 后关闭入口仍可用，恢复尺寸并 r 重读后值一致。profile/home patch、技能、诊断页切换完成后的私有配置共 4 文件哈希保持；探针退出码 0，10 项 ANSI 帧回放断言通过。无模型回合、真实用户配置或第三方安装变更；自己的源码链接插件构建产物按预期更新。完整文件清单、实际解包结果、只读哈希和脱敏屏幕见 [m5-diagnostic-versions.json](research/evidence/m5-diagnostic-versions.json)。版本仍 0.1.0-dev.0；未打 tag、未发布，KI-01～03、AC-15 和用户完整验收的既有状态不变。
+
+**复核发现的后续 P0。** FR-2 明确要求技能按状态筛选，但当前 `filterInstances` 只有 scope + 名称/描述 query，后续叠加分组；SKILL_ACTIONS 没有状态选择入口，状态标记/统计不能代替筛选。这是此前差异清单漏列的原需求，不是新增 P1。本轮只登记并修正 §14.1/范围审计，不把诊断完成说成 P0 全部闭环。下一项先补技能启用/停用/无效筛选及与搜索/分组组合的验证，再核对布局/模式、1000 技能/逐键搜索性能和用户完整验收。

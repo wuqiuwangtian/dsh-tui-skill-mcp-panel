@@ -257,6 +257,17 @@ for (const [columns, rows] of sizes) {
     await press('4')
     for (let i = 0; i < 12; i++) await press('\x1b[6~')
     await check('diagnostics-clamped-end', (s) => s.includes('说明 Notes') || s.includes('只覆盖文件来源'))
+    const versionCalls = runtime.calls.length
+    runtime.state.versions = { plugin: { value: '0.1.0-dev.0', source: '/fixture/package.json' }, host: { value: '0.19.0', source: 'tuiPluginHost.hostDescriptor()' }, kernel: { source: 'current CLI', reason: 'No confirmed CLI' }, node: { value: '26.3.0', source: 'process.versions.node' } }; runtime.notify()
+    await press('\x1b[H')
+    await check('diagnostic-version-summary', s => s.includes('运行版本') && s.includes('0.1.0-dev.0'))
+    await press('v'); await press('\x1b[F')
+    await check('version-source-reader-narrow-footer', s => s.replace(/[│\s]/gu, '').includes('兼容范围') && s.includes('Enter/Esc 关闭'))
+    await check('version-source-reader-is-read-only', () => runtime.calls.length === versionCalls)
+    await press('\r'); runtime.state.versions = undefined; runtime.notify()
+    await press('v'); await press('\x1b[H')
+    await check('version-unavailable-is-explicit', s => s.includes('unavailable'))
+    await press('\r')
     const cleanupCalls = runtime.calls.length
     await press('c'); await press('\x1b[F')
     await check('cleanup-record-reader-narrow-footer', s => s.includes('技能回收站清理记录') && s.includes('Enter/Esc 关闭'))

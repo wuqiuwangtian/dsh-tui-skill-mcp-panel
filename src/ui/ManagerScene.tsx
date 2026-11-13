@@ -32,7 +32,7 @@ const GROUP_ACTIONS = [
   ['create', 'a 新建', 'a新建'], ['rename', 'r 重命名', 'r改名'], ['delete', 'd 删除', 'd删除'],
   ['filter', '↵ 过滤', '↵过滤'], ['clear', 'x 清除', 'x清除'], ['kind', 't 技能/MCP', 't切换'], ['refresh', 'R 刷新', 'R刷新'], ['help', '? 帮助', '?'],
 ] as const
-const DIAG_ACTIONS = [['trash', 'c 清理记录', 'c清理'], ['refresh', 'r 刷新', 'r刷新'], ['help', '? 帮助', '?']] as const
+const DIAG_ACTIONS = [['versions', 'v 版本来源', 'v版本'], ['trash', 'c 清理记录', 'c清理'], ['refresh', 'r 刷新', 'r刷新'], ['help', '? 帮助', '?']] as const
 
 const MCP_STATUSES: Record<McpStatusFilter, string> = { all: '全部', enabled: '启用', disabled: '停用', failed: '失败' }
 const MCP_ACTIONS = [
@@ -145,6 +145,7 @@ const HELP_LINES = [
   '  Home / End         列表首尾；详情/帮助首尾；PgUp/PgDn 翻页',
   '  r                  重新扫描磁盘',
   '  诊断页 c           查看清理前快照、结果与受保护记录（只读）',
+  '  诊断页 v           查看运行版本、来源与 unavailable 原因（只读）',
   '  ?                  本帮助',
   '  Esc / q            返回 / 关闭（搜索、帮助、详情、标记逐层退出）',
   '',
@@ -273,6 +274,7 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   const push = (line: string): void => {
     lines.push(displayLine(line, width))
   }
+  lines.push(...wrapTextLines(versionLines(state, false), width), '')
   push('宿主能力 Host seams')
   const present = state.services.filter((service) => service.present).map((service) => service.name)
   const missing = state.services.filter((service) => !service.present).map((service) => service.name)
@@ -345,6 +347,21 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   push('  · 技能发现规则与 DSH 内核一致；本页结果由插件自行扫盘，非 ctx.skills。')
   push('  · customSkillDirs 无法从宿主层读取，当前按未配置处理（未列出的自定义根会被漏掉）。')
   push('  · 只覆盖文件来源；运行期注册（runtime/agent scope）的技能不在扫盘结果内。')
+  return lines
+}
+
+function versionLines(state: ManagerState, sources = true): string[] {
+  const lines = ['运行版本 Versions']
+  for (const [key, label] of [['plugin', '插件'], ['host', '宿主'], ['kernel', 'DSH 内核'], ['node', 'Node']] as const) {
+    const info = state.versions?.[key]
+    lines.push(`${label}: ${info?.value ?? 'unavailable'}`)
+    if (sources) {
+      lines.push(`来源：${info?.source ?? '尚未读取'}`)
+      if (!info?.value) lines.push(`原因：${info?.reason ?? '尚未读取或来源不可用'}`)
+    }
+  }
+  if (sources) lines.push('内核项读取当前已启动 DSH CLI 解析的 app-boot 包元数据；嵌入/无法确认入口时 unavailable。',
+    '包元数据不等于代码校验；不从兼容范围、PATH 或本插件的开发依赖猜测宿主/内核版本。')
   return lines
 }
 
@@ -1278,6 +1295,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       if (tab !== 'skills') {
+        if (char === 'v') { setModal({ kind: 'info', title: '运行版本与来源（只读）', lines: versionLines(state) }); return }
         if (char === 'c') { setModal({ kind: 'info', title: '技能回收站清理记录', lines: trashCleanupLines(state) }); return }
         if (char === 'r') {
           void runtime.refresh('manual')
@@ -1467,7 +1485,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         `tab=${tab} scope=${scope} focus=${focus}${helpOpen ? ' help' : ''}${modal === undefined ? '' : ` modal=${modal.kind}`}`,
         verificationFrame,
       )
-    }, [tab, scope, focus, selected?.id, selectedMcp?.id, state.mcp, state.groupsFingerprint, state.groupsWarning, state.config, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.fullText, state.statusMessage?.at, modal?.kind, marked, groupFilter])
+    }, [tab, scope, focus, selected?.id, selectedMcp?.id, state.mcp, state.groupsFingerprint, state.groupsWarning, state.config, state.versions, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.fullText, state.statusMessage?.at, modal?.kind, marked, groupFilter])
 
     const textPager = (at: number, total: number, page: number, setOffset: (value: number) => void): ReactNode => (
       <Box flexDirection="row" height={1}>
@@ -1959,6 +1977,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (id === 'help') { setHelpOffset(0); setHelpOpen(true); return }
       if (id === 'refresh') { if (tab === 'mcp') void runtime.refreshMcp(); else void runtime.refresh('manual'); return }
       if (id === 'clear') { clearFilters(); return }
+      if (id === 'versions') { setModal({ kind: 'info', title: '运行版本与来源（只读）', lines: versionLines(state) }); return }
       if (id === 'trash') { setModal({ kind: 'info', title: '技能回收站清理记录', lines: trashCleanupLines(state) }); return }
       if (tab === 'skills') {
         if (id === 'fulltext') { openFullText(); return }

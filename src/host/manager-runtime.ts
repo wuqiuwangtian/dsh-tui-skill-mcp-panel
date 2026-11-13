@@ -74,6 +74,7 @@ import {
   type TuiSceneServiceLike,
 } from '../shared/seams.js'
 import { readKnownWorkspaces, type WorkspaceState } from './workspaces.js'
+import { collectVersions, type HostVersionService, type RuntimeVersions } from './versions.js'
 
 const PROBED_SERVICES = [
   'tuiScenes',
@@ -172,6 +173,7 @@ export interface ManagerFullTextState {
 }
 
 export interface ManagerState {
+  versions?: RuntimeVersions
   activeTab?: PanelTab
   workspaces?: WorkspaceState
   status: 'loading' | 'ready' | 'error'
@@ -225,6 +227,7 @@ export class ManagerRuntime {
   private currentCwd = process.cwd()
   private selectedCwd = this.currentCwd
   private refreshGeneration = 0
+  private versionRequest = 0
 
   constructor(ctx: Context) {
     this.ctx = ctx
@@ -251,7 +254,7 @@ export class ManagerRuntime {
     this.startupPromise = this.initialize()
     // TUI seam services appear ~1s after plugin activation (measured in M0 probe).
     this.capabilityTimer = setTimeout(() => {
-      if (!this.disposed) this.captureCapabilities()
+      if (!this.disposed) { this.captureCapabilities(); void this.refreshVersions() }
     }, 1500)
   }
 
@@ -396,6 +399,7 @@ export class ManagerRuntime {
       await this.loadMcp()
       if (generation !== this.refreshGeneration) return
       await this.refreshWorkspaces()
+      await this.refreshVersions()
       await this.writeDump(`refresh:${reason}`)
     } catch (error) {
       if (this.disposed || generation !== this.refreshGeneration) return
@@ -405,6 +409,12 @@ export class ManagerRuntime {
         refreshing: false,
       })
     }
+  }
+
+  async refreshVersions(): Promise<void> {
+    const request = ++this.versionRequest
+    const versions = await collectVersions({ host: getService<HostVersionService>(this.ctx, 'tuiPluginHost') })
+    if (!this.disposed && request === this.versionRequest) this.patchState({ versions })
   }
 
   /** Refresh when the last scan is older than `maxAgeMs` (scene mount). */
@@ -1241,6 +1251,7 @@ export class ManagerRuntime {
           members: service.members,
         })),
         paths: this.state.paths,
+        versions: this.state.versions,
         sceneError: this.state.sceneError ?? null,
         scan: this.state.scan,
         activeTab: this.state.activeTab,
