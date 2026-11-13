@@ -98,6 +98,15 @@ class StubRuntime {
   }
 
   async ensureFresh() {}
+  async syncSessionCwd() {}
+  async rememberTab(tab) { this.state.activeTab = tab; this.notify() }
+  async refreshWorkspaces() {
+    this.state.workspaces = { currentCwd: '/fixture', currentProjectRoot: '/fixture', selectedCwd: '/fixture', entries: [
+      { cwd: '/fixture/other', projectRoot: '/fixture/other', label: 'Other workspace', present: true },
+    ] }
+    this.notify()
+  }
+  async selectWorkspace(cwd) { this.calls?.push(`workspace:${cwd}`); return true }
 
   async refresh(reason) {
     this.state = { ...this.state, refreshReason: reason }

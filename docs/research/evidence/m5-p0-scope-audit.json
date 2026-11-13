@@ -144,12 +144,15 @@
     },
     "viewPersistenceAndWorkspace": {
       "source": "src/ui/ManagerScene.tsx; src/domain/store.ts; src/host/manager-runtime.ts",
-      "observed": "initial skills/all; no saved tab; tuiWorkspaces capability probe only",
-      "next": true
+      "next": false,
+      "observedBeforeFollowup": "initial skills/all; no saved tab; tuiWorkspaces capability probe only",
+      "status": "Implemented and locally verified; full user acceptance pending",
+      "resolutionEvidence": "m5-view-state.json"
     },
     "fullSkillDetails": {
       "source": "src/ui/ManagerScene.tsx:skillDetailLines",
-      "observed": "width truncation and first 400 body lines"
+      "observed": "width truncation and first 400 body lines",
+      "next": true
     },
     "diagnosticVersions": {
       "source": "src/ui/ManagerScene.tsx:diagnosticLines",

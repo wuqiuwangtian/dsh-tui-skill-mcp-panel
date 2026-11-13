@@ -658,4 +658,57 @@ pnpm check:release
 
 **最终完整检查。** 最终源码上的 `pnpm check:release` 退出码 0：184 项域层/发布测试、296 项布局断言、88 项鼠标断言，以及渲染/交互/MCP/120 与 58 列 CRUD/分组冒烟全部通过，零失败、零跳过；manifest 和实际打包/解包/导入检查通过。开发包 `0.1.0-dev.0` 共 80 个文件、105,646 bytes，SHA256 `9af99871c39cfae2e058a9228c0ab96789bdc413def5bdb869fa7891e3db1230`，未发布。完整变更清单、旧 mtime 复现、28 项专项边界和脱敏真实屏幕见 [m5-trash-retention.json](research/evidence/m5-trash-retention.json)。
 
-下一项按需求 §14.1 补 FR-2 页签记忆与其他工作区入口，再处理完整正文/路径与诊断版本。其余 P0、性能/布局最终核对、用户完整验收及 AC-15 均未因此完成；仍不打 tag、不发布、不实施真实环境第三方兼容补丁。
+本批完成时的下一项为 FR-2 页签记忆与其他工作区入口（后续已在 §17 补齐）；当前下一项以需求 §14.1 为准。其余 P0、性能/布局最终核对、用户完整验收及 AC-15 均未因此完成；仍不打 tag、不发布、不实施真实环境第三方兼容补丁。
+
+## 17. 页签记忆与已知工作区入口（2026-11-13）
+
+**对应需求：FR-2，按 D-13 补齐首版 P0。** 最后页签持久化到本插件 `config.json.lastTab`，重新打开/冷启动恢复；技能页 `o` 或鼠标入口选择公开服务返回的已知本地工作区。选择只改变面板管理目标，不改变聊天会话、宿主进程 cwd 或 MCP profile。工作区目标不跨进程持久化，避免重启后默认写到另一个项目。增强设置界面仍为 P1；没有增加依赖、删除文件或移除功能。
+
+### 17.1 原有现象、溯源与修改位置
+
+| 现象 | 溯源 | 修改位置与结果 |
+| --- | --- | --- |
+| 每次打开都是技能页，离开 MCP/分组/诊断后无法记住位置 | 场景 `useState('skills')` 固定初值；私有配置无最后页签 | `src/domain/store.ts` 的页签类型、`loadPanelDocument`/`updateLastTab`；`ManagerRuntime.rememberTab`；场景直接使用 runtime 的 activeTab。只在真实切页时保存，初始化默认页不覆盖磁盘。 |
+| 可按全局/当前工作区筛选，但没有其他已知项目入口 | `tuiWorkspaces` 只探测能力，扫描始终使用 process.cwd | 新增 `src/host/workspaces.ts`：读取公开 `listRegistry()`，旧服务仅有 `list()` 时只接受 kind=local；超时/拒绝/坏数据降级。运行时选择已知路径后重扫，UI 增加 o/鼠标入口、完整路径确认与当前目标栏。 |
+| 聊天会话已在其他目录时，进程 cwd 可能误作会话根 | 原运行时只知道启动目录；没有读取 scene.channel.cwd | 场景 mount 读取公开 `channel.cwd`，运行时 `syncSessionCwd` 同步本地会话目录；仍按已有 `findProjectRoot` 找最近 `.git`，无 `.git` 则 cwd。全程不调用 process.chdir。 |
+| 切换工作区后旧批量标记可能指向旧目录；技能分组可能误挂新根 | 列表标记与 runtime 的 scan 根原本从不切换；作用域键依赖当前扫描 | 根变化时清除标记/选中/详情位置；启停、删除、建组和成员写入重查实例仍在当前扫描中，旧项目实例拒写。技能分组继续使用实际 projectRoot 作为 scope key。 |
+| 初始化扫描与紧随其后的手动刷新竞争，可能跳过启动清理 | 新加入扫描代次保护后，早期扫描可被后续刷新取消，而 initialize 仍继续 | 普通 refresh 等待 startupPromise，再开启新扫描；扫描代次阻止迟到结果覆盖更新视图。实际 runtime 启动清理回归继续保留，未以删测试规避。 |
+
+涉及文件：新增 `src/host/workspaces.ts`、`test/domain/view-state.test.js`、`scripts/prepare-view-state-probe.mjs` 与证据 `docs/research/evidence/m5-view-state.json`；修改 store、manager-runtime、ManagerScene，四个 UI 冒烟脚本及 README/AGENT/需求/研究索引/范围审计。文件删除：无；功能移除：无。原 `w` dump 快捷键保留；新增工作区快捷键为 `o`。
+
+### 17.2 写入、兼容与影响边界
+
+- 页签是全局私有偏好，和当前私有配置位置一致；MCP 分组继续按 profile 隔离。配置 schema 仍为 v1 的可选字段扩展，缺失/无效 lastTab 回退技能页。未知字段、原始 MCP 分组（包括无法解析的记录）和其他 profile 数据按原始 JSON 数据保留；不承诺空白格式逐字节不变。
+- 页签保存串行化，并与 MCP 分组共用 config.json 锁：锁内重新读取/合并，临时文件与指纹重查后原子 rename。新配置 0600，已有普通文件权限保留；损坏/未来版本/不合法分组容器/链接配置拒写，场景仍可切页并显示未保存原因。最后保存覆盖前次页签是偏好的预期行为；不支持不遵守锁的外部任意写入事务或断电持久性保证。
+- 使用宿主 0.19.0 的插件侧公开方法，未访问 `getHostWorkspaceRuntime`、未读写宿主账本文件、未注册 provider。公共 registry 读取需要正常插件 activation，真实 TUI 已验证。旧版 `list()` 回退不把远程 provider cwd 当本机路径。
+- 选择器列出目录已不存在的登记项但拒绝选择；提交前再次检查目录存在且来自可用列表。服务不可用、抛错、超时（1500ms）或返回坏数据时保留当前本地能力，并能从选择器“查看当前完整路径与服务状态”查看原因。服务回调超时后未必能被取消，迟到返回不发布结果。
+- 启停/添加/删除会作用于选中的实际发现根；确认框明确这一点，其他工作区启停只提示“已保存”，不声称当前会话已加载。全局技能仍会显示在“全部/全局”，切换项目不自动隐藏全局；操作前仍需选中目标行。
+- 选择其他工作区不调用聊天路由，不改 profile/home MCP，不迁移共享技能组 schema。面板重新打开同一 runtime 保留当前浏览目标；进程重启回到会话工作区。远程会话或不可访问的会话目录明确提示原本地目标仍在，未宣称支持远程技能文件。
+- 切页会写私有配置，可能让同时进行的清理指纹检查保守停止；清理保留数据并显示记录，下次生命周期再检查。工作区列表在刷新/o 时重读，不新增常驻文件监听；外部任意文件替换仍沿用既有技能写入安全边界。
+
+### 17.3 验证与复核
+
+专项覆盖：默认/无效页签；未知数据、原始 MCP 行和文件权限；与 MCP 分组并发合并；损坏/未来版本/链接拒写；已知目录、缺失目录、无效条目、去重、子目录到 Git 根；本地目标回退、远程排除、服务不存在/拒绝/超时；快速连续切页顺序、冷启动恢复；其他工作区启停/分组作用域、旧实例拒写、process.cwd 与 MCP 边界；channel.cwd 和 process.cwd 不同时的根选择。8 项专项全部通过，且原启动/清理回归继续通过。
+
+复核入口（构建前退出真实 TUI 验证进程）：
+
+```sh
+pnpm build
+node --test test/domain/view-state.test.js
+pnpm test:ui:layout
+pnpm test:ui:mouse
+pnpm test:ui:interaction
+pnpm check:release
+node scripts/prepare-view-state-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui
+```
+
+人工使用脚本输出的独立 run.sh：
+
+1. `/skill-mcp` 打开，夹具预置 diagnostics，应落在诊断页。按 1 → o，选择 Other workspace → Enter，确认框应完整显示 subdirectory 和其上级实际 Git 根；n 取消仍为原目录。
+2. 重选并 y 确认，技能页目标栏应标“其他工作区”，列表出现 other-only。选中它按空格，只改变隔离的 other-project 下技能文件，原 project 的 probe-skill 保持；这不改变聊天会话。
+3. o 选择当前会话工作区返回；2 查看 MCP，仍为原 profile，home 仍只读。3 停在分组页，关闭面板并重新打开应仍为分组；退出隔离 CLI 后重启、再打开应仍恢复分组，但技能管理目标回到当前会话。
+4. 选择器最后一项查看完整当前路径及服务状态；鼠标可完成入口、行选择、确认/取消，窄屏支持分页。请只对隔离夹具操作，不拿真实技能做破坏性验收。
+
+最终完整检查（192 项测试、320 项布局断言/8 尺寸、100 项鼠标断言/3 尺寸，以及全部渲染/交互/MCP/120 与 58 列 CRUD/分组冒烟）退出码 0，零失败、零跳过；manifest 和实际打包/解包/导入通过。README 使用说明更新后再次执行 check:tarball 退出码 0，最终开发包 83 个文件、109,697 bytes，SHA256 `901422eba07ac3e1b04c46abd7abddd96fcf952c0db778b01c86eac5f4eb7cc5`。两次真实 TUI（DSH 0.2.2-rc.1 / host 0.19.0，PTY 58×24、场景 54×22）均退出码 0；公开服务实际列出登记目录，取消/确认、子目录→Git 根、其他工作区启停、返回当前根、profile 边界、原目录保留、未知配置保留、冷启动分组页和同 runtime 重新打开均核对通过。最终构建的其他工作区保存提示已复验；8 项真实 ANSI 帧回放断言通过。没有模型回合、真实用户配置或第三方安装变更，自己的源码链接插件编译产物按预期更新。完整文件清单与脱敏屏幕见 [m5-view-state.json](research/evidence/m5-view-state.json)。它们不替代用户完整人工验收；版本仍 0.1.0-dev.0，未打 tag、未发布。
+
+下一项按需求 §14.1 处理 **FR-3 技能详情完整路径与正文**：折行和分页读取完整内容，保留窄屏与大内容保护，再落实 FR-18 诊断版本。布局/性能最终核对、AC-15 和用户完整验收仍待完成；KI-01～03 与真实第三方安装保持原决定。

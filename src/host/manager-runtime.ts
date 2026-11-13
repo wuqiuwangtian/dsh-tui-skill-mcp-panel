@@ -5,11 +5,12 @@
  *
  * No React here; the scene subscribes to `snapshot()`.
  */
-import { appendFile, lstat, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { appendFile, lstat, mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { scanSkills } from '../domain/skills/index.js'
+import { findProjectRoot } from '../domain/skills/discovery.js'
 import type { SkillInstance, SkillScanResult } from '../domain/skills/types.js'
 import {
   addSkill as addSkillOp,
@@ -40,6 +41,8 @@ import {
   loadPanelDocument,
   panelHome,
   updateMcpGroups,
+  updateLastTab,
+  type PanelTab,
   type PanelConfig,
 } from '../domain/store.js'
 import {
@@ -69,6 +72,7 @@ import {
   type LoaderLike,
   type TuiSceneServiceLike,
 } from '../shared/seams.js'
+import { readKnownWorkspaces, type WorkspaceState } from './workspaces.js'
 
 const PROBED_SERVICES = [
   'tuiScenes',
@@ -155,6 +159,8 @@ export interface ManagerDetailState {
 }
 
 export interface ManagerState {
+  activeTab?: PanelTab
+  workspaces?: WorkspaceState
   status: 'loading' | 'ready' | 'error'
   scan?: SkillScanResult
   error?: string
@@ -197,6 +203,10 @@ export class ManagerRuntime {
   private disposed = false
   private scanStartedAt = 0
   private readonly startupPromise: Promise<void>
+  private tabSave: Promise<void> = Promise.resolve()
+  private currentCwd = process.cwd()
+  private selectedCwd = this.currentCwd
+  private refreshGeneration = 0
 
   constructor(ctx: Context) {
     this.ctx = ctx
@@ -217,6 +227,7 @@ export class ManagerRuntime {
       mcp: { rows: [], errors: [], warnings: [] },
       config: { version: 1, trashRetentionDays: 7, mcpGroups: {} },
       busy: true,
+      workspaces: { currentCwd: this.currentCwd, currentProjectRoot: findProjectRoot(this.currentCwd), selectedCwd: this.currentCwd, entries: [] },
       ...(this.dumpPath === undefined ? {} : { dumpPath: this.dumpPath }),
     }
     this.startupPromise = this.initialize()
@@ -351,19 +362,24 @@ export class ManagerRuntime {
   }
 
   async refresh(reason: string): Promise<void> {
+    if (reason !== 'activation') await this.startupPromise
     if (this.disposed) return
+    const generation = ++this.refreshGeneration
+    const cwd = this.selectedCwd
     this.scanStartedAt = Date.now()
     this.patchState({ status: this.state.scan === undefined ? 'loading' : this.state.status, refreshing: true, refreshReason: reason })
     try {
-      const scan = await scanSkills({ cwd: process.cwd() })
-      if (this.disposed) return
+      const scan = await scanSkills({ cwd })
+      if (this.disposed || generation !== this.refreshGeneration) return
       this.captureCapabilities()
       this.patchState({ status: 'ready', scan, error: undefined, refreshing: false })
       await this.loadMetadata(scan.dshHome)
       await this.loadMcp()
+      if (generation !== this.refreshGeneration) return
+      await this.refreshWorkspaces()
       await this.writeDump(`refresh:${reason}`)
     } catch (error) {
-      if (this.disposed) return
+      if (this.disposed || generation !== this.refreshGeneration) return
       this.patchState({
         status: 'error',
         error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
@@ -376,6 +392,62 @@ export class ManagerRuntime {
   async ensureFresh(maxAgeMs = 3000): Promise<void> {
     await this.startupPromise
     if (Date.now() - this.scanStartedAt > maxAgeMs) await this.refresh('scene-mount')
+  }
+
+  async rememberTab(tab: PanelTab): Promise<void> {
+    this.patchState({ activeTab: tab })
+    this.tabSave = this.tabSave.then(async () => {
+      await this.startupPromise
+      if (this.disposed) return
+      try {
+        await updateLastTab(this.panelHomePath, tab)
+        if (!this.disposed) this.patchState({ config: { ...this.state.config, lastTab: tab } })
+      } catch (error) {
+        if (!this.disposed) this.setStatus(`页签记忆未保存：${error instanceof Error ? error.message : String(error)}`, 'warning')
+      }
+    })
+    await this.tabSave
+  }
+
+  async refreshWorkspaces(): Promise<void> {
+    const result = await readKnownWorkspaces(getService(this.ctx, 'tuiWorkspaces'), this.currentCwd)
+    if (!this.disposed) this.patchState({ workspaces: { currentCwd: this.currentCwd, currentProjectRoot: findProjectRoot(this.currentCwd), selectedCwd: this.selectedCwd, ...result } })
+  }
+
+  /** Scene channel cwd is the session truth; never chdir the host process. */
+  async syncSessionCwd(cwd: string): Promise<void> {
+    await this.startupPromise
+    if (this.disposed) return
+    if (!isAbsolute(cwd) || /[\x00-\x1f\x7f]/u.test(cwd)) {
+      this.setStatus('当前会话不是可管理的本地目录；面板仍显示原本地目标', 'warning'); return
+    }
+    cwd = resolve(cwd)
+    if (cwd === this.currentCwd) return
+    await this.withBusy(async () => {
+      if (!await stat(cwd).then(info => info.isDirectory(), () => false)) {
+        this.setStatus('当前会话目录不可访问；面板仍显示原本地目标', 'warning'); return
+      }
+      this.currentCwd = cwd
+      this.selectedCwd = cwd
+      await this.refresh('session-cwd')
+    })
+  }
+
+  async selectWorkspace(cwd: string): Promise<boolean> {
+    return (await this.withBusy(async () => {
+      if (cwd !== this.currentCwd && !this.state.workspaces?.entries.some(entry => entry.cwd === cwd && entry.present)) {
+        this.setStatus('该工作区不在可用的本地列表中，请刷新后重试', 'warning'); return false
+      }
+      if (!await stat(cwd).then(info => info.isDirectory(), () => false)) {
+        this.setStatus('工作区目录已不存在，保留原视图；请刷新列表', 'warning'); return false
+      }
+      const previous = this.selectedCwd
+      this.selectedCwd = cwd
+      await this.refresh('workspace-selection')
+      if (this.state.status === 'error') { this.selectedCwd = previous; return false }
+      this.setStatus(cwd === this.currentCwd ? '已返回当前工作区' : '已切换面板管理目标；当前聊天会话未切换', 'info')
+      return true
+    })) ?? false
   }
 
   // ── metadata: groups / trash / config ─────────────────────────────────────
@@ -396,7 +468,8 @@ export class ManagerRuntime {
     try {
       const [batches, document] = await Promise.all([listTrash(this.panelHomePath), loadPanelDocument(this.panelHomePath)])
       if (this.disposed) return
-      this.patchState({ latestTrash: batches[0], config: document.config, configWarning: document.warning })
+      this.patchState({ latestTrash: batches[0], config: document.config, configWarning: document.warning,
+        ...(this.state.activeTab === undefined ? { activeTab: document.config.lastTab ?? 'skills' } : {}) })
     } catch (error) {
       this.patchState({ configWarning: error instanceof Error ? error.message : String(error) })
     }
@@ -434,6 +507,7 @@ export class ManagerRuntime {
   async toggleSkills(instances: SkillInstance[]): Promise<void> {
     if (instances.length === 0) return
     await this.withBusy(async () => {
+      if (!this.skillsStillInView(instances)) return
       const failures: string[] = []
       for (const instance of instances) {
         const result = await toggleSkill(instance)
@@ -441,7 +515,8 @@ export class ManagerRuntime {
       }
       await this.refresh('toggle')
       if (failures.length === 0) {
-        this.setStatus(`已切换 ${instances.length} 个技能（热加载中）`, 'success')
+        const otherWorkspace = instances.some(instance => instance.scope === 'workspace') && this.state.scan?.projectRoot !== findProjectRoot(this.currentCwd)
+        this.setStatus(`已切换 ${instances.length} 个技能（${otherWorkspace ? '已保存到其他工作区；当前会话未切换' : '热加载中'}）`, 'success')
       } else {
         this.setStatus(
           `已切换 ${instances.length - failures.length}/${instances.length}；失败：${failures.slice(0, 3).join('；')}`,
@@ -455,6 +530,7 @@ export class ManagerRuntime {
   async deleteSkillInstances(instances: SkillInstance[]): Promise<void> {
     if (instances.length === 0) return
     await this.withBusy(async () => {
+      if (!this.skillsStillInView(instances)) return
       const result = await deleteSkillsOp(instances, { panelHome: this.panelHomePath })
       await this.performTrashCleanup('after-delete')
       await this.refresh('delete')
@@ -469,6 +545,12 @@ export class ManagerRuntime {
       const cleanupIssue = this.state.trashCleanup?.phase === 'blocked' || (this.state.trashCleanup?.failed.length ?? 0) > 0
       this.setStatus(`已移入回收站 ${result.deleted.length} 个技能，可按 u 撤销${suffix}${cleanupIssue ? '；清理未完成，请查看诊断页' : ''}`, cleanupIssue ? 'warning' : 'success')
     })
+  }
+
+  private skillsStillInView(instances: SkillInstance[]): boolean {
+    if (instances.every(instance => this.state.scan?.instances.some(current => current.id === instance.id))) return true
+    this.setStatus('技能视图已变化，请重新选择后操作；未修改旧工作区', 'warning')
+    return false
   }
 
   /** Undo the most recent trash batch. */
@@ -971,6 +1053,7 @@ export class ManagerRuntime {
 
   async createGroup(name: string, instances: SkillInstance[] = []): Promise<void> {
     await this.withBusy(async () => {
+      if (!this.skillsStillInView(instances)) return
       try {
         let groups = this.state.groups
         const created = upsertGroup(groups, undefined, name, instances[0] === undefined ? 'global' : this.scopeKeyFor(instances[0]), [])
@@ -1028,6 +1111,7 @@ export class ManagerRuntime {
   /** Add/remove the given instances to a group (per instance scope key). */
   async setGroupMembershipForInstances(groupId: string, instances: SkillInstance[], member: boolean): Promise<void> {
     await this.withBusy(async () => {
+      if (!this.skillsStillInView(instances)) return
       try {
         let groups = this.state.groups
         for (const instance of instances) {
@@ -1099,6 +1183,8 @@ export class ManagerRuntime {
         paths: this.state.paths,
         sceneError: this.state.sceneError ?? null,
         scan: this.state.scan,
+        activeTab: this.state.activeTab,
+        workspaces: this.state.workspaces,
         mcpGroups: this.mcpGroupsForCurrentProfile(),
         configWarning: this.state.configWarning,
         skillGroups: { fingerprint: this.state.groupsFingerprint, writable: this.state.groupsWritable, warning: this.state.groupsWarning, backupPath: this.state.groupsBackupPath },

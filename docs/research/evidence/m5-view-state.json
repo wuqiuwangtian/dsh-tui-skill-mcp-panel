@@ -1,0 +1,170 @@
+{
+  "date": "2026-11-13",
+  "baseline": "11014f7",
+  "version": "0.1.0-dev.0",
+  "requirements": [
+    "FR-2",
+    "D-13"
+  ],
+  "before": {
+    "tab": "UI initialized skills on every mount; config had no lastTab",
+    "workspaces": "capability probing only; scan used process.cwd without scene.channel.cwd"
+  },
+  "files": {
+    "added": [
+      "src/host/workspaces.ts",
+      "test/domain/view-state.test.js",
+      "scripts/prepare-view-state-probe.mjs",
+      "docs/research/evidence/m5-view-state.json"
+    ],
+    "modified": [
+      "AGENT.md",
+      "README.md",
+      "docs/release-readiness.md",
+      "docs/research/README.md",
+      "docs/research/evidence/m5-p0-scope-audit.json",
+      "docs/需求文档.md",
+      "scripts/ui-interaction-smoke.mjs",
+      "scripts/ui-layout-smoke.mjs",
+      "scripts/ui-mouse-smoke.mjs",
+      "scripts/ui-render-smoke.mjs",
+      "src/domain/store.ts",
+      "src/host/manager-runtime.ts",
+      "src/ui/ManagerScene.tsx"
+    ],
+    "deleted": [],
+    "featuresRemoved": []
+  },
+  "implementation": {
+    "tab": "optional config v1 lastTab; valid whitelist; runtime activeTab; serialized writes under existing config lock with fresh raw merge and fingerprint recheck",
+    "workspaceService": "public listRegistry; fallback public list accepts local kind only; 1500ms provider promise timeout; no ledger access or host-only facade",
+    "workspaceSelection": "only available known local or current cwd; stat again before scan; nearest .git root; confirmation contains full cwd and actual root",
+    "sessionCwd": "scene channel.cwd has priority over initial process cwd; never chdir in product",
+    "staleSelection": "clear marks/selection/detail offset when project root changes; stale old-project instances refused before toggle/delete/group membership writes",
+    "unchangedBoundaries": [
+      "MCP profile and home layers",
+      "shared skill group v1 schema",
+      "third-party installed packages"
+    ],
+    "newShortcut": "o (workspace); existing w dump retained"
+  },
+  "regression": {
+    "command": "pnpm build && node --test test/domain/view-state.test.js",
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "coverage": [
+      "default/invalid tabs",
+      "raw unknown/MCP data and permissions preserved",
+      "concurrent tab/MCP config merge",
+      "corrupt/future/linked config preserved",
+      "registry list dedup/missing/invalid/subdirectory git root",
+      "fallback local targets and remote exclusion",
+      "service absent/denied/invalid/timeout",
+      "ordered tab changes and cold reload",
+      "cross-project toggle and group scope",
+      "old project selections refused",
+      "process cwd and MCP boundary",
+      "channel cwd different from process cwd"
+    ]
+  },
+  "finalReleaseCheck": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "tests": 192,
+    "passed": 192,
+    "failed": 0,
+    "skipped": 0,
+    "layoutAssertions": 320,
+    "layoutSizes": 8,
+    "mouseAssertions": 100,
+    "mouseSizes": 3,
+    "renderSmoke": "passed",
+    "interactionSmoke": "passed",
+    "mcpSmoke": "passed",
+    "crudColumns": [
+      120,
+      58
+    ],
+    "groupsColumns": [
+      120,
+      58
+    ],
+    "manifest": "passed",
+    "tarball": "passed",
+    "finalPackRecheck": {
+      "command": "pnpm check:tarball",
+      "exitCode": 0,
+      "reason": "README usage was updated after first pack; source/tests unchanged, repacked final README",
+      "fileCount": 83,
+      "bytes": 109697,
+      "sha256": "901422eba07ac3e1b04c46abd7abddd96fcf952c0db778b01c86eac5f4eb7cc5"
+    }
+  },
+  "realTui": {
+    "command": "node scripts/prepare-view-state-probe.mjs <CLI-installed dsh-TUI 0.19.0>",
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "pty": "58x24",
+    "scene": "54x22",
+    "runs": 2,
+    "bothExitCodes": [
+      0,
+      0
+    ],
+    "publicServiceListActuallyWorked": true,
+    "initialTab": "diagnostics",
+    "knownWorkspaceSubdirectoryMappedToParentGitRoot": true,
+    "processCwdPreserved": true,
+    "cancelKeptOriginalRoot": true,
+    "otherWorkspaceToggleOnlyTouchedFixture": true,
+    "currentWorkspaceReturned": true,
+    "mcpProfilePreserved": true,
+    "coldRestartTab": "groups",
+    "coldRestartTargetReturnsCurrent": true,
+    "sameRuntimeReopenTab": "groups",
+    "sameRuntimeTargetRetained": true,
+    "finalBuildOtherWorkspaceStatus": "已保存到其他工作区；当前会话未切换",
+    "unknownConfigSentinelPreserved": true,
+    "realFrameAssertions": 8,
+    "screens": {
+      "restored-diagnostics": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断 \n   ╭──────────────────────────────────────────────────╮\n   │ 诊断 Diagnostics  扫描 2026-11-13T06:00:03.413Z  │\n   │ 宿主能力 Host seams                              │\n   │   present: tuiScenes, tuiDialogs, tuiToast, tui… │\n   │   missing: (none)                                │\n   │ 路径 Paths                                       │\n   │   cwd: <fixture>/project    │\n   │   DSH_HOME: <fixture>/dsh   │\n   │   AGENTS_HOME: <fixture>/a… │\n   │   projectRoot: <fixture>/p… │\n   │   当前会话 cwd: <fixture>/… │\n   │   settings patch: /tmp/skill-mcp-real-tui-PiRDU… │\n   │   configEditor patch: /tmp/skill-mcp-real-tui-P… │\n   │   home patch: <fixture>/ds… │\n   │   dump: <fixture>/dump.json │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [c清理] [r刷新] [?]                                  \n   已写入 <fixture>/dump.json      \n                                                        \n",
+      "known-picker": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 面板管理工作区 · 不切换会话                      │\n   │ ❯当前会话工…   <fixture>/…  │\n   │  Other work…  <fixture>/o…  │\n   │  查看当前完整路径与  只管理本机目录；MCP 始终为… │\n   │ ↑↓ ↵确认 · 1/3 [Esc 取消]                        │\n   ╰──────────────────────────────────────────────────╯\n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                        \n                                                        \n                                                        \n",
+      "target-confirmation": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 切换面板管理目标                                 │\n   │ 目录：<fixture>/other-proje │\n   │ ct-其他工作区/subdirectory                       │\n   │ 实际技能发现根：<fixture>/o │\n   │ ther-project-其他工作区                          │\n   │ 只切换面板；不改变当前聊天会话。启停、添加和删除 │\n   │ 会作用于此目标目录。                             │\n   │ [首] [上页] [下页] [末] 1/6                      │\n   │ [y 确认] [n / Esc 取消]                          │\n   ╰──────────────────────────────────────────────────╯\n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                        \n                                                        \n                                                        \n",
+      "cancel": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 1 项\n   目标（当前工作区） <fixture>/p…\n    作用域  全部(1)  工作区(1)  全局(0)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表  全部 · 1项                             │\n   │ ❯ probe-skill               project/.dsh  生效   │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区]                \n   已写入 <fixture>/dump.json      \n                                                        \n",
+      "commit-switch": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 1 项\n   目标（其他工作区） <fixture>/o…\n    作用域  全部(1)  工作区(1)  全局(0)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表  全部 · 1项                             │\n   │ ❯ other-only                project/.dsh  生效   │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区]                \n   已切换面板管理目标；当前聊天会话未切换               \n                                                        \n",
+      "other-toggle": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 1 项\n   目标（其他工作区） <fixture>/o…\n    作用域  全部(1)  工作区(1)  全局(0)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表  全部 · 1项                             │\n   │ ❯ other-only                project/.dsh  停用   │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区]                \n   已切换 1 个技能（热加载中）                          \n                                                        \n",
+      "return-commit": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 1 项\n   目标（当前工作区） <fixture>/p…\n    作用域  全部(1)  工作区(1)  全局(0)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表  全部 · 1项                             │\n   │ ❯ probe-skill               project/.dsh  生效   │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区]                \n   已返回当前工作区                                     \n                                                        \n",
+      "mcp-profile": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                             \n   ╭──────────────────────────────────────────────────╮\n   │ MCP servers  3 行 · 启用 0 · 停用 3              │\n   │ 无工作区 · profile写 · home只读                  │\n   │ 筛选: 全部 · 分组:全部 · 3/3 行                  │\n   │ ❯ mcp-expr    stdio  停用 · profile · 只读       │\n   │   mcp-home    stdio  停用 · home · 只读          │\n   │   mcp-probe   stdio  停用 · profile · 仅启停     │\n   │ ──────────────────────────────────────────────   │\n   │ 分组：(未分组) · g 修改                          │\n   │ id mcp-expr · entryId mcp-expr · 层 profile      │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组]     \n   [f筛选] [/搜索] [x清除] [i详情] [r刷新] [?]          \n   已返回当前工作区                                     \n                                                        \n",
+      "remember-groups": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                             \n   ╭──────────────────────────────────────────────────╮\n   │ 分组 Groups  技能 · 0 组                         │\n   │ [技能] [MCP] t 切换 · 可见/总数                  │\n   │ 还没有技能分组。按 a 新建，或在技能页按 g        │\n   │ 添加成员。                                       │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [a新建] [r改名] [d删除] [↵过滤] [x清除] [t切换]     \n   [R刷新] [?]                                          \n   已返回当前工作区                                     \n                                                        \n",
+      "restart-submit": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断 \n   ╭──────────────────────────────────────────────────╮\n   │ 分组 Groups  技能 · 0 组                         │\n   │ [技能] [MCP] t 切换 · 可见/总数                  │\n   │ 还没有技能分组。按 a 新建，或在技能页按 g        │\n   │ 添加成员。                                       │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [a新建] [r改名] [d删除] [↵过滤] [x清除] [t切换]     \n   [R刷新] [?]                                          \n   已写入 <fixture>/dump.json      \n                                                        \n",
+      "restart-open": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断 \n   ╭──────────────────────────────────────────────────╮\n   │ 分组 Groups  技能 · 0 组                         │\n   │ [技能] [MCP] t 切换 · 可见/总数                  │\n   │ 还没有技能分组。按 a 新建，或在技能页按 g        │\n   │ 添加成员。                                       │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [a新建] [r改名] [d删除] [↵过滤] [x清除] [t切换]     \n   [R刷新] [?]                                          \n   还没有分组                                           \n                                                        \n",
+      "final-toggle": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 1 项\n   目标（其他工作区） <fixture>/o…\n    作用域  全部(1)  工作区(1)  全局(0)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表  全部 · 1项                             │\n   │ ❯ other-only                project/.dsh  生效   │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区]                \n   已切换 1 个技能（已保存到其他工作区；当前会话未切换… \n                                                        \n",
+      "reopen-submit": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                             \n   ╭──────────────────────────────────────────────────╮\n   │ 分组 Groups  技能 · 0 组                         │\n   │ [技能] [MCP] t 切换 · 可见/总数                  │\n   │ 还没有技能分组。按 a 新建，或在技能页按 g        │\n   │ 添加成员。                                       │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │ \n   │                                                  │ \n   │                                                  │ \n   ╰──────────────────────────────────────────────────╯ \n   [a新建] [r改名] [d删除] [↵过滤] [x清除] [t切换]      \n   [R刷新] [?]                                          \n   已切换 1 个技能（已保存到其他工作区；当前会话未切换… \n                                                        \n"
+    }
+  },
+  "boundaries": {
+    "realUserProfilesOrSkillsChanged": false,
+    "installedThirdPartyChanged": false,
+    "ownLinkedPluginBuildChanged": true,
+    "modelRequestsMade": false,
+    "published": false,
+    "tagCreated": false,
+    "userFullAcceptance": "pending",
+    "AC15": "not passed; KI-01..03 unchanged"
+  },
+  "limits": [
+    "Remote provider skill directories unsupported; invalid/unavailable session cwd keeps original local target with warning",
+    "Workspace target is not persisted across processes; tab preference is global under existing private config home",
+    "Unknown JSON values preserved; formatting is not byte preserved",
+    "Locks coordinate cooperating writers; no arbitrary external race or crash-durability promise",
+    "Workspace list service timeout does not guarantee provider cancellation",
+    "Full user acceptance, final layout/mode alignment and 1000-skill/search performance remain pending"
+  ],
+  "next": {
+    "source": "docs/需求文档.md §14.1",
+    "item": "FR-3 full skill paths and body, followed by FR-18 versions",
+    "P1": "deferred per D-13"
+  }
+}

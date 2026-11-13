@@ -50,6 +50,15 @@ class Runtime {
   subscribe(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn) }
   notify() { for (const fn of this.listeners) fn() }
   async ensureFresh() {}
+  async syncSessionCwd() {}
+  async rememberTab(tab) { this.state.activeTab = tab; this.notify() }
+  async refreshWorkspaces() {
+    this.state.workspaces = { currentCwd: '/fixture', currentProjectRoot: '/fixture', selectedCwd: '/fixture', entries: [
+      { cwd: '/fixture/other', projectRoot: '/fixture/other', label: 'Other workspace', present: true },
+    ] }
+    this.notify()
+  }
+  async selectWorkspace(cwd) { this.calls?.push(`workspace:${cwd}`); return true }
   async loadDetail(row) { this.state.detail = { id: row.id, status: 'ready', content: body }; this.notify() }
   groupIdsFor() { return [] }
   writeRenderFrame() {}
@@ -230,6 +239,11 @@ for (const [columns, rows] of sizes) {
     runtime.state.status = 'error'; runtime.state.error = 'SCAN-ERROR-END'; runtime.state.statusMessage = undefined
     runtime.notify(); await press('1')
     await check('error-empty-skills', (s) => s.includes('SCAN-ERROR-END') && s.includes('没有任何技能'))
+    await press('o'); await check('workspace-picker-all-sizes', s => s.includes('面板管理工作区') && s.includes('Other workspace'))
+    await press('\x1b[B'); await press('\r'); await press('\x1b[F')
+    await check('workspace-confirm-all-sizes', s => s.includes('不改变当前聊天会话') && s.includes('[y 确认]'))
+    await press('n')
+    await check('workspace-cancel-does-not-switch', () => !runtime.calls.some(call => call.startsWith('workspace:')))
     await press('2')
     await check('error-empty-mcp', (s) => s.includes('没有 MCP 行') && s.includes('SCAN-ERROR-END') && (s.includes('home只读') || s.includes('home 全局')))
     await press('3')

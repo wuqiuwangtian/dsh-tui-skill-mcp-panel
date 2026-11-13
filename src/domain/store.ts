@@ -8,6 +8,9 @@ import { patchFingerprint, readPatchSnapshot, withPatchLock } from './mcp/write.
 
 export const PANEL_DIR_NAME = 'skill-mcp-panel'
 export const CONFIG_VERSION = 1
+export const PANEL_TABS = ['skills', 'mcp', 'groups', 'diagnostics'] as const
+export type PanelTab = (typeof PANEL_TABS)[number]
+export function isPanelTab(value: unknown): value is PanelTab { return PANEL_TABS.includes(value as PanelTab) }
 
 /** Root under `~/.dsh-tui` (or `$SKILL_MCP_PANEL_HOME` for tests). */
 export function panelHome(env: NodeJS.ProcessEnv = process.env): string {
@@ -36,6 +39,7 @@ export function groupsFile(dshHome: string): string {
 
 export interface PanelConfig {
   version: number
+  lastTab?: PanelTab
   /** Trash retention: delete entries older than this many days. */
   trashRetentionDays: number
   /** MCP groups (serverName + entryId); owned by this plugin, never written to groups.json. */
@@ -63,12 +67,24 @@ export async function loadPanelDocument(home: string): Promise<PanelDocument> {
       const retention = typeof days === 'number' && Number.isFinite(days) && days >= 1 && days <= 90 ? Math.floor(days) : 7
       const parsedGroups = parseMcpGroups(record.mcpGroups)
       const validContainer = record.mcpGroups === undefined || (record.mcpGroups !== null && typeof record.mcpGroups === 'object' && !Array.isArray(record.mcpGroups))
-      return { config: { version: CONFIG_VERSION, trashRetentionDays: retention, mcpGroups: parsedGroups.groups }, raw: record,
+      return { config: { version: CONFIG_VERSION, lastTab: isPanelTab(record.lastTab) ? record.lastTab : 'skills', trashRetentionDays: retention, mcpGroups: parsedGroups.groups }, raw: record,
         fingerprint: snapshot.fingerprint, warning: parsedGroups.warning, writable: validContainer }
     }
   } catch { /* Do not include raw JSON in errors: unrelated preferences may contain secrets. */ }
   return { config: fallback, raw: {}, fingerprint: snapshot.fingerprint, writable: false,
     warning: '插件配置损坏，已回退只读默认值；原文件保留，请修复或备份后重命名 config.json' }
+}
+
+/** Only this preference changes; merge fresh raw data under the same lock as MCP groups. */
+export async function updateLastTab(home: string, tab: PanelTab): Promise<void> {
+  if (!isPanelTab(tab)) throw new Error('未知页签，未保存')
+  await mkdir(home, { recursive: true, mode: 0o700 })
+  await withPatchLock(configFile(home), async () => {
+    const current = await loadPanelDocument(home)
+    if (!current.writable) throw new Error(current.warning ?? '插件配置不可写，请手工修复')
+    if (current.raw.lastTab === tab) return
+    await writePanelDocument(home, { ...current.raw, version: CONFIG_VERSION, lastTab: tab }, current.fingerprint)
+  }, { resourceName: 'config.json' })
 }
 
 /** Compatibility wrapper; detailed callers also expose warnings. */

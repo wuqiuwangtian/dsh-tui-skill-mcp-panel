@@ -39,6 +39,15 @@ class Runtime {
   subscribe(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn) }
   notify() { for (const fn of this.listeners) fn() }
   async ensureFresh() {}
+  async syncSessionCwd() {}
+  async rememberTab(tab) { this.state.activeTab = tab; this.notify() }
+  async refreshWorkspaces() {
+    this.state.workspaces = { currentCwd: '/fixture', currentProjectRoot: '/fixture', selectedCwd: '/fixture', entries: [
+      { cwd: '/fixture/other', projectRoot: '/fixture/other', label: 'Other workspace', present: true },
+    ] }
+    this.notify()
+  }
+  async selectWorkspace(cwd) { this.calls?.push(`workspace:${cwd}`); return true }
   async loadDetail(row) { this.state.detail = { id: row.id, status: 'ready', content: body }; this.notify() }
   writeRenderFrame() {}
   groupIdsFor() { return [] }
@@ -200,6 +209,17 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
     await check('cleanup records pointer reader exposes close button', s => s.includes('技能回收站清理记录') && s.includes('Enter/Esc 关闭'))
     assert.equal(runtime.calls.length, beforeCleanup); passed('cleanup history pointer view is read only')
     await click('Enter/Esc 关闭')
+    await press('1')
+    await click(columns < 110 ? 'o工作区' : 'o 工作区')
+    await check('workspace pointer opens public picker', s => s.includes('面板管理工作区'))
+    await click('Other workspace')
+    await click('[末]')
+    await check('workspace pointer shows target confirmation', s => s.includes('不改变当前聊天会话'))
+    await click('n / Esc 取消')
+    assert.ok(!runtime.calls.some(call => call.startsWith('workspace:'))); passed('workspace pointer cancel keeps target')
+    await click(columns < 110 ? 'o工作区' : 'o 工作区')
+    await click('Other workspace'); await click('[y 确认]')
+    assert.ok(runtime.calls.includes('workspace:/fixture/other')); passed('workspace pointer confirm invokes selected target')
   } finally { app.unmount(); term.dispose() }
 }
 if (process.env.MOUSE_SMOKE_REPORT) await writeFile(process.env.MOUSE_SMOKE_REPORT, JSON.stringify(results, null, 2) + '\n')

@@ -78,7 +78,12 @@ class FakeStdin extends Readable {
 const stdout = new FakeStdout(160, 40)
 const stdin = new FakeStdin()
 stdin.setEncoding('utf8')
-const runtime = new ManagerRuntime({ get: () => undefined })
+const otherProject = join(root, 'other-project'), otherChild = join(otherProject, 'sub')
+await mkdir(join(otherProject, '.git'), { recursive: true }); await mkdir(otherChild)
+await mkdir(join(otherProject, '.dsh/skills'), { recursive: true })
+await writeFile(join(otherProject, '.dsh/skills/other-only.md'), SKILL('other-only'))
+const runtimeContext = { get: name => name === 'tuiWorkspaces' ? { listRegistry: async () => [{ path: otherChild, title: 'Other project' }] } : undefined }
+const runtime = new ManagerRuntime(runtimeContext)
 await runtime.refresh('interaction-test')
 await runtime.ensureFresh()
 
@@ -341,6 +346,26 @@ try {
   await sleep(250)
   screen = await screenText()
   check('mcp tab renders', screen.includes('MCP servers') && screen.includes('没有 MCP 行'), screen.slice(0, 400))
+  // P0 FR-2: actual runtime writes tab preference and browses the registered git root.
+  const currentAlpha = join(project, '.dsh/skills/alpha', existsSync(join(project, '.dsh/skills/alpha/SKILL.md')) ? 'SKILL.md' : 'SKILL.md.disabled')
+  const currentAlphaBytes = await readFile(currentAlpha)
+  await press('1'); await press('v'); await press('o')
+  screen = await screenText()
+  check('workspace picker uses public known list', screen.includes('Other project'))
+  await press('\x1b[B'); await press('\r'); await press('n')
+  check('workspace cancel retains current scan', runtime.snapshot().scan.projectRoot === project)
+  await press('o'); await press('\x1b[B'); await press('\r'); await press('y')
+  screen = await screenText()
+  check('workspace target root and list change', runtime.snapshot().scan.projectRoot === otherProject && screen.includes('other-only') && screen.includes('其他工作区'))
+  check('workspace switch keeps process cwd', process.cwd() === project)
+  await press('/'); await pressText('other-only'); await press('\r'); await press(' ')
+  check('new workspace action targets only new root', existsSync(join(otherProject, '.dsh/skills/other-only.md.disabled')) && (await readFile(currentAlpha)).equals(currentAlphaBytes))
+  await press('o'); await press('\x1b[H'); await press('\r'); await press('y')
+  check('return current workspace', runtime.snapshot().scan.projectRoot === project)
+  await press('4'); await runtime.rememberTab('diagnostics')
+  check('tab persisted to private config', JSON.parse(await readFile(join(panel, 'config.json'), 'utf8')).lastTab === 'diagnostics')
+  const coldView = new ManagerRuntime(runtimeContext)
+  try { await coldView.ensureFresh(); check('cold runtime restores last tab', coldView.snapshot().activeTab === 'diagnostics') } finally { coldView.dispose() }
 } finally {
   try { instance.unmount() } catch {}
   try { runtime.dispose() } catch {}

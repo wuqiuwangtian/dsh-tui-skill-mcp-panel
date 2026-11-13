@@ -25,6 +25,7 @@ const SKILL_ACTIONS = [
   ['toggle', '空格 启停', '␣启停'], ['mark', 'v 标记', 'v标记'], ['delete', 'd 删除', 'd删除'],
   ['undo', 'u 撤销', 'u撤销'], ['create', 'a 添加', 'a添加'], ['group', 'g 分组', 'g分组'],
   ['search', '/ 搜索', '/搜索'], ['clear', 'x 清除', 'x清除'], ['refresh', 'r 刷新', 'r刷新'], ['help', '? 帮助', '?'],
+  ['workspace', 'o 工作区', 'o工作区'],
 ] as const
 const GROUP_ACTIONS = [
   ['create', 'a 新建', 'a新建'], ['rename', 'r 重命名', 'r改名'], ['delete', 'd 删除', 'd删除'],
@@ -127,6 +128,7 @@ const HELP_LINES = [
   '  d                  删除选中/标记技能（回收站，可撤销）',
   '  u                  撤销最近一次删除',
   '  a                  添加技能（本地路径导入）',
+  '  o                  选择面板管理工作区；不切换聊天会话',
   '  g                  把选中/标记技能加入或移出分组',
   '  x                  清除分组过滤 / 清除标记',
   '  MCP 页              ↑/↓ 选择 · 空格 启停（仅改 disabled）· r 重新读取 · m 迁移旧启停配置',
@@ -280,6 +282,8 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   push(`  DSH_HOME: ${scan?.dshHome ?? process.env.DSH_HOME ?? '(default)'}`)
   push(`  AGENTS_HOME: ${scan?.agentsHome ?? process.env.DSH_AGENTS_HOME ?? '(default)'}`)
   push(`  projectRoot: ${scan?.projectRoot ?? '(pending)'}`)
+  push(`  当前会话 cwd: ${state.workspaces?.currentCwd ?? '(unavailable)'}`)
+  if (state.workspaces?.warning) push(`  工作区：${state.workspaces.warning}`)
   push(`  settings patch: ${state.paths.settingsDocument ?? '(unavailable)'}`)
   push(`  configEditor patch: ${state.paths.configEditorDocument ?? '(unavailable)'}`)
   push(`  home patch: ${state.paths.homePatch}`)
@@ -422,13 +426,14 @@ function mcpDetailLines(row: McpRowView | undefined, width: number): string[] {
 }
 
 export function createManagerScene(runtime: ManagerRuntime, sceneId: string): ComponentType<TuiSceneProps> {
-  return function ManagerScene({ React, ui, close }: TuiSceneProps): ReturnType<typeof ui.Box> {
+  return function ManagerScene({ React, ui, channel, close }: TuiSceneProps): ReturnType<typeof ui.Box> {
     const sceneUi = ui as unknown as SceneUi
     const { Box, Text, useInput, useTerminalSize } = sceneUi
     const { columns, rows } = useTerminalSize()
     const tooSmall = columns < 40 || rows < 16
     const [, forceRender] = React.useReducer((value: number) => value + 1, 0)
-    const [tab, setTab] = React.useState<Tab>('skills')
+    const state = runtime.snapshot()
+    const tab: Tab = state.activeTab ?? 'skills'
     const [scope, setScope] = React.useState<ScopeFilter>('all')
     const [query, setQuery] = React.useState('')
     const [searchMode, setSearchMode] = React.useState(false)
@@ -452,10 +457,12 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
     React.useEffect(() => runtime.subscribe(forceRender), [])
     React.useEffect(() => {
-      void runtime.ensureFresh()
-    }, [])
+      void (async () => {
+        if (typeof channel.cwd === 'string') await runtime.syncSessionCwd(channel.cwd)
+        await runtime.ensureFresh()
+      })()
+    }, [channel.cwd])
 
-    const state = runtime.snapshot()
     const scan = state.scan
     const summary = counts(scan)
     const scopeCounts: Record<ScopeFilter, number> = {
@@ -520,6 +527,12 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       setDetailOffset(0)
     }, [selected?.id])
     React.useEffect(() => { setModalOffset(0) }, [modal?.kind, modal?.title])
+    React.useEffect(() => {
+      setMarked(new Set())
+      setSelectedId(undefined)
+      previousSelected.current = undefined
+      setDetailOffset(0)
+    }, [scan?.projectRoot])
 
     React.useEffect(() => {
       if (groupFilter !== undefined && state.groups[groupFilter] === undefined) setGroupFilter(undefined)
@@ -547,7 +560,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const statusTone = state.statusMessage?.tone ?? (state.status === 'error' ? 'error' : 'info')
     const cardsHeight = Math.max(
       5,
-      rows - 4 - extraFooterRows - (tab === 'skills' && !wide ? 1 : 0) - (statusText === undefined ? 0 : 1),
+      rows - 4 - extraFooterRows - (tab === 'skills' ? (wide ? 1 : 2) : 0) - (statusText === undefined ? 0 : 1),
     )
     const bodyRows = Math.max(2, cardsHeight - 3)
     const scopeCardWidth = 22
@@ -685,7 +698,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
             kind: 'select',
             title: '添加到哪个作用域？',
             options: [
-              { id: 'workspace', label: '当前工作区', hint: scan?.projectRoot ?? '(pending)' },
+              { id: 'workspace', label: '面板目标工作区', hint: scan?.projectRoot ?? '(pending)' },
               { id: 'global', label: '全局（~/.dsh/skills）' },
             ],
             index: 0,
@@ -966,10 +979,38 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     }
 
     const goTab = (next: Tab): void => {
-      setTab(next)
+      void runtime.rememberTab(next)
       setFocus(next === 'skills' ? 'list' : 'body')
       setDiagOffset(0)
       setDetailOffset(0)
+    }
+
+    const openWorkspaces = (): void => {
+      if (state.busy) { runtime.setStatus('已有操作在进行中，请稍候…', 'warning'); return }
+      void runtime.refreshWorkspaces().then(() => {
+        const workspaces = runtime.snapshot().workspaces
+        const current = workspaces?.currentCwd ?? scan?.cwd ?? ''
+        const entries = [{ cwd: current, label: '当前会话工作区', projectRoot: workspaces?.currentProjectRoot ?? current, present: true },
+          ...(workspaces?.entries ?? []).filter(entry => entry.cwd !== current)]
+        setModal({ kind: 'select', title: '面板管理工作区 · 不切换会话', index: Math.max(0, entries.findIndex(entry => entry.cwd === workspaces?.selectedCwd)),
+          options: [
+            ...entries.map(entry => ({ id: entry.cwd, label: `${entry.label}${entry.present ? '' : '（目录不存在）'}`, hint: entry.cwd })),
+            { id: ':info', label: '查看当前完整路径与服务状态', hint: workspaces?.warning ?? '只管理本机目录；MCP 始终为当前 profile' },
+          ], onSubmit: id => {
+            if (id === ':info') {
+              setModal({ kind: 'info', title: '工作区路径与服务状态', lines: [
+                `当前会话：${current}`, `面板目标：${scan?.cwd ?? current}`, `实际发现根：${scan?.projectRoot ?? current}`,
+                workspaces?.warning ?? '已读取公开工作区服务；只管理本机目录', 'MCP 始终管理当前 profile；此处不切换聊天会话。',
+              ] }); return
+            }
+            const entry = entries.find(item => item.cwd === id)
+            if (!entry?.present) { runtime.setStatus('工作区目录不存在，请刷新或选择其他项', 'warning'); return }
+            setModal({ kind: 'confirm', title: '切换面板管理目标', message: [
+              `目录：${entry.cwd}`, `实际技能发现根：${entry.projectRoot}`,
+              '只切换面板；不改变当前聊天会话。启停、添加和删除会作用于此目标目录。',
+            ], onConfirm: () => { void runtime.selectWorkspace(id) } })
+          } })
+      })
     }
 
     const cycleScope = (delta: number): void => {
@@ -1226,6 +1267,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       // skills-tab actions (available regardless of focus)
+      if (char === 'o') return openWorkspaces()
       if (char === 'r') {
         void runtime.refresh('manual')
         return
@@ -1867,6 +1909,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (id === 'clear') { clearFilters(); return }
       if (id === 'trash') { setModal({ kind: 'info', title: '技能回收站清理记录', lines: trashCleanupLines(state) }); return }
       if (tab === 'skills') {
+        if (id === 'workspace') { openWorkspaces(); return }
         if (id === 'back') setFocus('list')
         else if (id === 'toggle') runToggle()
         else if (id === 'mark') pressMark()
@@ -1905,6 +1948,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           </Text>
         </Box>
         {tabBar}
+        {tab === 'skills' ? <Box height={1} onClick={openWorkspaces}><Text dimColor wrap="truncate">{`目标${state.workspaces?.selectedCwd !== state.workspaces?.currentCwd ? '（其他工作区）' : '（当前工作区）'} ${scan?.projectRoot ?? '(pending)'} · o`}</Text></Box> : null}
         {tab === 'skills' && !wide ? scopeChips : null}
         {tab === 'skills' ? skillsBody : tab === 'groups' ? groupsCard : tab === 'mcp' ? mcpCard : bodyCard}
         {packActions(actionItems, contentWidth).map((items, index) => <Box key={`actions-${index}`} flexDirection="row" height={1}>
