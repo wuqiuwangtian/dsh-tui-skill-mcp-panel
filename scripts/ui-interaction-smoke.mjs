@@ -23,6 +23,8 @@ const React = requireFromHost('react')
 const ui = await import(pathToFileURL(join(dshTuiDir, 'lib', 'types', 'ui.js')).href)
 const { createManagerScene } = await import(pathToFileURL(join(repo, 'lib', 'types', 'ui', 'ManagerScene.js')).href)
 const { ManagerRuntime } = await import(pathToFileURL(join(repo, 'lib', 'types', 'host', 'manager-runtime.js')).href)
+const { scanSkills } = await import(pathToFileURL(join(repo, 'lib/types/domain/skills/index.js')).href)
+const { deleteSkills } = await import(pathToFileURL(join(repo, 'lib/types/domain/skills/write.js')).href)
 
 const SKILL = (name) => `---\nname: ${name}\ndescription: ${name} fixture\n---\n\n# ${name}\n\nBody.\n`
 
@@ -41,6 +43,11 @@ await writeFile(join(source, 'gamma.md'), SKILL('gamma'))
 process.env.DSH_HOME = home
 process.env.SKILL_MCP_PANEL_HOME = panel
 process.chdir(project)
+
+const retentionSource = join(project, '.dsh/skills/retention-old.md')
+await writeFile(retentionSource, SKILL('retention-old'))
+const retentionRow = (await scanSkills({ cwd: project, dshHome: home, agentsHome: join(root, 'agents'), bundledDir: join(root, 'bundled') })).instances.find(row => row.name === 'retention-old')
+const oldTrash = await deleteSkills([retentionRow], { panelHome: panel, now: () => new Date(Date.now() - 8 * 86400000) })
 
 class FakeStdout extends EventEmitter {
   constructor(columns, rows) {
@@ -73,6 +80,7 @@ const stdin = new FakeStdin()
 stdin.setEncoding('utf8')
 const runtime = new ManagerRuntime({ get: () => undefined })
 await runtime.refresh('interaction-test')
+await runtime.ensureFresh()
 
 const Component = createManagerScene(runtime, 'skill-mcp-panel')
 const instance = ui.renderSync(React.createElement(Component, { React, ui, channel: {}, close() {} }), {
@@ -112,6 +120,13 @@ try {
   await sleep(200)
   let screen = await screenText()
   check('initial renders list', screen.includes('技能列表') && screen.includes('alpha'), screen.slice(0, 400))
+  check('startup removes only expired fixture', !existsSync(join(panel, 'trash', oldTrash.batchId)) && runtime.snapshot().lastTrashCleanup.removed.includes(oldTrash.batchId))
+  const auditPath = join(panel, 'trash-cleanup.json'), auditBytes = await readFile(auditPath)
+  await press('4'); await press('c'); await press('\x1b[F')
+  screen = await screenText()
+  check('diagnostics cleanup history contains pre-plan and result', screen.includes('清理前快照') && screen.includes(oldTrash.batchId) && screen.includes('已清理'))
+  check('viewing cleanup records is read only', (await readFile(auditPath)).equals(auditBytes))
+  await press('\r'); await press('1')
 
   await press(' ')
   await sleep(200)
@@ -138,7 +153,7 @@ try {
   check('confirm identifies directory and scope', screen.includes('作用域：工作区') && screen.includes(`删除目录：${join(project, '.dsh', 'skills', 'alpha')}`))
   await press('\x1b')
   check('cancel leaves skill bytes unchanged', await readFile(join(project, '.dsh', 'skills', 'alpha', 'SKILL.md'), 'utf8') === SKILL('alpha'))
-  check('cancel creates no trash batch', !existsSync(join(panel, 'trash')))
+  check('cancel creates no trash batch', (await readdir(join(panel, 'trash'))).length === 0)
   await press('d')
   await press('y')
   await sleep(300)
@@ -307,6 +322,7 @@ try {
   const concurrent = new ManagerRuntime({ get: () => undefined })
   try {
     await concurrent.refresh('shared-group-concurrency')
+    await concurrent.ensureFresh()
     await runtime.renameGroup(originalId, 'runtime-new-name')
     const firstWrite = await readFile(groupsPath, 'utf8')
     await concurrent.deleteGroupById(originalId)

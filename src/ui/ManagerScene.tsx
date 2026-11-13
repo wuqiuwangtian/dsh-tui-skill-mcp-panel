@@ -30,7 +30,7 @@ const GROUP_ACTIONS = [
   ['create', 'a 新建', 'a新建'], ['rename', 'r 重命名', 'r改名'], ['delete', 'd 删除', 'd删除'],
   ['filter', '↵ 过滤', '↵过滤'], ['clear', 'x 清除', 'x清除'], ['kind', 't 技能/MCP', 't切换'], ['refresh', 'R 刷新', 'R刷新'], ['help', '? 帮助', '?'],
 ] as const
-const DIAG_ACTIONS = [['refresh', 'r 刷新', 'r刷新'], ['help', '? 帮助', '?']] as const
+const DIAG_ACTIONS = [['trash', 'c 清理记录', 'c清理'], ['refresh', 'r 刷新', 'r刷新'], ['help', '? 帮助', '?']] as const
 
 const MCP_STATUSES: Record<McpStatusFilter, string> = { all: '全部', enabled: '启用', disabled: '停用', failed: '失败' }
 const MCP_ACTIONS = [
@@ -140,6 +140,7 @@ const HELP_LINES = [
   '  /                  搜索（Enter/Esc 退出搜索）',
   '  Home / End         列表首尾；详情/帮助首尾；PgUp/PgDn 翻页',
   '  r                  重新扫描磁盘',
+  '  诊断页 c           查看清理前快照、结果与受保护记录（只读）',
   '  ?                  本帮助',
   '  Esc / q            返回 / 关闭（搜索、帮助、详情、标记逐层退出）',
   '',
@@ -236,6 +237,32 @@ function counts(scan: SkillScanResult | undefined): {
   }
 }
 
+function trashCleanupLines(state: ManagerState): string[] {
+  const current = state.trashCleanup, last = state.lastTrashCleanup
+  const lines = ['技能回收站清理', '默认保留 7 天或最近 100 个正常批次；按删除时间计算。',
+    '启动与删除后自动检查；待恢复、MCP、未知/损坏和链接批次保留。',
+    `回收站：${state.paths.panelHome}/trash`, '清理会永久移除到期/超额数据，无法再撤销。']
+  if (current === undefined) return [...lines, '尚未完成启动检查。']
+  lines.push('', `上次检查：${current.trigger} · ${current.phase}`, `检查时间：${current.plan.plannedAt}`,
+    `策略：${current.plan.retentionDays} 天 / ${current.plan.maxBatches} 批`,
+    `检查时正常 ${current.plan.normal.length} · 计划 ${current.plan.candidates.length} · 保护 ${current.plan.protected.length}`,
+    `已清理 ${current.removed.length} · 跳过 ${current.skipped.length} · 失败 ${current.failed.length}`,
+    `执行后正常 ${current.remainingNormal ?? '未检查'} · 保护 ${current.remainingProtected ?? '未检查'}`,
+    `清理记录：${current.recordPath}`)
+  for (const warning of current.plan.warnings) lines.push(`未执行原因：${warning}`)
+  for (const item of current.plan.protected) lines.push(`保留 ${item.batchId}：${item.reason}`)
+  for (const name of current.plan.pendingRecords) lines.push(`中断记录：${state.paths.panelHome}/trash-cleanup-pending/${name}`)
+  const execution = current.phase === 'planned' || current.phase === 'blocked' ? current : last ?? current
+  lines.push('', `清理前快照（${execution.trigger} · ${execution.phase}）：${execution.plan.plannedAt}`)
+  for (const batch of execution.plan.candidates) lines.push(`${batch.batchId} · 删除于 ${batch.createdAt} · ${batch.entries} 项 · ${batch.reason === 'expired' ? '到期' : '超额'}`)
+  for (const id of execution.removed) lines.push(`已清理：${id}`)
+  for (const item of [...execution.skipped, ...execution.failed]) lines.push(`未清理 ${item.batchId}：${item.reason}`)
+  if (current.plan.pendingRecords.length || current.plan.protected.some(item => /恢复|中断/u.test(item.reason))) {
+    lines.push('未解决的中断记录需先检查数据，不要删除标记后强行恢复。')
+  }
+  return lines
+}
+
 function diagnosticLines(state: ManagerState, width: number): string[] {
   const scan = state.scan
   const lines: string[] = []
@@ -259,6 +286,11 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   push(`  dump: ${state.dumpPath ?? '(set SKILL_MCP_PANEL_DUMP to enable)'}`)
   if (state.sceneError !== undefined) push(`  scene error: ${state.sceneError}`)
   if (state.dumpMessage !== undefined) push(`  dump message: ${state.dumpMessage}`)
+  push('')
+  const cleanup = state.trashCleanup
+  push('技能回收站清理（c 查看完整记录）')
+  push(`  ${cleanup === undefined ? '尚未检查' : `${cleanup.phase} · ${cleanup.plan.retentionDays}天/${cleanup.plan.maxBatches}批 · 计划${cleanup.plan.candidates.length} 已清理${cleanup.removed.length} 失败${cleanup.failed.length}`}`)
+  push('  MCP / 待恢复 / 未知数据保留')
   push('')
   push('共享技能分组（groups.json v1）')
   push(`  文件：${state.paths.skillGroupsFile ?? '(unknown)'}`)
@@ -1171,6 +1203,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       if (tab !== 'skills') {
+        if (char === 'c') { setModal({ kind: 'info', title: '技能回收站清理记录', lines: trashCleanupLines(state) }); return }
         if (char === 'r') {
           void runtime.refresh('manual')
           return
@@ -1832,6 +1865,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (id === 'help') { setHelpOffset(0); setHelpOpen(true); return }
       if (id === 'refresh') { if (tab === 'mcp') void runtime.refreshMcp(); else void runtime.refresh('manual'); return }
       if (id === 'clear') { clearFilters(); return }
+      if (id === 'trash') { setModal({ kind: 'info', title: '技能回收站清理记录', lines: trashCleanupLines(state) }); return }
       if (tab === 'skills') {
         if (id === 'back') setFocus('list')
         else if (id === 'toggle') runToggle()

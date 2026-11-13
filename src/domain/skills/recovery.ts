@@ -4,9 +4,10 @@ import { createHash, randomUUID } from 'node:crypto'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { backupsRoot, trashRoot } from '../store.js'
 import { withPatchLock } from '../mcp/write.js'
+import { withSkillTrashLock } from './trash-lock.js'
 import { parseSkillDocument } from './frontmatter.js'
 import { copyEntityVerified, entityExists, entityFingerprint, moveEntity, MoveRecoveryError } from './move.js'
-import { readTrashBatch, writeTrashManifest, type TrashBatch, type TrashEntry } from './write.js'
+import { readTrashBatch, writeTrashManifest, type TrashBatch, type TrashEntry } from './trash-manifest.js'
 
 export type SkillRecoveryChoice = { kind: 'replace' } | { kind: 'scope'; scope: 'global' | 'workspace'; rootPath: string }
 export interface SkillRecoverySession {
@@ -140,7 +141,7 @@ async function validateEntities(session: SkillRecoverySession): Promise<void> {
 export async function commitSkillRecovery(session: SkillRecoverySession): Promise<SkillRecoveryResult> {
   validateEntry(session.panelHome, session.batchId, session.entry)
   await directoryChain(dirname(manifestPath(session.panelHome, session.batchId)))
-  return withPatchLock(manifestPath(session.panelHome, session.batchId), async () => {
+  return withSkillTrashLock(session.panelHome, () => withPatchLock(manifestPath(session.panelHome, session.batchId), async () => {
     let batch = await validateSession(session)
     const { entry, destination, backupDir } = session
     const backupPath = backupDir === undefined ? undefined : join(backupDir, 'entity')
@@ -197,5 +198,5 @@ export async function commitSkillRecovery(session: SkillRecoverySession): Promis
       } catch (error) { result.warnings.push(`覆盖前暂存保留于 ${displaced}：${message(error)}`) }
     }
     return result
-  }, { resourceName: '技能恢复清单' })
+  }, { resourceName: '技能恢复清单' }))
 }

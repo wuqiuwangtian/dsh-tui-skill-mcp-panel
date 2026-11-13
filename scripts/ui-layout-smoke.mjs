@@ -221,6 +221,11 @@ for (const [columns, rows] of sizes) {
     await press('4')
     for (let i = 0; i < 12; i++) await press('\x1b[6~')
     await check('diagnostics-clamped-end', (s) => s.includes('说明 Notes') || s.includes('只覆盖文件来源'))
+    const cleanupCalls = runtime.calls.length
+    await press('c'); await press('\x1b[F')
+    await check('cleanup-record-reader-narrow-footer', s => s.includes('技能回收站清理记录') && s.includes('Enter/Esc 关闭'))
+    await check('cleanup-record-reader-does-not-mutate', () => runtime.calls.length === cleanupCalls)
+    await press('\r')
     runtime.state.scan.instances = []; runtime.state.groups = {}; runtime.state.mcp.rows = []
     runtime.state.status = 'error'; runtime.state.error = 'SCAN-ERROR-END'; runtime.state.statusMessage = undefined
     runtime.notify(); await press('1')

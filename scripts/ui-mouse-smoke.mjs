@@ -193,6 +193,13 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
     await click(columns < 110 ? 'a新建' : 'a 新建')
     await press('mouse-created'); await click('Enter 提交')
     assert.ok(runtime.calls.includes('create-group:mouse-created')); passed('input submit invokes group creation')
+    await click(columns < 72 ? '诊断' : 'Diagnostics 诊断')
+    const beforeCleanup = runtime.calls.length
+    await click(columns < 110 ? 'c清理' : 'c 清理记录')
+    await click('[末]')
+    await check('cleanup records pointer reader exposes close button', s => s.includes('技能回收站清理记录') && s.includes('Enter/Esc 关闭'))
+    assert.equal(runtime.calls.length, beforeCleanup); passed('cleanup history pointer view is read only')
+    await click('Enter/Esc 关闭')
   } finally { app.unmount(); term.dispose() }
 }
 if (process.env.MOUSE_SMOKE_REPORT) await writeFile(process.env.MOUSE_SMOKE_REPORT, JSON.stringify(results, null, 2) + '\n')

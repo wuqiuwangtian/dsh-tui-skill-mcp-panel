@@ -1,0 +1,293 @@
+{
+  "date": "2026-11-13",
+  "baseline": "a3ab5c8",
+  "version": "0.1.0-dev.0",
+  "authority": "docs/需求文档.md §14.1 / FR-5; docs/release-readiness.md §16",
+  "scope": {
+    "implemented": "Startup and after-delete skill trash retention, durable pre-removal diagnostics, failure protection",
+    "realProfileConfigWritten": false,
+    "installedThirdPartyChanged": false,
+    "modelRequestsMade": false,
+    "published": false,
+    "tagCreated": false,
+    "fullUserAcceptance": "pending",
+    "AC15": "not passed",
+    "nextP0": "FR-2 tab persistence and known-workspace entry"
+  },
+  "changes": {
+    "files": [
+      "src/domain/skills/retention.ts",
+      "src/domain/skills/trash-lock.ts",
+      "src/domain/skills/trash-manifest.ts",
+      "test/domain/retention.test.js",
+      "src/domain/skills/write.ts",
+      "src/domain/skills/recovery.ts",
+      "src/host/manager-runtime.ts",
+      "src/ui/ManagerScene.tsx",
+      "scripts/ui-interaction-smoke.mjs",
+      "scripts/ui-layout-smoke.mjs",
+      "scripts/ui-mouse-smoke.mjs",
+      "README.md",
+      "AGENT.md",
+      "docs/需求文档.md",
+      "docs/release-readiness.md",
+      "docs/research/README.md",
+      "docs/research/evidence/m5-p0-scope-audit.json",
+      "docs/research/evidence/m5-trash-retention.json"
+    ],
+    "addedFiles": [
+      "src/domain/skills/retention.ts",
+      "src/domain/skills/trash-lock.ts",
+      "src/domain/skills/trash-manifest.ts",
+      "test/domain/retention.test.js",
+      "docs/research/evidence/m5-trash-retention.json"
+    ],
+    "deletedFiles": [],
+    "deletedFeatures": [],
+    "movedTypesAndFunctions": [
+      "TrashEntry",
+      "TrashBatch",
+      "listTrash",
+      "readTrashBatch",
+      "writeTrashManifest",
+      "cleanupTrash"
+    ],
+    "compatibility": "Existing write.ts imports re-export the moved interfaces/functions",
+    "replacedPrivateFunctions": [
+      "isOwnedSkillTrashBatch"
+    ],
+    "newCoreFunctions": [
+      "inspectTrashCleanup",
+      "runTrashCleanup",
+      "withSkillTrashLock",
+      "assertTrashDirectory",
+      "ManagerRuntime.initialize",
+      "ManagerRuntime.performTrashCleanup",
+      "ManagerScene.trashCleanupLines"
+    ],
+    "modifiedPaths": [
+      "deleteSkills root lock",
+      "undoTrash root then batch lock",
+      "commitSkillRecovery root then batch lock",
+      "strict read cleanup-intent guard",
+      "startup/after-delete readiness",
+      "diagnostics c reader"
+    ],
+    "newDependencies": []
+  },
+  "before": {
+    "baseline": "a3ab5c8",
+    "oldDeletionFreshMtime": {
+      "ageDays": 8,
+      "removed": 0,
+      "batchPreserved": true
+    },
+    "freshDeletionOldMtime": {
+      "ageDays": 0,
+      "removed": 1,
+      "batchPreserved": false
+    }
+  },
+  "policy": {
+    "ageBasis": "manifest.createdAt, consistent with timestamped batch ID",
+    "expiry": "age >= retentionDays * 86400000",
+    "defaultRetentionDays": 7,
+    "defaultMaxNormalBatches": 100,
+    "order": "createdAt milliseconds descending, then batchId descending",
+    "budgetExceptions": "Protected/untrusted/interrupted/namespace data excluded; total directories/disk can exceed budget",
+    "runtimeTriggers": [
+      "startup after metadata ready",
+      "after panel skill delete attempt"
+    ],
+    "preVisibility": "Persist planned snapshot then publish diagnostic state before rm; automatic startup execution does not wait for human confirmation",
+    "locks": "Shared trash root lock then batch manifest lock for cooperating writers",
+    "failureMode": "Keep data and report when policy, audit, identity or lock cannot be trusted"
+  },
+  "guards": [
+    "Strict v1 shared manifest reader; preserve unknown metadata; reject damaged/duplicate entries",
+    "Ordinary root/scope/flat-wrapper directories and registered payload roots; unregistered siblings retained",
+    "Recovery flags and outside cleanup-pending markers exclude batches and prevent blind undo/conflict restore",
+    "Policy fingerprint rechecked; invalid/unknown/linked config does not destructively fall back to 7 days",
+    "Pre-removal audit must persist before any rm; unknown/corrupt/linked audit stays unchanged",
+    "Intent file outside the batch precedes each rm; partial writes also protect by presence",
+    "Oldest reviewed candidates only; per-batch token rechecked; no unreviewed new deletions join the plan",
+    "Dispose cancels unstarted removals",
+    "Last actual execution retained when later inspection has no work",
+    "MCP, backups, foreign, linked batches, future dates and mismatched identities not cleaned",
+    "Root snapshot plus per-batch validation avoids quadratic rescanning"
+  ],
+  "newValidation": {
+    "command": "pnpm build && node --test test/domain/retention.test.js",
+    "exitCode": 0,
+    "tests": 28,
+    "passed": 28,
+    "failed": 0,
+    "skipped": 0,
+    "topLevelCases": 19,
+    "cases": [
+      "age uses deletion time, includes exactly seven days, and persists the pre-delete plan",
+      "count keeps the newest 100 by precise createdAt, not random suffix ordering",
+      "MCP, unknown/corrupt/linked/future/pending/unregistered data do not enter the retention budget",
+      "planned batches changed by an external writer are skipped without creating a cleanup intent",
+      "failure to persist the pre-removal audit prevents every destructive step",
+      "corrupt, unknown-version or linked cleanup audit stays unchanged and blocks automatic deletion",
+      "partial rm failure leaves an outside intent; subsequent cleanup and undo refuse the damaged entity",
+      "partially written intent is conservative even when its JSON is invalid",
+      "final audit write failure preserves the pre-plan and reports actual removed data honestly",
+      "dispose/cancellation and changed policy after preview do not remove planned batches",
+      "a policy change during intent creation clears only its own unused intent and preserves the batch",
+      "new deletions wait for cleanup and are never added to its frozen removal plan",
+      "successful entity-link cleanup never follows or removes its external target",
+      "last persisted execution is retained when the next startup has no work",
+      "runtime startup publishes the pre-delete snapshot then removes only expired skill batches",
+      "runtime deletion cleans after adding a batch and finishes with 100 normal batches",
+      "invalid configuration never falls back to a shorter destructive retention policy",
+      "an external config change at the published startup plan stops removal",
+      "disposing the runtime from its pre-cleanup snapshot cancels all unstarted removals"
+    ],
+    "priorRelatedRegressionTestsPassed": 80
+  },
+  "uiValidation": {
+    "realRuntimeInteraction": "Expired fixture startup cleanup, c shows pre-plan/result, audit bytes unchanged by view; stale shared-group snapshot check retained with initialization awaited",
+    "layoutAssertions": 296,
+    "layoutSizes": 8,
+    "mouseAssertions": 88,
+    "mouseSizes": 3,
+    "method": "Actual host UI rendering/stdin/SGR hit testing, no direct handler calls"
+  },
+  "realTui": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "terminal": "58x22",
+    "scene": "54x20",
+    "fixtureOnly": true,
+    "startup": {
+      "trigger": "startup",
+      "phase": "finished",
+      "normalBefore": 101,
+      "protectedBefore": 4,
+      "candidates": [
+        {
+          "batchId": "20261105T032506Z-n5t2jv",
+          "createdAt": "2026-11-05T03:25:06.064Z",
+          "entries": 1,
+          "reason": "expired"
+        }
+      ],
+      "removed": [
+        "20261105T032506Z-n5t2jv"
+      ],
+      "skipped": [],
+      "failed": [],
+      "normalAfter": 100,
+      "protectedAfter": 4
+    },
+    "afterDelete": {
+      "trigger": "after-delete",
+      "phase": "finished",
+      "normalBefore": 101,
+      "protectedBefore": 4,
+      "candidates": [
+        {
+          "batchId": "20261112T032506Z-ulhd2z",
+          "createdAt": "2026-11-12T03:25:06.064Z",
+          "entries": 1,
+          "reason": "excess"
+        }
+      ],
+      "removed": [
+        "20261112T032506Z-ulhd2z"
+      ],
+      "skipped": [],
+      "failed": [],
+      "normalAfter": 100,
+      "protectedAfter": 4
+    },
+    "protectedCases": [
+      "Recovery-pending batch",
+      "Cleanup-pending batch with outside marker",
+      "MCP namespace",
+      "Foreign namespace"
+    ],
+    "backupAndConfigSentinelBytesPreserved": true,
+    "readonlyRecordViewPreservedAuditBytes": true,
+    "restart": "No new candidate; previous after-delete pre/post audit retained byte-for-byte and visible with c",
+    "preRemovalOrdering": "Durable audit and live pre-delete state were asserted with the real runtime test observer while source batch still existed; real TUI verified retained history rather than a human pause",
+    "screens": [
+      {
+        "label": "diagnostics",
+        "screen": "\n   Skill / MCP manager          skill-mcp-panel · 54x20\n     技能  MCP  分组  诊断                             \n   ╭──────────────────────────────────────────────────╮\n   │ 诊断 Diagnostics  扫描 2026-11-13T03:25:22.614Z  │\n   │ 宿主能力 Host seams                              │\n   │   present: tuiScenes, tuiDialogs, tuiToast, tui… │\n   │   missing: (none)                                │\n   │ 路径 Paths                                       │\n   │   cwd: <fixture>/project    │\n   │   DSH_HOME: <fixture>/dsh   │\n   │   AGENTS_HOME: <fixture>/a… │\n   │   projectRoot: <fixture>/p… │\n   │   settings patch: /tmp/skill-mcp-real-tui-youID… │\n   │   configEditor patch: /tmp/skill-mcp-real-tui-y… │\n   │   home patch: <fixture>/ds… │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [c清理] [r刷新] [?]                                  \n   已写入 <fixture>/dump.json      \n                                                        \n"
+      },
+      {
+        "label": "cleanup-history-start",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能回收站清理记录                               │\n   │ 技能回收站清理                                   │\n   │ 默认保留 7 天或最近 100 个正常批次；按删除时间计 │\n   │ 算。                                             │\n   │ 启动与删除后自动检查；待恢复、MCP、未知/损坏和链 │\n   │ 接批次保留。                                     │\n   │ 回收站：<fixture>/panel/tra │\n   │ sh                                               │\n   │ 清理会永久移除到期/超额数据，无法再撤销。        │\n   │ 上次检查：startup · finished                     │\n   │ 检查时间：2026-11-13T03:25:09.441Z               │\n   │ [首] [上页] [下页] [末] 1/33                     │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯\n                                                        \n                                                        \n                                                        \n"
+      },
+      {
+        "label": "cleanup-history-end",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能回收站清理记录                               │\n   │ 中断记录：<fixture>/panel/t │\n   │ rash-cleanup-pending/20261102T032506Z-rvggh8.jso │\n   │ n                                                │\n   │ 清理前快照（startup · finished）：2026-11-13T03: │\n   │ 25:09.441Z                                       │\n   │ 20261105T032506Z-n5t2jv · 删除于 2026-11-05T03:2 │\n   │ 5:06.064Z · 1 项 · 到期                          │\n   │ 已清理：20261105T032506Z-n5t2jv                  │\n   │ 未解决的清理中断记录需先检查数据，不要删除标记后 │\n   │ 强行恢复。                                       │\n   │ [首] [上页] [下页] [末] 23/33                    │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯\n                                                        \n                                                        \n                                                        \n"
+      },
+      {
+        "label": "after-delete-record",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能回收站清理记录                               │\n   │ 技能回收站清理                                   │\n   │ 默认保留 7 天或最近 100 个正常批次；按删除时间计 │\n   │ 算。                                             │\n   │ 启动与删除后自动检查；待恢复、MCP、未知/损坏和链 │\n   │ 接批次保留。                                     │\n   │ 回收站：<fixture>/panel/tra │\n   │ sh                                               │\n   │ 清理会永久移除到期/超额数据，无法再撤销。        │\n   │ 上次检查：after-delete · finished                │\n   │ 检查时间：2026-11-13T03:25:43.506Z               │\n   │ [首] [上页] [下页] [末] 1/33                     │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯\n                                                        \n   已移入回收站 1 个技能，可按 u 撤销                   \n                                                        \n"
+      },
+      {
+        "label": "after-delete-record-end",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能回收站清理记录                               │\n   │ 中断记录：<fixture>/panel/t │\n   │ rash-cleanup-pending/20261102T032506Z-rvggh8.jso │\n   │ n                                                │\n   │ 清理前快照（after-delete · finished）：2026-11-1 │\n   │ 3T03:25:43.506Z                                  │\n   │ 20261112T032506Z-ulhd2z · 删除于 2026-11-12T03:2 │\n   │ 5:06.064Z · 1 项 · 超额                          │\n   │ 已清理：20261112T032506Z-ulhd2z                  │\n   │ 未解决的清理中断记录需先检查数据，不要删除标记后 │\n   │ 强行恢复。                                       │\n   │ [首] [上页] [下页] [末] 23/33                    │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯\n                                                        \n   已移入回收站 1 个技能，可按 u 撤销                   \n                                                        \n"
+      },
+      {
+        "label": "restart-record",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能回收站清理记录                               │\n   │ 技能回收站清理                                   │\n   │ 默认保留 7 天或最近 100 个正常批次；按删除时间计 │\n   │ 算。                                             │\n   │ 启动与删除后自动检查；待恢复、MCP、未知/损坏和链 │\n   │ 接批次保留。                                     │\n   │ 回收站：<fixture>/panel/tra │\n   │ sh                                               │\n   │ 清理会永久移除到期/超额数据，无法再撤销。        │\n   │ 上次检查：startup · finished                     │\n   │ 检查时间：2026-11-13T03:26:04.226Z               │\n   │ [首] [上页] [下页] [末] 1/33                     │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯\n                                                        \n                                                        \n                                                        \n"
+      },
+      {
+        "label": "restart-record-end",
+        "screen": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能回收站清理记录                               │\n   │ 中断记录：<fixture>/panel/t │\n   │ rash-cleanup-pending/20261102T032506Z-rvggh8.jso │\n   │ n                                                │\n   │ 清理前快照（after-delete · finished）：2026-11-1 │\n   │ 3T03:25:43.506Z                                  │\n   │ 20261112T032506Z-ulhd2z · 删除于 2026-11-12T03:2 │\n   │ 5:06.064Z · 1 项 · 超额                          │\n   │ 已清理：20261112T032506Z-ulhd2z                  │\n   │ 未解决的清理中断记录需先检查数据，不要删除标记后 │\n   │ 强行恢复。                                       │\n   │ [首] [上页] [下页] [末] 23/33                    │\n   │ [Enter/Esc 关闭]                                 │\n   ╰──────────────────────────────────────────────────╯\n                                                        \n                                                        \n                                                        \n"
+      }
+    ],
+    "bothProbesExitedBeforeFinalBuild": true
+  },
+  "finalReleaseCheck": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "tests": 184,
+    "passed": 184,
+    "failed": 0,
+    "skipped": 0,
+    "layoutAssertions": 296,
+    "mouseAssertions": 88,
+    "manifest": "passed",
+    "renderSmoke": "passed",
+    "uiInteractionSmoke": "passed",
+    "mcpSmoke": "passed",
+    "mcpCrudSmokeColumns": [
+      120,
+      58
+    ],
+    "mcpGroupsSmokeColumns": [
+      120,
+      58
+    ],
+    "tarball": {
+      "version": "0.1.0-dev.0",
+      "fileCount": 80,
+      "bytes": 105646,
+      "sha256": "9af99871c39cfae2e058a9228c0ab96789bdc413def5bdb869fa7891e3db1230"
+    },
+    "scope": "Final stable source/tests/README; later edits only non-packed documentation/evidence",
+    "artifactRecheck": {
+      "command": "pnpm check:tarball",
+      "exitCode": 0,
+      "reason": "Normalize one trailing blank line in the extracted module; rebuilt archive is byte-identical to the full release check",
+      "sha256Unchanged": true
+    }
+  },
+  "limits": [
+    "Expiry/quota cleanup is permanent, cannot be undone",
+    "Invalid configuration/audit, failed cleanup and protected data can leave total storage over budget",
+    "Pending cleanup intents are not auto-cleared and need inspection; partial entities are not auto-restored",
+    "Latest actual execution persisted, not an unbounded audit history",
+    "Coarse root lock can make another cooperating writer wait or time out",
+    "No arbitrary external-writer isolation or fsync/power-loss guarantee",
+    "No automatic cleanup policy added for MCP/backup/pending metadata",
+    "Other P0, full user acceptance, layout/performance final check and external KI-01..03 remain open"
+  ]
+}

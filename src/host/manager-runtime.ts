@@ -5,7 +5,7 @@
  *
  * No React here; the scene subscribes to `snapshot()`.
  */
-import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { appendFile, lstat, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
@@ -13,7 +13,6 @@ import { scanSkills } from '../domain/skills/index.js'
 import type { SkillInstance, SkillScanResult } from '../domain/skills/types.js'
 import {
   addSkill as addSkillOp,
-  cleanupTrash,
   deleteSkills as deleteSkillsOp,
   listTrash,
   toggleSkill,
@@ -23,6 +22,7 @@ import {
   type UndoResult,
 } from '../domain/skills/write.js'
 import { openSkillRecovery, commitSkillRecovery, type SkillRecoverySession, type SkillRecoveryResult } from '../domain/skills/recovery.js'
+import { runTrashCleanup, type TrashCleanupReport } from '../domain/skills/retention.js'
 import {
   deleteGroup as deleteGroupOp,
   groupIdsForSkill,
@@ -35,6 +35,7 @@ import {
 } from '../domain/groups.js'
 import {
   backupsRoot,
+  configFile,
   groupsFile,
   loadPanelDocument,
   panelHome,
@@ -169,6 +170,8 @@ export interface ManagerState {
   groupsWritable?: boolean
   groupsBackupPath?: string
   latestTrash?: TrashBatch
+  trashCleanup?: TrashCleanupReport
+  lastTrashCleanup?: TrashCleanupReport
   config: PanelConfig
   configWarning?: string
   statusMessage?: ManagerStatusMessage
@@ -193,6 +196,7 @@ export class ManagerRuntime {
   private statusTimer: ReturnType<typeof setTimeout> | undefined
   private disposed = false
   private scanStartedAt = 0
+  private readonly startupPromise: Promise<void>
 
   constructor(ctx: Context) {
     this.ctx = ctx
@@ -212,14 +216,52 @@ export class ManagerRuntime {
       groups: {},
       mcp: { rows: [], errors: [], warnings: [] },
       config: { version: 1, trashRetentionDays: 7, mcpGroups: {} },
-      busy: false,
+      busy: true,
       ...(this.dumpPath === undefined ? {} : { dumpPath: this.dumpPath }),
     }
-    void this.refresh('activation')
+    this.startupPromise = this.initialize()
     // TUI seam services appear ~1s after plugin activation (measured in M0 probe).
     this.capabilityTimer = setTimeout(() => {
       if (!this.disposed) this.captureCapabilities()
     }, 1500)
+  }
+
+  private async initialize(): Promise<void> {
+    try {
+      await this.refresh('activation')
+      if (!this.disposed && this.state.scan !== undefined) await this.performTrashCleanup('startup')
+    } catch (error) {
+      if (!this.disposed) this.setStatus(`启动清理未完成：${error instanceof Error ? error.message : String(error)}`, 'warning')
+    } finally { if (!this.disposed) this.patchState({ busy: false }) }
+  }
+
+  private async performTrashCleanup(trigger: string): Promise<void> {
+    let disabledReason: string | undefined, fingerprint: string | undefined
+    let retentionDays = this.state.config.trashRetentionDays
+    try {
+      const path = configFile(this.panelHomePath)
+      const info = await lstat(path).catch((error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return undefined; throw error })
+      if (info !== undefined && !info.isFile()) throw new Error('插件配置不是普通文件，自动清理已停用')
+      const document = await loadPanelDocument(this.panelHomePath)
+      const days = document.raw.trashRetentionDays
+      if (!document.writable || (days !== undefined && (typeof days !== 'number' || !Number.isFinite(days) || days < 1 || days > 90))) throw new Error(document.warning ?? '插件保留策略无效，自动清理已停用')
+      fingerprint = document.fingerprint
+      retentionDays = document.config.trashRetentionDays
+    } catch (error) { disabledReason = error instanceof Error ? error.message : String(error) }
+    const result = await runTrashCleanup(this.panelHomePath, { retentionDays, trigger, disabledReason,
+      cancelled: () => this.disposed,
+      policyUnchanged: async () => (await readPatchSnapshot(configFile(this.panelHomePath))).fingerprint === fingerprint,
+      onPlanned: async (report) => {
+        if (this.disposed) return
+        this.patchState({ trashCleanup: structuredClone(report) })
+        await this.writeDump('trash-cleanup:planned')
+      },
+    })
+    if (this.disposed) return
+    this.patchState({ trashCleanup: result.report,
+      lastTrashCleanup: result.report.plan.candidates.length > 0 && result.report.phase === 'finished' ? result.report : result.previous ?? this.state.lastTrashCleanup })
+    this.patchState({ latestTrash: (await listTrash(this.panelHomePath))[0] })
+    await this.writeDump(`trash-cleanup:${result.report.phase}`)
   }
 
   subscribe(listener: () => void): () => void {
@@ -332,6 +374,7 @@ export class ManagerRuntime {
 
   /** Refresh when the last scan is older than `maxAgeMs` (scene mount). */
   async ensureFresh(maxAgeMs = 3000): Promise<void> {
+    await this.startupPromise
     if (Date.now() - this.scanStartedAt > maxAgeMs) await this.refresh('scene-mount')
   }
 
@@ -372,6 +415,8 @@ export class ManagerRuntime {
   }
 
   private async withBusy<T>(operation: () => Promise<T>): Promise<T | undefined> {
+    await this.startupPromise
+    if (this.disposed) return undefined
     if (this.state.busy) {
       this.setStatus('已有操作在进行中，请稍候…', 'warning')
       return undefined
@@ -410,8 +455,8 @@ export class ManagerRuntime {
   async deleteSkillInstances(instances: SkillInstance[]): Promise<void> {
     if (instances.length === 0) return
     await this.withBusy(async () => {
-      await cleanupTrash(this.panelHomePath, { retentionDays: this.state.config.trashRetentionDays })
       const result = await deleteSkillsOp(instances, { panelHome: this.panelHomePath })
+      await this.performTrashCleanup('after-delete')
       await this.refresh('delete')
       if (result.deleted.length === 0) {
         this.setStatus(
@@ -421,7 +466,8 @@ export class ManagerRuntime {
         return
       }
       const suffix = result.failed.length > 0 ? `；失败 ${result.failed.length}：${result.failed[0]?.error ?? ''}` : ''
-      this.setStatus(`已移入回收站 ${result.deleted.length} 个技能，可按 u 撤销${suffix}`, 'success')
+      const cleanupIssue = this.state.trashCleanup?.phase === 'blocked' || (this.state.trashCleanup?.failed.length ?? 0) > 0
+      this.setStatus(`已移入回收站 ${result.deleted.length} 个技能，可按 u 撤销${suffix}${cleanupIssue ? '；清理未完成，请查看诊断页' : ''}`, cleanupIssue ? 'warning' : 'success')
     })
   }
 
@@ -456,6 +502,7 @@ export class ManagerRuntime {
   }
 
   async openSkillRecovery(batchId: string, entryId: string, kind: 'replace' | 'scope', scope: 'global' | 'workspace'): Promise<SkillRecoverySession | undefined> {
+    await this.startupPromise
     try {
       return await openSkillRecovery(this.panelHomePath, batchId, entryId,
         kind === 'replace' ? { kind } : { kind, scope, rootPath: this.recoveryRoot(scope) })
@@ -643,6 +690,7 @@ export class ManagerRuntime {
   }
 
   async openMcpForm(id?: string): Promise<McpEditSession | undefined> {
+    await this.startupPromise
     try {
       if (this.state.busy) throw new Error('已有操作在进行中，请稍候')
       const row = id === undefined ? undefined : this.state.mcp.rows.find((entry) => entry.id === id)
@@ -1054,6 +1102,8 @@ export class ManagerRuntime {
         mcpGroups: this.mcpGroupsForCurrentProfile(),
         configWarning: this.state.configWarning,
         skillGroups: { fingerprint: this.state.groupsFingerprint, writable: this.state.groupsWritable, warning: this.state.groupsWarning, backupPath: this.state.groupsBackupPath },
+        trashCleanup: this.state.trashCleanup,
+        lastTrashCleanup: this.state.lastTrashCleanup,
         mcp: {
           ...this.state.mcp,
           rows: this.state.mcp.rows.map((row) => ({ ...row, config: maskSecretConfig(row.config) })),
