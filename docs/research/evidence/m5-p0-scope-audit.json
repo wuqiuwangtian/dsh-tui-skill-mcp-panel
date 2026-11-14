@@ -307,6 +307,8 @@
       "AC-14 layout/modes versus §6.1",
       "§8 1000 skills and per-keystroke search timing"
     ],
-    "condition": "record current behavior, gaps and reproducible measurement before changing layout breakpoints"
+    "condition": "Original layout table and FR/AC preserved; wait for user decision on restoring design or explicitly adopting current layout before dependent changes",
+    "status": "Local layout/mode/performance audit completed; layout decision and full user acceptance pending",
+    "resolutionEvidence": "m5-layout-performance-audit.json"
   }
 }

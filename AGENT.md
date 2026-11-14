@@ -19,7 +19,7 @@
 
 - **阶段：首版 P0 差异补齐与 M5 验收准备并行，尚不可发布（2026-11-14）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
 - **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；共享技能分组 TUI 写入保护与 web 边界见同文档 §6；布局/异常交互回归及最小可用区域见 §7；实际 tgz 安装/停用/再启用/卸载与信任提示见 §8；鼠标回归、窄屏导航与启停选中项保持见 §9；技能启停与实际 agent 目录/`/skills` 同步见 §10；完整 web/TUI 顺序共存历史失败见 §11；D-12 精确 disabled 编辑与旧覆盖迁移见 §11.1；剩余 web/TTY 根因与官方 2.3.12 对照见 §11.2；内核 stderr 候选、原宿主组合复验和暂不推荐的宿主恢复实验见 §11.3；真实安装局部变更/恢复历史提案见 §11.4；用户于 2026-11-12 决定保持现状、不实施，KI-01～KI-03 速查处理入口见 §11.5；完整人工验收与发布仍待执行；**不可发布**。
-- **首版范围 D-13（2026-11-12 用户确认）**：P1 延后，先补齐 P0、修复缺陷并完成验收。主要流程可用不等于 P0 全部完成；实际差异与下一项以需求文档 §14.1 为准。技能删除/清理的三项安全补强及验证见发布准备 §12，完整删除确认与局部真机验证见 §13；跨设备复制校验、失败恢复与部分撤销保护见 §14；撤销冲突的备份/其他作用域选择及验证见 §15；启动/删除后清理、执行前诊断快照及失败保护见 §16；FR-2 页签记忆、已知本地工作区入口与 channel.cwd 根对齐见 §17；FR-3 有界预览、分页全文和完整路径见 §18；FR-18 运行版本/来源及不可读降级见 §19；FR-2 技能状态筛选、组合过滤与可见项批量边界见 §20；下一项核对 AC-14 布局/模式及 §8 性能，先形成差异与验证口径，不先改断点；不以文档声明代替实现。
+- **首版范围 D-13（2026-11-12 用户确认）**：P1 延后，先补齐 P0、修复缺陷并完成验收。主要流程可用不等于 P0 全部完成；实际差异与下一项以需求文档 §14.1 为准。技能删除/清理的三项安全补强及验证见发布准备 §12，完整删除确认与局部真机验证见 §13；跨设备复制校验、失败恢复与部分撤销保护见 §14；撤销冲突的备份/其他作用域选择及验证见 §15；启动/删除后清理、执行前诊断快照及失败保护见 §16；FR-2 页签记忆、已知本地工作区入口与 channel.cwd 根对齐见 §17；FR-3 有界预览、分页全文和完整路径见 §18；FR-18 运行版本/来源及不可读降级见 §19；FR-2 技能状态筛选、组合过滤与可见项批量边界见 §20；AC-14 布局/双模式与 §8 本机性能核对见 §21；当前等待用户选择按原设计补齐布局或明确采纳现行分档，未改断点与 FR/AC；不以文档声明代替实现。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
 
 ## 3. 阅读顺序（必须）
@@ -139,6 +139,7 @@ pnpm typecheck              # 同上，不产出
 pnpm test                   # build + node:test（含 MCP 写入保护的回归用例）
 pnpm test:ui                # headless Ink 渲染 smoke（160/58 列）
 pnpm test:ui:mouse          # 真实 host 命中检测：SGR 点击/释放/滚轮，40/58/116 列，含启停后选中项保持
+pnpm audit:performance /tmp/skill-performance.json # 1000 技能/逐键计时；项目文件系统隔离夹具，非物理 SSD 认证
 pnpm test:skills:filters     # 120/58 列：真实 runtime 状态/搜索/作用域/分组组合与可见项批量边界
 pnpm test:ui:interaction    # headless 交互：技能操作/分组 + 旧快照拒写/刷新/多 runtime/备份，
                             # 驱动 空格/v/d+u/a/g/Tab，断言文件与 groups.json 变化
@@ -154,6 +155,8 @@ node scripts/skill-groups-interop.mjs ~/.dsh/profiles/web/node_modules/dsh-skill
 node scripts/prepare-tui-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui
                             # 准备 /tmp 下独立 home/profile/技能/本地 MCP，输出 run.sh；不启动进程
 ```
+
+基础真机探针可在宿主目录后加 `--mode=inline` 或 `--mode=fullscreen`（默认）；会在新建的临时 home 预设显示偏好和已完成的 fullscreen factory migration，避免首次迁移清除 inline 选择。实际模式仍需核对宿主日志，步骤见[发布准备 §21](docs/release-readiness.md#21-布局模式与性能核对2026-11-14)。
 
 完整 web/TUI 同一宿主探针用 `node scripts/prepare-web-interop-probe.mjs <CLI 已安装宿主目录> <已安装 web 面板目录>`；复验步骤、认证链接保护与 AC-15 失败证据见 [发布准备 §11](docs/release-readiness.md#11-webtui-完整-ui-顺序共存)。只准备临时目录，仍需真实 UI 操作。
 

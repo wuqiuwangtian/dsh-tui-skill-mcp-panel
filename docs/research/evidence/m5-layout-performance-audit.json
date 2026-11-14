@@ -1,0 +1,1415 @@
+{
+  "date": "2026-11-14",
+  "baseline": "8ad72d8",
+  "version": "0.1.0-dev.0",
+  "authority": "docs/需求文档.md §6.1, §8, AC-14, §14.1",
+  "scope": "Read-only product audit and local measurement; no breakpoint or original FR/AC change",
+  "changes": {
+    "filesAdded": [
+      "scripts/skill-performance-probe.mjs",
+      "docs/research/evidence/m5-layout-performance-audit.json"
+    ],
+    "filesModified": [
+      "AGENT.md",
+      "docs/release-readiness.md",
+      "docs/research/README.md",
+      "docs/research/evidence/m5-p0-scope-audit.json",
+      "docs/需求文档.md",
+      "package.json",
+      "scripts/prepare-tui-probe.mjs"
+    ],
+    "filesDeleted": [],
+    "featuresAdded": [
+      "reproducible 1000-skill local performance command",
+      "explicit mode choice in isolated probe with preference and migration seed"
+    ],
+    "featuresModified": [
+      "probe defaults remain fullscreen; invalid mode fails before allocation",
+      "requirements status/index now distinguishes audit evidence from unresolved layout decision"
+    ],
+    "featuresDeleted": []
+  },
+  "productSourceIdentity": {
+    "src/ui/ManagerScene.tsx": "4432ef80d6cc9522285c7fa21828d4baded979121a03b38e13fb74dcce106a42",
+    "src/host/manager-runtime.ts": "6c0344e85edaab9a52b50c3158c3967ef03c6ee2e803a16e76144f3e69852370",
+    "src/domain/skills/discovery.ts": "4588f793605db682e1003d6d4e4438e15815bf6f028380d5c7739ca2a7b75719"
+  },
+  "layout": {
+    "cause": {
+      "file": "src/ui/ManagerScene.tsx",
+      "symbols": [
+        "wide = columns >= 110",
+        "twoPane = columns >= 72",
+        "scopeCard: SCOPE_FILTERS only",
+        "skillsBody: scope/list/detail",
+        "groupsCard: separate tab",
+        "helpOpen: standalone modal"
+      ]
+    },
+    "gaps": [
+      {
+        "range": "64-71",
+        "required": "list/detail side by side",
+        "actual": "single pane"
+      },
+      {
+        "range": "90-109",
+        "required": "scope/group tree, list, detail",
+        "actual": "list/detail only"
+      },
+      {
+        "range": ">=110",
+        "required": "scope/group navigation in left column; optional help column",
+        "actual": "scope only left; groups separate tab; help modal"
+      },
+      {
+        "range": "<64",
+        "required": "single pane with breadcrumb",
+        "actual": "detail title and return action, no literal breadcrumb trail"
+      }
+    ],
+    "clarifications": [
+      "Optional help means three columns alone are not a mandatory fourth-column failure",
+      "AC-14 width coverage bands and design breakpoint table serve different purposes; cover their union"
+    ],
+    "decision": {
+      "status": "pending user choice",
+      "recommended": "A: restore design (64 dual, 90 scope/group navigation plus list/detail); keep group management tab and help modal",
+      "alternative": "B: explicitly adopt 72/110 current layout and separate groups tab; requires user-approved requirement adjustment",
+      "risksA": [
+        "narrower detail wraps more",
+        "new focus, scrolling, pointer and resize boundary work",
+        "must retain hidden-mark write boundaries"
+      ],
+      "costB": [
+        "more list/detail returns at 64-71",
+        "no left navigation at 90-109",
+        "separate group tab navigation persists",
+        "original design is not satisfied unless explicitly revised"
+      ]
+    }
+  },
+  "additionalBoundaryChecks": {
+    "command": "node scripts/ui-layout-smoke.mjs <columns>x30",
+    "columns": [
+      63,
+      71,
+      89,
+      90,
+      109
+    ],
+    "assertions": 270,
+    "exitCodes": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "allPassed": true,
+    "source": "unchanged existing 54-assertion smoke, 5 additional widths; baseline 8 widths not repeated"
+  },
+  "realTui": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "node": "26.3.0",
+    "method": "Actual installed CLI/host in owned PTYs; actual stdin, resize only own tty via dump PID; ANSI replay using xterm + Unicode11",
+    "modes": [
+      {
+        "mode": "inline",
+        "cases": [
+          {
+            "scene": "58x26",
+            "pty": "62x28",
+            "cards": 1,
+            "assertions": 9,
+            "pass": true
+          },
+          {
+            "scene": "64x26",
+            "pty": "68x28",
+            "cards": 1,
+            "assertions": 9,
+            "pass": true
+          },
+          {
+            "scene": "80x26",
+            "pty": "84x28",
+            "cards": 2,
+            "assertions": 9,
+            "pass": true
+          },
+          {
+            "scene": "90x26",
+            "pty": "94x28",
+            "cards": 2,
+            "assertions": 9,
+            "pass": true
+          },
+          {
+            "scene": "110x26",
+            "pty": "114x28",
+            "cards": 3,
+            "assertions": 9,
+            "pass": true
+          }
+        ],
+        "screens": {
+          "list-64": "\n   Skill / MCP manager                    skill-mcp-panel · 64x26\n     技能  MCP  分组  诊断                            全部 · 1 项\n   目标（当前工作区） <fixture>/project · o\n    作用域  全部(1)  工作区(1)  全局(0) \n   ╭────────────────────────────────────────────────────────────╮\n   │ 技能列表  全部 · 1项                                       │\n   │ ❯ probe-skill                   project/.dsh  生效         │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   │                                                            │\n   ╰────────────────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] \n   [x清除] [r刷新] [?] [o工作区] [f筛选] [i全文] [p路径] \n   已写入 <fixture>/dump.json\n\n",
+          "detail-end-58": "\n   Skill / MCP manager              skill-mcp-panel · 58x26\n     技能  MCP  分组  诊断                      全部 · 1 项\n   目标（当前工作区） <fixture>/proje…\n    作用域  全部(1)  工作区(1)  全局(0) \n   ╭──────────────────────────────────────────────────────╮\n   │ 详情  probe-skill  ↕97/110                           │\n   │   BODY-087 中文🧭 layout fixture                     │\n   │   BODY-088 中文🧭 layout fixture                     │\n   │   BODY-089 中文🧭 layout fixture                     │\n   │   BODY-090 中文🧭 layout fixture                     │\n   │   BODY-091 中文🧭 layout fixture                     │\n   │   BODY-092 中文🧭 layout fixture                     │\n   │   BODY-093 中文🧭 layout fixture                     │\n   │   BODY-094 中文🧭 layout fixture                     │\n   │   BODY-095 中文🧭 layout fixture                     │\n   │   BODY-096 中文🧭 layout fixture                     │\n   │   BODY-097 中文🧭 layout fixture                     │\n   │   BODY-098 中文🧭 layout fixture                     │\n   │   BODY-099 中文🧭 layout fixture                     │\n   │                                                      │\n   ╰──────────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] \n   [x清除] [r刷新] [?] [o工作区] [f筛选] [i全文] [p路径]   \n   [←返回]                                                  \n   已写入 <fixture>/dump.json          \n                                                            \n",
+          "form-input-64": "\n   Skill / MCP manager                            skill-mcp-panel\n                                                                 \n   ╭────────────────────────────────────────────────────────────╮\n   │ MCP serverName                                             │\n   │ serverName：                                               │\n   │ ❯ layout-中文🧭-draft▌                                     │\n   │ Ctrl+U 清空；已有 !!js 留空保留；Esc 返回表单              │\n   │ [Enter 提交] [Esc 取消]                                    │\n   ╰────────────────────────────────────────────────────────────╯\n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                           \n                                                                 \n                                                  \n\n",
+          "delete-confirm-80": "\n   Skill / MCP manager                                            skill-mcp-panel\n                                                                                 \n   ╭────────────────────────────────────────────────────────────────────────────╮\n   │ 删除技能                                                                   │\n   │ 将移入回收站（可撤销）：共 1 个                                            │\n   │ ↑/↓ 滚动 · PgUp/PgDn 翻页 · Home/End 首尾                                  │\n   │ 1. probe-skill                                                             │\n   │ 作用域：工作区 · 来源：project/.dsh                                        │\n   │ 删除目录：<fixture>/project/.dsh/skills/probe-skill   │\n   │ 技能文件：<fixture>/project/.dsh/skills/probe-skill/S │\n   │ KILL.md                                                                    │\n   │ [首] [上页] [下页] [末] 1-8/8                                              │\n   │ [y 确认] [n / Esc 取消]                                                    │\n   ╰────────────────────────────────────────────────────────────────────────────╯\n                                                                                 \n                                                                                 \n                                                                                 \n                                                                                 \n                                                                                 \n                                                                                 \n                                                                                 \n                                                                                 \n                                                                               \n                                     \n                                                  \n\n",
+          "list-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 1 项\n   目标（当前工作区） <fixture>/project · o\n    作用域  全部(1)  工作区(1)  全局(0) \n   ╭─────────────────────────────────────────╮ ╭──────────────────────────────────────────╮\n   │ 技能列表  全部 · 1项                    │ │ 详情  probe-skill  ↕1/111                │\n   │ ❯ probe-skill      project/.dsh  生效   │ │ 状态 启用 · 来源 project/.dsh · rank 100 │\n   │                                         │ │  · 工作区                                │\n   │                                         │ │ 形态 目录束 · 内核可见                   │\n   │                                         │ │ 文件 <fixture>/proj │\n   │                                         │ │ ect/.dsh/skills/probe-skill/SKILL.md     │\n   │                                         │ │ 根 <fixture>/projec │\n   │                                         │ │ t/.dsh/skills                            │\n   │                                         │ │ description Layout 中文🧭 audit          │\n   │                                         │ │ 正文预览（只读）· i 全文 · p 路径        │\n   │                                         │ │   BODY-000 中文🧭 layout fixture         │\n   │                                         │ │   BODY-001 中文🧭 layout fixture         │\n   │                                         │ │   BODY-002 中文🧭 layout fixture         │\n   │                                         │ │   BODY-003 中文🧭 layout fixture         │\n   │                                         │ │   BODY-004 中文🧭 layout fixture         │\n   │                                         │ │                                          │\n   ╰─────────────────────────────────────────╯ ╰──────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   已写入 <fixture>/dump.json\n\n",
+          "list-110": "\n   Skill / MCP manager                                                                 skill-mcp-panel · 110x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                                全部 · 1 项\n   目标（当前工作区） <fixture>/project · o\n   ╭────────────────────╮ ╭────────────────────────────────────────╮ ╭────────────────────────────────────────╮\n   │ 作用域             │ │ 技能列表  全部 · 1项                   │ │ 详情  probe-skill  ↕1/111              │\n   │ ❯ 全部 (1)         │ │ ❯ probe-skill     project/.dsh  生效   │ │ 状态 启用 · 来源 project/.dsh · rank 1 │\n   │   工作区 (1)       │ │                                        │ │ 00 · 工作区                            │\n   │   全局 (0)         │ │                                        │ │ 形态 目录束 · 内核可见                 │\n   │                    │ │                                        │ │ 文件 <fixture>/pr │\n   │                    │ │                                        │ │ oject/.dsh/skills/probe-skill/SKILL.md │\n   │                    │ │                                        │ │ 根 <fixture>/proj │\n   │                    │ │                                        │ │ ect/.dsh/skills                        │\n   │                    │ │                                        │ │ description Layout 中文🧭 audit        │\n   │                    │ │                                        │ │ 正文预览（只读）· i 全文 · p 路径      │\n   │                    │ │                                        │ │   BODY-000 中文🧭 layout fixture       │\n   │                    │ │                                        │ │   BODY-001 中文🧭 layout fixture       │\n   │                    │ │                                        │ │   BODY-002 中文🧭 layout fixture       │\n   │                    │ │                                        │ │   BODY-003 中文🧭 layout fixture       │\n   │                    │ │                                        │ │   BODY-004 中文🧭 layout fixture       │\n   │                    │ │                                        │ │   BODY-005 中文🧭 layout fixture       │\n   │                    │ │                                        │ │                                        │\n   ╰────────────────────╯ ╰────────────────────────────────────────╯ ╰────────────────────────────────────────╯\n   [空格 启停] [v 标记] [d 删除] [u 撤销] [a 添加] [g 分组] [/ 搜索] [x 清除] [r 刷新] [? 帮助] [o 工作区] 共 …\n   [f 状态筛选] [i 全文] [p 路径]                                      共 1 · 生效 1 · 停用 0 · 无效 0 · 遮蔽 0\n   已写入 <fixture>/dump.json\n\n"
+        }
+      },
+      {
+        "mode": "fullscreen",
+        "cases": [
+          {
+            "scene": "58x26",
+            "pty": "62x28",
+            "cards": 1,
+            "assertions": 9,
+            "pass": true
+          },
+          {
+            "scene": "64x26",
+            "pty": "68x28",
+            "cards": 1,
+            "assertions": 9,
+            "pass": true
+          },
+          {
+            "scene": "80x26",
+            "pty": "84x28",
+            "cards": 2,
+            "assertions": 9,
+            "pass": true
+          },
+          {
+            "scene": "90x26",
+            "pty": "94x28",
+            "cards": 2,
+            "assertions": 9,
+            "pass": true
+          },
+          {
+            "scene": "110x26",
+            "pty": "114x28",
+            "cards": 3,
+            "assertions": 9,
+            "pass": true
+          }
+        ],
+        "screens": {
+          "list-58": "\n   Skill / MCP manager              skill-mcp-panel · 58x26\n     技能  MCP  分组  诊断                      全部 · 1 项\n   目标（当前工作区） <fixture>/proje…\n    作用域  全部(1)  工作区(1)  全局(0) \n   ╭──────────────────────────────────────────────────────╮\n   │ 技能列表  全部 · 1项                                 │\n   │ ❯ probe-skill                   project/.dsh  生效   │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   │                                                      │\n   ╰──────────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] \n   [x清除] [r刷新] [?] [o工作区] [f筛选] [i全文] [p路径]    \n   已写入 <fixture>/dump.json          \n                                                            \n",
+          "detail-end-80": "\n   Skill / MCP manager                                    skill-mcp-panel · 80x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                  全部 · 1 项\n   目标（当前工作区） <fixture>/project · o\n    作用域  全部(1)  工作区(1)  全局(0) \n   ╭────────────────────────────────────╮ ╭─────────────────────────────────────╮\n   │ 技能列表  全部 · 1项               │ │ 详情  probe-skill  ↕98/112          │\n   │ ❯ probe-skil  project/.dsh  生效   │ │   BODY-086 中文🧭 layout fixture    │\n   │                                    │ │   BODY-087 中文🧭 layout fixture    │\n   │                                    │ │   BODY-088 中文🧭 layout fixture    │\n   │                                    │ │   BODY-089 中文🧭 layout fixture    │\n   │                                    │ │   BODY-090 中文🧭 layout fixture    │\n   │                                    │ │   BODY-091 中文🧭 layout fixture    │\n   │                                    │ │   BODY-092 中文🧭 layout fixture    │\n   │                                    │ │   BODY-093 中文🧭 layout fixture    │\n   │                                    │ │   BODY-094 中文🧭 layout fixture    │\n   │                                    │ │   BODY-095 中文🧭 layout fixture    │\n   │                                    │ │   BODY-096 中文🧭 layout fixture    │\n   │                                    │ │   BODY-097 中文🧭 layout fixture    │\n   │                                    │ │   BODY-098 中文🧭 layout fixture    │\n   │                                    │ │   BODY-099 中文🧭 layout fixture    │\n   │                                    │ │                                     │\n   ╰────────────────────────────────────╯ ╰─────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] \n   [o工作区] [f筛选] [i全文] [p路径] \n   已写入 <fixture>/dump.json\n\n",
+          "form-input-90": "\n   Skill / MCP manager                                                      skill-mcp-panel\n                                                                                           \n   ╭──────────────────────────────────────────────────────────────────────────────────────╮\n   │ MCP serverName                                                                       │\n   │ serverName：                                                                         │\n   │ ❯ layout-中文🧭-draft▌                                                               │\n   │ Ctrl+U 清空；已有 !!js 留空保留；Esc 返回表单                                        │\n   │ [Enter 提交] [Esc 取消]                                                              │\n   ╰──────────────────────────────────────────────────────────────────────────────────────╯\n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                           \n                                                  \n\n",
+          "delete-confirm-110": "\n   Skill / MCP manager                                                                          skill-mcp-panel\n                                                                                                               \n   ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮\n   │ 删除技能                                                                                         │        \n   │ 将移入回收站（可撤销）：共 1 个                                                                  │        \n   │ ↑/↓ 滚动 · PgUp/PgDn 翻页 · Home/End 首尾                                                        │        \n   │ 1. probe-skill                                                                                   │        \n   │ 作用域：工作区 · 来源：project/.dsh                                                              │        \n   │ 删除目录：<fixture>/project/.dsh/skills/probe-skill                         │        \n   │ 技能文件：<fixture>/project/.dsh/skills/probe-skill/SKILL.md                │        \n   │ [首] [上页] [下页] [末] 1-7/7                                                                    │        \n   │ [y 确认] [n / Esc 取消]                                                                          │        \n   ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯        \n                                                                                                               \n                                                                                                               \n                                                                                                               \n                                                                                                               \n                                                                                                               \n                                                                                                               \n                                                                                                               \n                                                                                                               \n                                                                                                               \n                                                                                                               \n                                                                                                               \n                                                  \n\n",
+          "list-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 1 项\n   目标（当前工作区） <fixture>/project · o\n    作用域  全部(1)  工作区(1)  全局(0) \n   ╭─────────────────────────────────────────╮ ╭──────────────────────────────────────────╮\n   │ 技能列表  全部 · 1项                    │ │ 详情  probe-skill  ↕1/111                │\n   │ ❯ probe-skill      project/.dsh  生效   │ │ 状态 启用 · 来源 project/.dsh · rank 100 │\n   │                                         │ │  · 工作区                                │\n   │                                         │ │ 形态 目录束 · 内核可见                   │\n   │                                         │ │ 文件 <fixture>/proj │\n   │                                         │ │ ect/.dsh/skills/probe-skill/SKILL.md     │\n   │                                         │ │ 根 <fixture>/projec │\n   │                                         │ │ t/.dsh/skills                            │\n   │                                         │ │ description Layout 中文🧭 audit          │\n   │                                         │ │ 正文预览（只读）· i 全文 · p 路径        │\n   │                                         │ │   BODY-000 中文🧭 layout fixture         │\n   │                                         │ │   BODY-001 中文🧭 layout fixture         │\n   │                                         │ │   BODY-002 中文🧭 layout fixture         │\n   │                                         │ │   BODY-003 中文🧭 layout fixture         │\n   │                                         │ │   BODY-004 中文🧭 layout fixture         │\n   │                                         │ │                                          │\n   ╰─────────────────────────────────────────╯ ╰──────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   已写入 <fixture>/dump.json\n\n",
+          "list-110": "\n   Skill / MCP manager                                                                 skill-mcp-panel · 110x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                                全部 · 1 项\n   目标（当前工作区） <fixture>/project · o\n   ╭────────────────────╮ ╭────────────────────────────────────────╮ ╭────────────────────────────────────────╮\n   │ 作用域             │ │ 技能列表  全部 · 1项                   │ │ 详情  probe-skill  ↕1/111              │\n   │ ❯ 全部 (1)         │ │ ❯ probe-skill     project/.dsh  生效   │ │ 状态 启用 · 来源 project/.dsh · rank 1 │\n   │   工作区 (1)       │ │                                        │ │ 00 · 工作区                            │\n   │   全局 (0)         │ │                                        │ │ 形态 目录束 · 内核可见                 │\n   │                    │ │                                        │ │ 文件 <fixture>/pr │\n   │                    │ │                                        │ │ oject/.dsh/skills/probe-skill/SKILL.md │\n   │                    │ │                                        │ │ 根 <fixture>/proj │\n   │                    │ │                                        │ │ ect/.dsh/skills                        │\n   │                    │ │                                        │ │ description Layout 中文🧭 audit        │\n   │                    │ │                                        │ │ 正文预览（只读）· i 全文 · p 路径      │\n   │                    │ │                                        │ │   BODY-000 中文🧭 layout fixture       │\n   │                    │ │                                        │ │   BODY-001 中文🧭 layout fixture       │\n   │                    │ │                                        │ │   BODY-002 中文🧭 layout fixture       │\n   │                    │ │                                        │ │   BODY-003 中文🧭 layout fixture       │\n   │                    │ │                                        │ │   BODY-004 中文🧭 layout fixture       │\n   │                    │ │                                        │ │   BODY-005 中文🧭 layout fixture       │\n   │                    │ │                                        │ │                                        │\n   ╰────────────────────╯ ╰────────────────────────────────────────╯ ╰────────────────────────────────────────╯\n   [空格 启停] [v 标记] [d 删除] [u 撤销] [a 添加] [g 分组] [/ 搜索] [x 清除] [r 刷新] [? 帮助] [o 工作区] 共 …\n   [f 状态筛选] [i 全文] [p 路径]                                      共 1 · 生效 1 · 停用 0 · 无效 0 · 遮蔽 0\n   已写入 <fixture>/dump.json\n\n"
+        }
+      }
+    ],
+    "modeLogsAndHashes": [
+      {
+        "mode": "inline",
+        "observedHostMount": {
+          "fullscreen": false,
+          "isRecompose": false
+        },
+        "baselineHashes": [
+          {
+            "path": "<fixture>/project/.dsh/skills/probe-skill/SKILL.md",
+            "sha256": "c7cded77db12066bc0e7891abdb7445bb8c6f7cef3b7da9605c7a0c800424f01",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/profiles/panel-verification/cordis.patch.yml",
+            "sha256": "1d1f821a75ede6749ad6f2726b2bd2ed30cf8b62eee7d75bed800292c61befe2",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/cordis.patch.yml",
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90",
+            "preserved": true
+          }
+        ],
+        "exitCode": 0,
+        "skillTrashBatches": 0
+      },
+      {
+        "mode": "fullscreen",
+        "observedHostMount": {
+          "fullscreen": true,
+          "isRecompose": false
+        },
+        "baselineHashes": [
+          {
+            "path": "<fixture>/project/.dsh/skills/probe-skill/SKILL.md",
+            "sha256": "c7cded77db12066bc0e7891abdb7445bb8c6f7cef3b7da9605c7a0c800424f01",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/profiles/panel-verification/cordis.patch.yml",
+            "sha256": "1006a4777397699fd0f456d79999dd9d1b2e90b6df663fa4225dae51b4c9109d",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/cordis.patch.yml",
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90",
+            "preserved": true
+          }
+        ],
+        "exitCode": 0,
+        "skillTrashBatches": 0
+      }
+    ],
+    "assertions": 90,
+    "allPassed": true,
+    "operations": [
+      "list",
+      "detail End to BODY-099",
+      "Esc back",
+      "delete confirmation then n cancel",
+      "MCP new form; edit serverName with CJK and emoji, Esc return/cancel",
+      "return skills"
+    ],
+    "notCovered": [
+      "physical pointer in each mode/size",
+      "MCP HTTP/save/reload in all cells",
+      "full user acceptance"
+    ],
+    "exitedBeforeBuild": true,
+    "modelRequestsMade": false
+  },
+  "performance": {
+    "date": "2026-11-14T07:57:03.734Z",
+    "baseline": "8ad72d8",
+    "environment": {
+      "node": "26.3.0",
+      "host": "0.19.0",
+      "platform": "linux",
+      "release": "6.18.58.1-microsoft-standard-WSL2",
+      "cpu": "Intel(R) Core(TM) Ultra X7 358H",
+      "logicalCpus": 14,
+      "totalMemoryBytes": 25201803264,
+      "filesystem": "/ /dev/sdd ext4",
+      "physicalSSD": "unverified; virtual block device does not establish physical medium"
+    },
+    "fixture": {
+      "skills": 1000,
+      "bytes": 9027890,
+      "bodyBytes": 8960,
+      "directory": 500,
+      "flat": 500,
+      "workspace": 600,
+      "global": 400,
+      "enabled": 800,
+      "disabled": 200,
+      "groups": 20,
+      "all1000SkillFilesAndGroupBytesPreserved": true
+    },
+    "method": {
+      "coldOpen": "before constructing a fresh runtime -> 1000-row scan committed and actual terminal output parsed; excludes CLI/host startup, metadata/cleanup completion and fixture preparation",
+      "warmOpen": "unmount/remount scene with same runtime and fresh output emulator (includes unmount cost)",
+      "search": "real stdin one Unicode codepoint at a time -> exact query, expected result count and visible search cursor confirmed from real host ANSI output",
+      "observedMs": "includes input scheduling, React, renderer, output and terminal emulator callback; conservative local upper bound",
+      "cache": "OS cache not dropped; files just created and reused across trials; first runtime is not disk-cold",
+      "renderer": "real installed host UI/React with custom streams and headless xterm, not real CLI/PTY or physical display",
+      "debug": "no disk dump; existing verification frame captured in memory",
+      "renderIO": "static audit required separately; selected preview reads asynchronously after commit"
+    },
+    "coldOpenObserved": {
+      "samples": 6,
+      "minMs": 305.79218199999923,
+      "medianMs": 321.7717510000002,
+      "p95Ms": 624.385139,
+      "maxMs": 624.385139
+    },
+    "warmOpenObserved": {
+      "samples": 6,
+      "minMs": 12.85027799999989,
+      "medianMs": 17.695144999999684,
+      "p95Ms": 20.86743499999966,
+      "maxMs": 20.86743499999966
+    },
+    "searchObserved": {
+      "samples": 168,
+      "minMs": 2.6056960000005347,
+      "medianMs": 14.186322999999902,
+      "p95Ms": 23.93581499999982,
+      "maxMs": 24.766155999999683
+    },
+    "localThresholds": {
+      "coldOpenUnder1s": true,
+      "warmOpenUnder1s": true,
+      "everySearchKeyUnder100ms": true
+    },
+    "trials": [
+      {
+        "columns": 58,
+        "trial": 1,
+        "scanReadyMs": 602.813329,
+        "startupReadyMs": 679.7064469999999,
+        "coldOpen": {
+          "observedMs": 624.385139
+        },
+        "warmOpen": {
+          "observedMs": 12.85027799999989
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 6.64041700000007
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 14.186322999999902
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 6.468307999999979
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 15.08355000000006
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 6.460295000000087
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 14.545112999999901
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 5.6665770000001885
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 14.527532000000065
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 21.993864999999914
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 3.7349950000000263
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 6.410288000000037
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.45527200000015
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 3.8544670000001133
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 14.395163000000139
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 13.232682999999952
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 6.551652000000104
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 13.694247000000132
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 22.834344999999985
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 5.145895999999993
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 15.092562000000044
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 4.9005709999999
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 14.702704999999924
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 3.4090960000000905
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 14.587937999999895
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 4.970478000000185
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 15.775773999999956
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 3.8649669999999787
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 13.956097000000227
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 3.4090960000000905,
+          "medianMs": 13.232682999999952,
+          "p95Ms": 21.993864999999914,
+          "maxMs": 22.834344999999985
+        }
+      },
+      {
+        "columns": 58,
+        "trial": 2,
+        "scanReadyMs": 395.69459300000017,
+        "startupReadyMs": 459.16897500000005,
+        "coldOpen": {
+          "observedMs": 401.6645239999998
+        },
+        "warmOpen": {
+          "observedMs": 20.86743499999966
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 7.773353000000043
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 15.60759999999982
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 8.52240299999994
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 14.691529000000173
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 8.886823999999706
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 15.135216000000128
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 24.651560999999674
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 4.250880000000052
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 16.57693300000028
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 19.019173000000137
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 8.385831999999937
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.657991000000038
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 21.485447000000022
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 3.2671359999999368
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 9.364905999999792
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 14.76158600000008
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 24.181531000000177
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 7.754852999999912
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 14.42988400000013
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 24.419548000000304
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 7.6405909999998585
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 15.61391999999978
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 19.74908800000003
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 3.055076000000099
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 7.746910000000298
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.311807999999928
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 20.422371999999996
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.6272009999997863
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 2.6272009999997863,
+          "medianMs": 14.42988400000013,
+          "p95Ms": 24.419548000000304,
+          "maxMs": 24.651560999999674
+        }
+      },
+      {
+        "columns": 58,
+        "trial": 3,
+        "scanReadyMs": 356.1824609999999,
+        "startupReadyMs": 413.8059800000001,
+        "coldOpen": {
+          "observedMs": 361.55063299999983
+        },
+        "warmOpen": {
+          "observedMs": 18.19667499999923
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 7.408889000000272
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 14.705581999999595
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 7.262095999999474
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 15.630605000000287
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 7.53907799999979
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 15.541901000000507
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 7.463354999999865
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 15.59371899999951
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 19.739242999999988
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 2.7724630000002435
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 7.116530999999668
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.8385159999998
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 19.67362200000025
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 3.0846900000005917
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 7.606784999999945
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 14.949781000000257
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 7.490077000000383
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 16.390451000000212
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 8.09124200000042
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 15.212625999999545
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 23.839445999999953
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 3.854938000000402
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 14.689736999999695
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 3.5378810000001977
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 7.606163999999808
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 13.842349000000468
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 18.738992000000508
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.6056960000005347
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 2.6056960000005347,
+          "medianMs": 8.09124200000042,
+          "p95Ms": 19.739242999999988,
+          "maxMs": 23.839445999999953
+        }
+      },
+      {
+        "columns": 120,
+        "trial": 1,
+        "scanReadyMs": 310.248278,
+        "startupReadyMs": 371.2200240000002,
+        "coldOpen": {
+          "observedMs": 316.74145299999964
+        },
+        "warmOpen": {
+          "observedMs": 15.719656000000214
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 9.133472999999867
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 14.56625399999939
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 23.85111500000039
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 13.009253000000172
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 11.87404400000014
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 24.17838799999936
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 9.418916999999965
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 15.821410999999898
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 20.810733000000255
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 3.613430000000335
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 9.004721000000245
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.302872999999636
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 19.405961999999818
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.849989999999707
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 10.044418000000405
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 24.766155999999683
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 7.43005600000015
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 15.255597000000307
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 7.976394000000255
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 14.79814499999975
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 24.17222099999981
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 4.08285800000067
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 15.62570599999981
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 3.190378000000237
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 7.5757269999994605
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.57369000000017
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 19.304446000000098
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.85438300000078
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 2.849989999999707,
+          "medianMs": 13.009253000000172,
+          "p95Ms": 24.17838799999936,
+          "maxMs": 24.766155999999683
+        }
+      },
+      {
+        "columns": 120,
+        "trial": 2,
+        "scanReadyMs": 301.3429100000003,
+        "startupReadyMs": 361.3959070000001,
+        "coldOpen": {
+          "observedMs": 305.79218199999923
+        },
+        "warmOpen": {
+          "observedMs": 20.432182999999895
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 7.615053999999873
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 14.822098000000551
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 23.93581499999982
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 7.988186999999925
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 14.300374000000375
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 9.910729000000174
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 15.26547600000049
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 21.979049000000487
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 3.720165000000634
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 15.393529999999373
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 8.055861999999252
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.86928799999987
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 19.71159499999976
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.964683999999579
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 8.699664000000666
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 15.265627000000677
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 7.675709000000097
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 15.597209000000475
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 8.173483999999917
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 15.479266999999709
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 7.799717999999302
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 15.831002999999328
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 3.276836000000003
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 13.841064000000188
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 7.642135000000053
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 15.495335999999952
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 19.920420000000377
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.9984099999992395
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 2.964683999999579,
+          "medianMs": 13.841064000000188,
+          "p95Ms": 21.979049000000487,
+          "maxMs": 23.93581499999982
+        }
+      },
+      {
+        "columns": 120,
+        "trial": 3,
+        "scanReadyMs": 317.34656500000074,
+        "startupReadyMs": 385.3057550000003,
+        "coldOpen": {
+          "observedMs": 321.7717510000002
+        },
+        "warmOpen": {
+          "observedMs": 17.695144999999684
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 7.614376999999877
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 15.107868999999482
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 8.17730599999959
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 14.19379200000003
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 24.10123399999975
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 7.7991020000008575
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 14.366072999999233
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 20.81825199999912
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 3.8274209999999584
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 16.358320999999705
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 7.965699000000313
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.604397999999492
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 20.554474999999
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.9922719999995024
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 10.54877099999976
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 23.86512699999912
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 7.688115999999354
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 15.01632199999949
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 24.238870999999563
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 8.2267580000007
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 15.777511000000231
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 20.976544999999533
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 3.3141020000002754
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 15.270233999999618
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 7.915750000000116
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 15.56331499999942
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 20.897780999999668
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.9828579999993963
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 2.9828579999993963,
+          "medianMs": 14.366072999999233,
+          "p95Ms": 24.10123399999975,
+          "maxMs": 24.238870999999563
+        }
+      }
+    ],
+    "limits": [
+      "Local observation only; not physical SSD or disk-cold certification",
+      "No full user manual acceptance or model requests",
+      "Input pacing waits for each completed key; burst backlog and physical terminal transport not measured"
+    ],
+    "startupReadyObserved": {
+      "samples": 6,
+      "maxMs": 679.7064469999999,
+      "allUnder1s": true
+    }
+  },
+  "renderIOAudit": {
+    "method": "static call-path review; not filesystem syscall tracing",
+    "result": "no direct fs import/read in ManagerScene render; effect -> runtime.loadDetail -> bounded async preview",
+    "remainingWorkCost": [
+      "discovery.createInstance reads full document asynchronously during sequential scan",
+      "render constructs verificationRows for all filtered instances and calls in-memory groupIdsFor",
+      "no evidence justifies speculative optimization in this batch"
+    ]
+  },
+  "probePreparation": {
+    "checks": [
+      {
+        "case": "fullscreen",
+        "exitCode": 0,
+        "patchPreferenceMigrationAgree": true,
+        "launcherPreparedOnly": true
+      },
+      {
+        "case": "inline",
+        "exitCode": 0,
+        "patchPreferenceMigrationAgree": true,
+        "launcherPreparedOnly": true
+      },
+      {
+        "case": "unknown mode",
+        "exitCode": 1,
+        "rejectedBeforeCreatingFixture": true
+      }
+    ],
+    "modeArgument": "optional second argument --mode=fullscreen|--mode=inline; default fullscreen",
+    "isolatedFiles": [
+      "profile/cordis.patch.yml",
+      "user/.dsh-tui/settings.json",
+      "user/.dsh-tui/migrations.json"
+    ],
+    "migration": "Host 0.19 first factory migration clears pre-migration false; seed applied marker to represent deliberate post-migration inline choice",
+    "actualModeProof": "DSH_TUI_RESTART_CHILD=1 only for test process enables existing boot: UI mounted log; no actual restart handoff requested",
+    "historicalFailedAttempt": "Initial preference-only inline fixture was migrated to fullscreen, detected and excluded from inline acceptance; then marker handling added and actual mode confirmed"
+  },
+  "validation": {
+    "performanceCommandExitCode": 0,
+    "syntaxChecks": [
+      "node --check scripts/skill-performance-probe.mjs",
+      "node --check scripts/prepare-tui-probe.mjs"
+    ],
+    "syntaxExitCodes": [
+      0,
+      0
+    ],
+    "tarballCommand": "pnpm check:tarball",
+    "tarballExitCode": 0,
+    "tarball": {
+      "check": "tarball",
+      "ok": true,
+      "name": "dsh-tui-skill-mcp-panel",
+      "version": "0.1.0-dev.0",
+      "fileCount": 92,
+      "bytes": 118179,
+      "sha256": "52b1d6a7d214dae99a2446748d65e155f982e13fb21b9ea6d67de1817eb03ad0",
+      "npmIntegrity": "sha512-hN/DeIbUBKDxSOoWoirYQqhpO3iI6VSyGES+Hl95tsu2/E9ZQjfu12+ED/tCEgYH1fOi6maR8PlbRyULoobRQA==",
+      "dryRunFileCount": 92,
+      "manifestId": "com.dsh-tui.skill-mcp-panel",
+      "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+      "diagnosticVersionSmoke": "plugin metadata from extracted package; Node actual; absent host/kernel unavailable",
+      "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+    },
+    "fullReleaseCheck": "not repeated: product src and check:release pipeline unchanged; prior source verification from m5-skill-status-filter.json applies; new targeted checks and final package check recorded separately",
+    "performanceCompletionCondition": "final run verifies matching query and list count in ANSI screen as well as committed scene frame"
+  },
+  "boundaries": {
+    "realUserConfigOrSkillsChanged": false,
+    "installedThirdPartyChanged": false,
+    "ownLinkedPluginBuildChanged": true,
+    "modelRequestsMade": false,
+    "newDependencies": false,
+    "tagCreated": false,
+    "published": false,
+    "AC14": "not closed: layout decision, remaining matrix and user acceptance pending",
+    "AC15": "not passed; KI-01..03 unchanged",
+    "performanceAcceptance": "local warm-OS-cache ext4 observation under targets; physical SSD/disk-cold and full user environment pending",
+    "fullUserAcceptance": "pending"
+  },
+  "next": {
+    "source": "docs/需求文档.md §14.1",
+    "item": "Wait for explicit layout choice, then implement design alignment or adopted requirement change and run affected regressions before full user acceptance"
+  }
+}
