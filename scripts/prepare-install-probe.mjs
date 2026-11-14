@@ -18,7 +18,7 @@ const cliRequire = createRequire(cli)
 const baseDir = dirname(cliRequire.resolve('@deepseek-ai/dsh-base/package.json'))
 const cordisDir = dirname(cliRequire.resolve('@deepseek-ai/cordis/package.json'))
 const host = JSON.parse(await readFile(join(hostDir, 'package.json'), 'utf8'))
-assert.equal(host.version, '0.19.0', 'observer is pinned to host 0.19.0 internals')
+assert.ok(['0.19.0', '0.20.0'].includes(host.version), 'observer internals reviewed only for hosts 0.19.0 and 0.20.0')
 // Keep the already-installed host and kernel read-only. Only the panel and its
 // package dependencies are installed by the real CLI into this temporary profile.
 await rm(join(profile, 'node_modules/dsh-tui-skill-mcp-panel'))

@@ -1,7 +1,8 @@
 /** Prepare an isolated real-DSH/TTY probe; never start it or touch normal prefs. */
 import { execFileSync } from 'node:child_process'
+import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
-import { chmod, mkdir, mkdtemp, realpath, symlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readFile, realpath, symlink, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -17,6 +18,13 @@ const hostDir = process.argv[2] === undefined
   ? dirname(require.resolve('@deepseek-harness-tui/dsh-tui/package.json'))
   : resolve(process.argv[2])
 const cli = await realpath(execFileSync('which', ['dsh'], { encoding: 'utf8' }).trim())
+const hostPackage = JSON.parse(await readFile(join(hostDir, 'package.json'), 'utf8'))
+assert.equal(hostPackage.name, '@deepseek-harness-tui/dsh-tui')
+assert.ok(['0.19.0', '0.20.0'].includes(hostPackage.version), 'review a new host before reusing this real-TUI fixture')
+const kernelPath = createRequire(cli).resolve('@deepseek-ai/dsh-app-boot/package.json')
+const kernelVersion = JSON.parse(await readFile(kernelPath, 'utf8')).version
+assert.ok(['0.2.2-rc.1', '0.2.2-rc.2'].includes(kernelVersion), 'review a new kernel before reusing this real-TUI fixture')
+assert.ok(hostPackage.version !== '0.19.0' || kernelVersion !== '0.2.2-rc.2', 'DSH rc.2 needs host 0.20.0; host 0.19.0 remains a separate rc.1 validation line')
 const root = await mkdtemp(join(tmpdir(), 'skill-mcp-real-tui-'))
 const profile = join(root, 'dsh', 'profiles', 'panel-verification')
 const project = join(root, 'project')
@@ -28,7 +36,7 @@ await symlink(hostDir, join(profile, 'node_modules', '@deepseek-harness-tui', 'd
 await symlink(repo, join(profile, 'node_modules', 'dsh-tui-skill-mcp-panel'))
 await writeFile(join(profile, 'package.json'), JSON.stringify({
   name: 'dsh-profile-panel-verification', private: true,
-  dependencies: { '@deepseek-harness-tui/dsh-tui': '0.19.0', 'dsh-tui-skill-mcp-panel': `link:${repo}` },
+  dependencies: { '@deepseek-harness-tui/dsh-tui': hostPackage.version, 'dsh-tui-skill-mcp-panel': `link:${repo}` },
   dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-harness-tui/dsh-tui', 'dsh-tui-skill-mcp-panel'] } },
 }, null, 2))
 const row = (id, disabled) => `- insert:\n    - id: ${id}\n      name: '@deepseek-ai/dsh-mcp-client'\n      disabled: ${disabled}\n      config:\n        serverName: ${id}\n        transport: stdio\n        command: ${JSON.stringify(process.execPath)}\n        args: [${JSON.stringify(join(repo, 'test', 'fixtures', 'mcp-stdio-server.mjs'))}]\n        env:\n          PANEL_TEST_TOKEN: !!js '"fixture-token-not-a-secret"'\n`
@@ -54,4 +62,4 @@ const variables = {
 const launcher = join(root, 'run.sh')
 await writeFile(launcher, `#!/bin/sh\nset -eu\nunset DSH_PROFILE DSH_PROFILE_DIR DSH_SESSION_ID DSH_BUNDLED_SKILL_DIR DSH_TUI_BACKEND_HANDOFF DSH_TUI_HOST_ENTRY_PATH\ncd ${quote(project)}\n${Object.entries(variables).map(([key, value]) => `export ${key}=${quote(value)}`).join('\n')}\nexec ${quote(process.execPath)} --import ${quote(join(root, 'test-home.mjs'))} ${quote(cli)} --profile panel-verification "$@"\n`)
 await chmod(launcher, 0o700)
-console.log(JSON.stringify({ root, launcher, profile, project, hostDir, mode: fullscreen ? 'fullscreen' : 'inline' }, null, 2))
+console.log(JSON.stringify({ root, launcher, profile, project, hostDir, hostVersion: hostPackage.version, kernelVersion, nodeVersion: process.versions.node, mode: fullscreen ? 'fullscreen' : 'inline' }, null, 2))

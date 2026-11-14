@@ -1,0 +1,612 @@
+{
+  "date": "2026-11-14",
+  "productSourceBase": "c09b301",
+  "productSourceChanged": false,
+  "decision": "User confirmed align development to host 0.20.0 / DSH rc.2, retain verified 0.19 compatibility",
+  "versions": {
+    "launcher": "0.20.0",
+    "profileHost": "0.20.0",
+    "kernel": "0.2.2-rc.2",
+    "webPanel": "2.3.7",
+    "node": "26.3.0",
+    "pnpm": "12.6.0"
+  },
+  "declaredSupport": {
+    "before": ">=0.19.0 <0.20.0",
+    "after": ">=0.19.0 <0.21.0",
+    "developmentHost": "0.20.0",
+    "oldPair": "host 0.19.0 / DSH 0.2.2-rc.1; historical full evidence in m5-layout-restoration.json",
+    "excludedCrossPair": {
+      "host": "0.19.0",
+      "kernel": "0.2.2-rc.2",
+      "refused": true,
+      "reason": "DSH rc.2 needs host 0.20.0; host 0.19.0 remains a separate rc.1 validation line"
+    }
+  },
+  "upstreamRelease": {
+    "url": "https://github.com/ccch1mneyyy/dsh-TUI/releases/tag/v0.20.0",
+    "readVia": "GitHub connector; official release notes",
+    "relatedChanges": [
+      "DSH rc.2 adaptation",
+      "inline resize/repaint and narrow terminal fixes"
+    ],
+    "notClaimed": "No upstream release note is treated as proof that KI-01/02/03 are resolved"
+  },
+  "fileComparisons": [
+    {
+      "file": "lib/types/scenes.d.ts",
+      "oldSha256": "3c7a7a353ac27ef36d1b1fe461a872a7b61e1e9e06c39be4b81f3d913d99db46",
+      "newSha256": "3c7a7a353ac27ef36d1b1fe461a872a7b61e1e9e06c39be4b81f3d913d99db46",
+      "equal": true
+    },
+    {
+      "file": "lib/types/jsx-runtime.js",
+      "oldSha256": "c8732be26f543860c4182c22d522ebc1e29e2fcf511ac8e11546d8922b5a5344",
+      "newSha256": "c8732be26f543860c4182c22d522ebc1e29e2fcf511ac8e11546d8922b5a5344",
+      "equal": true
+    },
+    {
+      "file": "lib/types/ui.d.ts",
+      "oldSha256": "8ea0e634fb32a077203e30f20965eae791395876fe9bae212986d536958f41e6",
+      "newSha256": "8ea0e634fb32a077203e30f20965eae791395876fe9bae212986d536958f41e6",
+      "equal": true
+    },
+    {
+      "file": "lib/types/dsh-adapter/scenes.js",
+      "oldSha256": "b0b80c266cc63ee19eda80459bacb364b6cd8d2b59c0b0ce9cadc4c3c01582a2",
+      "newSha256": "b0b80c266cc63ee19eda80459bacb364b6cd8d2b59c0b0ce9cadc4c3c01582a2",
+      "equal": true
+    },
+    {
+      "file": "lib/types/dsh-adapter/workspaces.js",
+      "oldSha256": "1bfc8db3c92b5840b4db8928dbd8d47a8086100036101ab436549d2e777bc8ec",
+      "newSha256": "1bfc8db3c92b5840b4db8928dbd8d47a8086100036101ab436549d2e777bc8ec",
+      "equal": true
+    },
+    {
+      "file": "lib/types/dsh-adapter/presets.js",
+      "oldSha256": "8190c32342f741d80429f1a26c174f6007d5f3eedba418d94f62092efcb08631",
+      "newSha256": "8190c32342f741d80429f1a26c174f6007d5f3eedba418d94f62092efcb08631",
+      "equal": true
+    },
+    {
+      "file": "lib/types/adapter/standard/index.js",
+      "oldSha256": "adec1f45549a250d67a252630d939c604302e5a8147a7e480392d91a1f095f39",
+      "newSha256": "adec1f45549a250d67a252630d939c604302e5a8147a7e480392d91a1f095f39",
+      "equal": true
+    },
+    {
+      "file": "tui-profile/registry/registry-0.15.json",
+      "oldSha256": "5c390eabce620c6700da27cd51676e9bd4571cf25a697654cb99dbf2f2b49ad2",
+      "newSha256": "5c390eabce620c6700da27cd51676e9bd4571cf25a697654cb99dbf2f2b49ad2",
+      "equal": true
+    }
+  ],
+  "admission": {
+    "pin": {
+      "hostPackage": "@deepseek-harness-tui/dsh-tui",
+      "hostVersion": "0.20.0",
+      "stdRepository": "https://github.com/T-Auto/dsh-std",
+      "stdRevision": "614dfa1ac168db79fcf4577cf0ebb34e2e3b944b",
+      "profileVersion": "tui-admission/0.15",
+      "hashes": {
+        "core": "d6b5ad3cb888abe6c04782e8715bcdfdbd623d89b532849776724f124f2fc45f",
+        "manifest": "1041a84e010c5b6924d9d921e82719a63a54ae2a697d041de24c5a32b2ae6dce",
+        "registry": "5c390eabce620c6700da27cd51676e9bd4571cf25a697654cb99dbf2f2b49ad2"
+      }
+    },
+    "oldPinVersionDriftRefused": true,
+    "candidateExampleNegotiation": {
+      "decision": "compatible"
+    },
+    "limitation": "example negotiation and source-linked boot did not enforce old compat range; neither proves complete compatibility"
+  },
+  "isolatedCandidate": {
+    "root": "/tmp/panel-host-020-audit-HZctN6",
+    "hostResolvedTo": "/home/wqwt/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui",
+    "developmentTypeFixtureAdjustment": "tsconfig paths only in the temporary copy point to existing @types/react; installed host lacks dev typings",
+    "initialCompileExit": 1,
+    "correctedCompileExit": 0,
+    "domainTests": 208,
+    "checks": [
+      {
+        "command": "node scripts/build.mjs",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-0.log",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "command": "node --test test/domain/*.test.js (all paths expanded)",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-1.log",
+        "logSha256": "a7f2efeb1fa23b53d29c46552ba59d7e3e13d3a20b9d0c4209305a2e94a7fa6e"
+      },
+      {
+        "command": "node scripts/ui-render-smoke.mjs",
+        "exit": 1,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-2.log",
+        "fixtureCorrection": {
+          "correctedExit": 0,
+          "reason": "copied ignored .dsh/.agents fixtures and initialized independent Git root",
+          "logSha256": "b86c1cbed08beadf54ce8a3301d128d33bc31a03f32993bb1d681941a7a5f86f"
+        },
+        "logSha256": "5422abf36e43685a7b7a43e491db40dd1f921a1cf31e239afa03224f899d6c75"
+      },
+      {
+        "command": "node scripts/ui-layout-smoke.mjs",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-3.log",
+        "logSha256": "65dc7c3df314613919fa2bf828ef0018fc962e1ea19c43db0957af2d65bd35ac"
+      },
+      {
+        "command": "node scripts/ui-mouse-smoke.mjs",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-4.log",
+        "logSha256": "61bbe7b99c3b6b06592be90d03c71d75b77d28ce4481ee2e9dabae66e9f39337"
+      },
+      {
+        "command": "node scripts/ui-interaction-smoke.mjs",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-5.log",
+        "logSha256": "2cf5f087ddab40f6430b648edb8ae8d16a311b88594d3606a67e807424a949c7"
+      },
+      {
+        "command": "node scripts/skill-filter-smoke.mjs 120",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-6.log",
+        "logSha256": "7f8cc7064a7d6d2d40067ee5f09b16604a800d7e1c995951134f26be2b23f6db"
+      },
+      {
+        "command": "node scripts/skill-filter-smoke.mjs 58",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-7.log",
+        "logSha256": "2b29c253e462fffab1eedc008beaabb52a762195a905a0cd1bb95600bf075c8d"
+      },
+      {
+        "command": "node scripts/skill-navigation-smoke.mjs",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-8.log",
+        "logSha256": "60277fa50ee6f8e39866fc811d331f62a717b13e074bee48938d3e004eb09679"
+      },
+      {
+        "command": "node scripts/mcp-smoke.mjs",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-9.log",
+        "logSha256": "112352202b5410c5d9ac9be3725fb65f4dad6841ec75fbbf491bad9c4c338635"
+      },
+      {
+        "command": "node scripts/mcp-crud-smoke.mjs 120",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-10.log",
+        "logSha256": "6296e1e7bd60ce4a45e736680ae24166228da6216355e7a601fa762d8ebec4e6"
+      },
+      {
+        "command": "node scripts/mcp-crud-smoke.mjs 58",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-11.log",
+        "logSha256": "36d339fee97957e2a0e0f3fd59aa5dfbbc61c0e485acd94b8813af95241993fc"
+      },
+      {
+        "command": "node scripts/mcp-groups-smoke.mjs 120",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-12.log",
+        "logSha256": "d1cb95629f831cd8445de66b59861258122a0c198ed57a9554c7272fede9582e"
+      },
+      {
+        "command": "node scripts/mcp-groups-smoke.mjs 58",
+        "exit": 0,
+        "log": "/tmp/panel-host-020-audit-HZctN6/compat-13.log",
+        "logSha256": "2b3bc838b673140c24fb7ffd47318e04b7cf2f34f7fdf62b45ba1f51a2e507a3"
+      }
+    ]
+  },
+  "legacyHeadless": {
+    "host": "/home/wqwt/code/dsh-tui-skill-mcp-panel/node_modules/.pnpm/@deepseek-harness-tui+dsh-tui@0.19.0_53f4613107e14e26c7a23ca286343e8c/node_modules/@deepseek-harness-tui/dsh-tui",
+    "results": [
+      {
+        "script": "ui-render-smoke.mjs",
+        "exit": 0
+      },
+      {
+        "script": "skill-navigation-smoke.mjs",
+        "exit": 0
+      }
+    ],
+    "scope": "render and navigation rerun; old full suite and rc.1 runtime evidence retained from prior phase, not rerun"
+  },
+  "repositoryCheck": {
+    "command": "pnpm check:release",
+    "exit": 0,
+    "tests": 215,
+    "failed": 0,
+    "layoutAssertions": 793,
+    "layoutSizes": 13,
+    "mouseAssertions": 239,
+    "mouseSizes": 5,
+    "navigationAssertions": 107,
+    "statusFilterAssertions": 52,
+    "successLines": [
+      "render-smoke OK: wide=6001 chars, narrow=2111 chars",
+      "ui-layout-smoke OK: 793 viewport/interaction assertions across 13 sizes",
+      "ui-mouse-smoke OK: 239 assertions across 5 sizes (SGR click/release + wheel)",
+      "ui-interaction-smoke OK: toggle / delete+undo / add / groups / stale conflict+refresh / multi-runtime / exact backup",
+      "skill-filter-smoke OK (120 cols): 26 assertions; status/search/scope/group, visible-only writes, invalid and empty safety",
+      "skill-filter-smoke OK (58 cols): 26 assertions; status/search/scope/group, visible-only writes, invalid and empty safety",
+      "skill-navigation-smoke OK: 107 assertions across 64/90/110 columns; tree/chip/pointer/resize, exact groups, visible-only writes",
+      "mcp-smoke OK: layers / mask / !!js / toggle both baselines / HMR / conflicts / mandatory backups / home read-only",
+      "mcp-crud-smoke OK (120 cols): stdio+HTTP forms / masked refs / unknown fields / reload / delete+undo / cold recovery / existing-row boundary / migration confirm+cancel",
+      "mcp-crud-smoke OK (58 cols): stdio+HTTP forms / masked refs / unknown fields / reload / delete+undo / cold recovery / existing-row boundary / migration confirm+cancel",
+      "mcp-groups-smoke OK (120 cols): membership / search+filters / groups CRUD / profile isolation / stale conflict / cold reload / rename+delete+undo / no YAML or shared-schema metadata writes",
+      "mcp-groups-smoke OK (58 cols): membership / search+filters / groups CRUD / profile isolation / stale conflict / cold reload / rename+delete+undo / no YAML or shared-schema metadata writes"
+    ],
+    "logSha256": "d748105aa1c2a40a35274faea5eb9e34973e632635fdecbb88e5aed7daf124bd",
+    "limits": "final package scripts/README were finalized during the long UI checks; final artifact checked separately; src and UI check code unchanged"
+  },
+  "finalTarball": {
+    "check": "tarball",
+    "ok": true,
+    "name": "dsh-tui-skill-mcp-panel",
+    "version": "0.1.0-dev.0",
+    "fileCount": 92,
+    "bytes": 120037,
+    "sha256": "6ec5f00e6f1b1bb01e22c041fe443a1134f9904a140256f7661e7e75c4671dae",
+    "npmIntegrity": "sha512-Btu+yE5yqwUGTX0YWg5NeeFSHxF6bmBAFmfdtP/t2xsRcqBeGO/214fECbYynJ6Pb2dBRMlBnm23r7jrIxR3rw==",
+    "dryRunFileCount": 92,
+    "manifestId": "com.dsh-tui.skill-mcp-panel",
+    "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+    "diagnosticVersionSmoke": "plugin metadata from extracted package; Node actual; absent host/kernel unavailable",
+    "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+  },
+  "realCli": {
+    "candidate": {
+      "root": "/tmp/skill-mcp-real-tui-wI9wrK",
+      "launcher": "/tmp/skill-mcp-real-tui-wI9wrK/run.sh",
+      "profile": "/tmp/skill-mcp-real-tui-wI9wrK/dsh/profiles/panel-verification",
+      "project": "/tmp/skill-mcp-real-tui-wI9wrK/project",
+      "hostDir": "/home/wqwt/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui",
+      "mode": "fullscreen",
+      "alpha": "/tmp/skill-mcp-real-tui-wI9wrK/project/.dsh/skills/layout-alpha.md",
+      "beta": "/tmp/skill-mcp-real-tui-wI9wrK/project/.dsh/skills/layout-beta.md.disabled",
+      "twin": "/tmp/skill-mcp-real-tui-wI9wrK/dsh/skills/layout-alpha.md",
+      "groupPath": "/tmp/skill-mcp-real-tui-wI9wrK/dsh/skills/.system/skill-viewer/groups.json",
+      "configPath": "/tmp/skill-mcp-real-tui-wI9wrK/panel/config.json"
+    },
+    "final": {
+      "versions": {
+        "plugin": {
+          "value": "0.1.0-dev.0",
+          "source": "/tmp/panel-host-020-audit-HZctN6/package.json"
+        },
+        "host": {
+          "value": "0.20.0",
+          "source": "tuiPluginHost.hostDescriptor().hostVersion"
+        },
+        "kernel": {
+          "value": "0.2.2-rc.2",
+          "source": "/home/wqwt/.local/node/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app-boot/package.json"
+        },
+        "node": {
+          "value": "26.3.0",
+          "source": "process.versions.node"
+        }
+      },
+      "sceneError": null,
+      "mcp": [
+        {
+          "serverName": "mcp-expr",
+          "enabled": false,
+          "targetable": false,
+          "layer": "profile"
+        },
+        {
+          "serverName": "mcp-home",
+          "enabled": false,
+          "targetable": false,
+          "layer": "home"
+        },
+        {
+          "serverName": "mcp-probe",
+          "enabled": false,
+          "targetable": true,
+          "layer": "profile"
+        }
+      ]
+    },
+    "sceneSizesObserved": [
+      "76x22 dual",
+      "110x28 tree",
+      "58x22 single and detail/back"
+    ],
+    "skillToggle": "workspace alpha disabled, global same-name fallback, then restored",
+    "mcpToggle": "initially disabled -> active / 已生效 -> disposed / 已生效; warm start only",
+    "baselineDataHashes": {
+      "checked": 8,
+      "matches": 7,
+      "changed": [
+        "/tmp/skill-mcp-real-tui-wI9wrK/dsh/profiles/panel-verification/cordis.patch.yml"
+      ],
+      "before": {
+        "/tmp/skill-mcp-real-tui-wI9wrK/panel/config.json": "f20f39f6946dad08d752a95c881595b58dacdca3aef4fec3a763b18dac634a04",
+        "/tmp/skill-mcp-real-tui-wI9wrK/dsh/cordis.patch.yml": "82791d2e115d7ee99d8125acf8dd5fd5d7d068a67c6eedb30f2810de358827fa",
+        "/tmp/skill-mcp-real-tui-wI9wrK/dsh/skills/layout-alpha.md": "f78998a24be6e0914d3ee2292e7a10f15b80667f6ad14b546918aad913222d7e",
+        "/tmp/skill-mcp-real-tui-wI9wrK/dsh/profiles/panel-verification/cordis.patch.yml": "ca342237f483c4d651a4ab9692db8b0880d8b0ddcc197d32a651cb38ffc25cc9",
+        "/tmp/skill-mcp-real-tui-wI9wrK/dsh/skills/.system/skill-viewer/groups.json": "46d66f0a110de5e83c58f1de4b6c08f4bb1989baf0d7cd5d76f23d0237d9734c",
+        "/tmp/skill-mcp-real-tui-wI9wrK/project/.dsh/skills/layout-beta.md.disabled": "66048091bce561beca80006f948dab8e481fa63207d8f43c6da25b65867d2365",
+        "/tmp/skill-mcp-real-tui-wI9wrK/project/.dsh/skills/layout-alpha.md": "f78998a24be6e0914d3ee2292e7a10f15b80667f6ad14b546918aad913222d7e",
+        "/tmp/skill-mcp-real-tui-wI9wrK/project/.dsh/skills/probe-skill/SKILL.md": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+      },
+      "after": {
+        "/tmp/skill-mcp-real-tui-wI9wrK/panel/config.json": "f20f39f6946dad08d752a95c881595b58dacdca3aef4fec3a763b18dac634a04",
+        "/tmp/skill-mcp-real-tui-wI9wrK/dsh/cordis.patch.yml": "82791d2e115d7ee99d8125acf8dd5fd5d7d068a67c6eedb30f2810de358827fa",
+        "/tmp/skill-mcp-real-tui-wI9wrK/dsh/skills/layout-alpha.md": "f78998a24be6e0914d3ee2292e7a10f15b80667f6ad14b546918aad913222d7e",
+        "/tmp/skill-mcp-real-tui-wI9wrK/dsh/profiles/panel-verification/cordis.patch.yml": "9b74d5294cfe28b993533ab589465ad8e047a2a3e1f4d6efd0920ee71b24f2fa",
+        "/tmp/skill-mcp-real-tui-wI9wrK/dsh/skills/.system/skill-viewer/groups.json": "46d66f0a110de5e83c58f1de4b6c08f4bb1989baf0d7cd5d76f23d0237d9734c",
+        "/tmp/skill-mcp-real-tui-wI9wrK/project/.dsh/skills/layout-beta.md.disabled": "66048091bce561beca80006f948dab8e481fa63207d8f43c6da25b65867d2365",
+        "/tmp/skill-mcp-real-tui-wI9wrK/project/.dsh/skills/layout-alpha.md": "f78998a24be6e0914d3ee2292e7a10f15b80667f6ad14b546918aad913222d7e",
+        "/tmp/skill-mcp-real-tui-wI9wrK/project/.dsh/skills/probe-skill/SKILL.md": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+      }
+    },
+    "targetPatchDifference": "only mcp-probe disabled:true line moved before name after removing/reinserting; other bytes unchanged",
+    "normalRawAfterWarmToggle": {
+      "canonical": false,
+      "echo": false
+    },
+    "exit": 0
+  },
+  "updatedAgentSync": {
+    "probe": {
+      "root": "/tmp/skill-mcp-real-tui-E3VsCP",
+      "launcher": "/tmp/skill-mcp-real-tui-E3VsCP/run.sh",
+      "profile": "/tmp/skill-mcp-real-tui-E3VsCP/dsh/profiles/panel-verification",
+      "project": "/tmp/skill-mcp-real-tui-E3VsCP/project",
+      "hostDir": "/home/wqwt/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui",
+      "hostVersion": "0.20.0",
+      "kernelVersion": "0.2.2-rc.2",
+      "nodeVersion": "26.3.0",
+      "mode": "fullscreen",
+      "bundled": "/tmp/skill-mcp-real-tui-E3VsCP/bundled-skills"
+    },
+    "observations": {
+      "before": {
+        "agents": [
+          {
+            "id": "f86af77c-6866-4beb-9cac-80a95c250e24",
+            "skillNames": [
+              "sync-bundled",
+              "sync-flat",
+              "sync-global",
+              "sync-human-only",
+              "sync-local",
+              "sync-model-only",
+              "sync-shared"
+            ],
+            "modelEligible": [
+              "sync-bundled",
+              "sync-flat",
+              "sync-global",
+              "sync-local",
+              "sync-model-only",
+              "sync-shared"
+            ],
+            "registeredCommands": [
+              "sync-bundled",
+              "sync-flat",
+              "sync-global",
+              "sync-human-only",
+              "sync-local",
+              "sync-shared"
+            ]
+          }
+        ]
+      },
+      "disabled": {
+        "agents": [
+          {
+            "id": "f86af77c-6866-4beb-9cac-80a95c250e24",
+            "skillNames": [
+              "sync-bundled",
+              "sync-flat",
+              "sync-global",
+              "sync-human-only",
+              "sync-model-only",
+              "sync-shared"
+            ],
+            "modelEligible": [
+              "sync-bundled",
+              "sync-flat",
+              "sync-global",
+              "sync-model-only",
+              "sync-shared"
+            ],
+            "registeredCommands": [
+              "sync-bundled",
+              "sync-flat",
+              "sync-global",
+              "sync-human-only",
+              "sync-shared"
+            ]
+          }
+        ]
+      },
+      "restored": {
+        "agents": [
+          {
+            "id": "f86af77c-6866-4beb-9cac-80a95c250e24",
+            "skillNames": [
+              "sync-bundled",
+              "sync-flat",
+              "sync-global",
+              "sync-human-only",
+              "sync-local",
+              "sync-model-only",
+              "sync-shared"
+            ],
+            "modelEligible": [
+              "sync-bundled",
+              "sync-flat",
+              "sync-global",
+              "sync-local",
+              "sync-model-only",
+              "sync-shared"
+            ],
+            "registeredCommands": [
+              "sync-bundled",
+              "sync-flat",
+              "sync-global",
+              "sync-human-only",
+              "sync-local",
+              "sync-shared"
+            ]
+          }
+        ]
+      }
+    },
+    "sceneError": null,
+    "observerError": false,
+    "exit": 0,
+    "limits": "catalog/command source only, no model turn"
+  },
+  "inlineRuntime": {
+    "root": "/tmp/skill-mcp-real-tui-KsTRbR",
+    "versions": {
+      "plugin": {
+        "value": "0.1.0-dev.0",
+        "source": "/home/wqwt/code/dsh-tui-skill-mcp-panel/package.json"
+      },
+      "host": {
+        "value": "0.20.0",
+        "source": "tuiPluginHost.hostDescriptor().hostVersion"
+      },
+      "kernel": {
+        "value": "0.2.2-rc.2",
+        "source": "/home/wqwt/.local/node/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app-boot/package.json"
+      },
+      "node": {
+        "value": "26.3.0",
+        "source": "process.versions.node"
+      }
+    },
+    "sceneError": null,
+    "activeTab": "skills",
+    "modeConfirmedFalse": true
+  },
+  "actualPackedRuntime": {
+    "root": "/tmp/skill-mcp-real-tui-GM8gRD",
+    "versions": {
+      "plugin": {
+        "value": "0.1.0-dev.0",
+        "source": "/tmp/skill-mcp-real-tui-GM8gRD/dsh/profiles/panel-verification/node_modules/.pnpm/dsh-tui-skill-mcp-panel@file+..+..+..+dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz_@deepseek_d8d25ef66f8ecef0734fcf0a7e4914f8/node_modules/dsh-tui-skill-mcp-panel/package.json"
+      },
+      "host": {
+        "value": "0.20.0",
+        "source": "tuiPluginHost.hostDescriptor().hostVersion"
+      },
+      "kernel": {
+        "value": "0.2.2-rc.2",
+        "source": "/home/wqwt/.local/node/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-app-boot/package.json"
+      },
+      "node": {
+        "value": "26.3.0",
+        "source": "process.versions.node"
+      }
+    },
+    "sceneError": null,
+    "activeTab": "skills",
+    "lifecycle": {
+      "at": "2026-11-14T09:46:35.609Z",
+      "pid": 654850,
+      "servicesReady": true,
+      "command": true,
+      "scenes": [
+        "skill-mcp-panel"
+      ],
+      "rows": [
+        {
+          "id": "skill-mcp-panel",
+          "disabled": false,
+          "state": 2
+        }
+      ]
+    },
+    "installedPluginPath": "/tmp/skill-mcp-real-tui-GM8gRD/dsh/profiles/panel-verification/node_modules/.pnpm/dsh-tui-skill-mcp-panel@file+..+..+..+dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz_@deepseek_d8d25ef66f8ecef0734fcf0a7e4914f8/node_modules/dsh-tui-skill-mcp-panel"
+  },
+  "runtimeExitCodes": {
+    "inline": 0,
+    "packed": 0
+  },
+  "acceptancePreparation": {
+    "command": "pnpm prepare:acceptance <installed host>",
+    "exit": 0,
+    "packet": {
+      "root": "/tmp/skill-mcp-acceptance-KZjKXh",
+      "instructions": "/tmp/skill-mcp-acceptance-KZjKXh/START.txt",
+      "results": "/tmp/skill-mcp-acceptance-KZjKXh/results.json",
+      "host": "0.20.0",
+      "kernel": "0.2.2-rc.2",
+      "dirty": true,
+      "archive": "/tmp/skill-mcp-real-tui-GM8gRD/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz"
+    },
+    "pendingCases": 11,
+    "allPending": true,
+    "fixturesOutsideRealHome": true,
+    "shellSyntaxChecked": true,
+    "resultsMode": "0600",
+    "note": "this agent-tested temporary packet contains exercised fixtures; regenerate after commit for the user; generated results honestly record dirty tree"
+  },
+  "webPreparation": {
+    "root": "/tmp/skill-mcp-real-tui-saeMVy",
+    "exit": 0,
+    "started": false,
+    "fullWebUiVerified": false
+  },
+  "knownIssues": {
+    "KI-01": "open; installed web still 2.3.7; full UI not rerun",
+    "KI-02": "open; existing flow-editor evidence retained, no installed web changes",
+    "KI-03": {
+      "status": "open",
+      "script": "node scripts/mcp-stdio-tty-probe.mjs",
+      "exit": 0,
+      "scope": "current CLI MCP SDK and three owned PTYs, not full-host cold-start reproduction",
+      "results": {
+        "cold-inherit": {
+          "beforeClose": {
+            "canonical": false,
+            "echo": false
+          },
+          "afterClose": {
+            "canonical": true,
+            "echo": true,
+            "cachedRaw": true
+          }
+        },
+        "warm-inherit": {
+          "afterClose": {
+            "canonical": false,
+            "echo": false,
+            "cachedRaw": true
+          }
+        },
+        "cold-pipe": {
+          "afterClose": {
+            "canonical": false,
+            "echo": false,
+            "cachedRaw": true
+          }
+        }
+      },
+      "currentKernelStdioSource": "dsh-mcp-client/lib/index.js createTransport still omits stderr option"
+    },
+    "AC-15": "not passed"
+  },
+  "notVerified": [
+    "complete user acceptance",
+    "model request-level synchronization",
+    "HTTP controlled endpoint",
+    "new full web/TUI UI co-existence",
+    "fresh old rc.1 whole runtime suite",
+    "new full install-disable-enable-uninstall trust/lifecycle walkthrough",
+    "physical terminal matrix and storage cold cache"
+  ],
+  "unresolvedP0": "See docs/需求文档.md §14.1 including FR-17 MCP force overwrite, metadata retention and shared group concurrency",
+  "sideEffects": "Repository dependencies and our linked compiled plugin updated; all probes under /tmp, no real user configuration writes or third-party installation patches; no model turns, tag or publication"
+}

@@ -42,7 +42,8 @@
     "test:ui:mouse": "pnpm build && node scripts/ui-mouse-smoke.mjs",
     "test:skills:filters": "pnpm build && node scripts/skill-filter-smoke.mjs 120 && node scripts/skill-filter-smoke.mjs 58",
     "audit:performance": "pnpm build && node scripts/skill-performance-probe.mjs",
-    "test:skills:navigation": "pnpm build && node scripts/skill-navigation-smoke.mjs"
+    "test:skills:navigation": "pnpm build && node scripts/skill-navigation-smoke.mjs",
+    "prepare:acceptance": "node scripts/prepare-acceptance.mjs"
   },
   "license": "MIT",
   "dsh": {
@@ -57,11 +58,11 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1 || 4.0.5-alpha.2",
-    "@deepseek-harness-tui/dsh-tui": ">=0.19.0 <0.20.0"
+    "@deepseek-harness-tui/dsh-tui": ">=0.19.0 <0.21.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-harness-tui/dsh-tui": "0.19.0",
+    "@deepseek-harness-tui/dsh-tui": "0.20.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@xterm/addon-unicode11": "0.9.0",

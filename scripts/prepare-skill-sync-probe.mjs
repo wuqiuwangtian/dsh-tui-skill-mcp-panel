@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const hostDir = resolve(process.argv[2] ?? '')
 assert.ok(process.argv[2], 'usage: node scripts/prepare-skill-sync-probe.mjs <CLI-installed host directory>')
-assert.equal(JSON.parse(await readFile(join(hostDir, 'package.json'), 'utf8')).version, '0.19.0')
+assert.ok(['0.19.0', '0.20.0'].includes(JSON.parse(await readFile(join(hostDir, 'package.json'), 'utf8')).version), 'catalog observer reviewed only for hosts 0.19.0 and 0.20.0')
 const cli = await realpath(execFileSync('which', ['dsh'], { encoding: 'utf8' }).trim())
 const req = createRequire(cli)
 const skillModule = req.resolve('@deepseek-ai/dsh-skill')

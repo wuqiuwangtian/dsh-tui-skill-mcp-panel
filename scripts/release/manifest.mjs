@@ -62,7 +62,7 @@ export async function validateManifestDocument(raw, pkg) {
   same(pkg.types, 'lib/types/index.d.ts', 'compiled type entry')
   same(pkg.exports?.['.'], { types: `./${pkg.types}`, import: `./${pkg.main}` }, 'package exports')
   same(parsed.compat?.hosts, [`${pin.hostPackage} ${pkg.peerDependencies?.[pin.hostPackage]}`], 'manifest/peer host range')
-  same(pkg.peerDependencies?.[pin.hostPackage], '>=0.19.0 <0.20.0', 'tested host compatibility range')
+  same(pkg.peerDependencies?.[pin.hostPackage], '>=0.19.0 <0.21.0', 'tested host compatibility range')
   same(parsed.permissions, [], 'D-8: no permission grants')
   same(parsed.subscriptions, [], 'no message/event subscriptions')
   same(parsed.requires, { contracts: [{ apiVersion: 'commands.dsh/v1alpha1', kind: 'Command' }] }, 'runtime command registration dependency')

@@ -76,8 +76,8 @@ MCP 分组存本插件的 `config.json`，按当前 profile patch 的绝对路�
 
 ## 兼容性
 
-- 目标宿主：`@deepseek-harness-tui/dsh-tui` `>=0.19.0 <0.20.0`
-- DSH 内核：`0.2.2-rc.1` 线；Node `>=24.9`
+- 目标宿主：`@deepseek-harness-tui/dsh-tui` `>=0.19.0 <0.21.0`；开发基线为 `0.20.0`
+- DSH 内核：当前验证线 `0.2.2-rc.2`，保留宿主 `0.19.0` / 内核 `0.2.2-rc.1` 的既有兼容线；Node `>=24.9`。不把宿主 `0.19.0` 与新版内核混合作为已验证组合。
 - 与 web 版 [`dsh-skill-mcp-panel`](https://github.com/Fishquito7/dsh-skill-mcp-panel) 共享磁盘约定（`*.disabled`、`groups.json`、补丁锁 `<patch>.panel.lock`，但受管块标记不同名）；技能分组已有 TUI 锁与快照冲突保护；web 2.3.7 未使用该分组锁，避免两端同时改同一分组文件。
 
 ## 权限与信任
