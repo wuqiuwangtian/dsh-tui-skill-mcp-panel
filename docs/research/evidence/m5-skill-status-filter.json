@@ -1,0 +1,272 @@
+{
+  "date": "2026-11-14",
+  "baseline": "7596b86",
+  "version": "0.1.0-dev.0",
+  "requirement": {
+    "id": "FR-2",
+    "scope": "Original P0 under D-13; P1 remains deferred",
+    "authority": "docs/需求文档.md §14.1"
+  },
+  "problem": {
+    "symptom": "Skills show state glyphs/counts but cannot filter enabled/disabled/invalid",
+    "rootCause": "ManagerScene.filterInstances only handles scope/query; groups applied separately; SKILL_ACTIONS has no status action",
+    "notClaimed": "No pre-existing accidental-delete incident is asserted; hidden-mark handling is a boundary for the new filter"
+  },
+  "changes": {
+    "filesAdded": [
+      "scripts/prepare-skill-filter-probe.mjs",
+      "scripts/skill-filter-smoke.mjs",
+      "src/domain/skills/filter.ts",
+      "test/domain/skill-filter.test.js",
+      "docs/research/evidence/m5-skill-status-filter.json"
+    ],
+    "filesModified": [
+      "AGENT.md",
+      "README.md",
+      "docs/release-readiness.md",
+      "docs/research/README.md",
+      "docs/research/evidence/m5-p0-scope-audit.json",
+      "docs/需求文档.md",
+      "package.json",
+      "scripts/ui-layout-smoke.mjs",
+      "scripts/ui-mouse-smoke.mjs",
+      "src/ui/ManagerScene.tsx"
+    ],
+    "filesDeleted": [],
+    "featuresAdded": [
+      "f and pointer state picker with counts within current scope/query/group",
+      "display-only selector combines status/scope/query/group without changing discovery decisions",
+      "selected status in list/button/empty result; enabled includes shadowed instances"
+    ],
+    "featuresModified": [
+      "different status clears marks/selection/detail offset; same status or cancel keeps marks",
+      "skills x clears search/status/group/marks and keeps scope",
+      "existing visible-only target intersection covered by real-runtime writes after refresh"
+    ],
+    "featuresDeleted": [],
+    "privateHelpersMoved": [
+      "ManagerScene.sortInstances and filterInstances -> domain/skills/filter.ts"
+    ],
+    "schemasDependenciesVersionChanged": false
+  },
+  "semantics": {
+    "enabled": "file scan status enabled, including shadowed; not the same as effective",
+    "invalid": "remains visible and inspectable; existing toggle validation still refuses",
+    "statusPersistence": "scene state only, kept across tabs, default all on fresh scene; no new config key",
+    "combination": "intersection of scope, case-insensitive trimmed name/description query, exact group membership keyed by actual projectRoot or global, and status",
+    "batch": "only marked instances in current filtered list; hidden old marks never become implicit current-row writes",
+    "scopeReset": "x preserves scope",
+    "sort": "name, effective descending, rank, providerOrder; input unchanged"
+  },
+  "unit": {
+    "file": "test/domain/skill-filter.test.js",
+    "tests": 5,
+    "coverage": [
+      "all status partitions and shadowed enabled",
+      "scope/name/description/status intersection",
+      "project/global group identity",
+      "ordering and input immutability",
+      "missing scan and unsupported status fail closed"
+    ]
+  },
+  "focusedRuntime": {
+    "command": "pnpm test:skills:filters",
+    "columns": [
+      120,
+      58
+    ],
+    "assertionsPerSize": 26,
+    "totalAssertions": 52,
+    "runtime": "actual ManagerRuntime and host UI kit on temporary files",
+    "coverage": [
+      "cancel keeps marked target",
+      "different status clears marks",
+      "query/status empty and empty delete/toggle no write",
+      "x clears filters but keeps scope",
+      "same-name global excluded from project group",
+      "combined scope/query/status/group",
+      "delete only newly visible disabled target then undo",
+      "external status rename hides old marked target; toggle acts only on remaining visible marked target",
+      "invalid refuses toggle",
+      "MCP state independent and tab return keeps skill state",
+      "unknown config retained; no skillStatus persisted"
+    ]
+  },
+  "realTui": {
+    "method": "Actual installed DSH CLI in owned PTY, real stdin and SGR pointer input; sequential ANSI replay using @xterm/headless + Unicode11; render frames and filesystem SHA256 checks",
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "node": "26.3.0",
+    "terminalSizes": [
+      "58x24",
+      "44x18"
+    ],
+    "sceneSizes": [
+      "54x22",
+      "40x16"
+    ],
+    "exitCode": 0,
+    "exitedBeforeFinalBuild": true,
+    "cases": [
+      "all5/enabled3/disabled1/invalid1",
+      "enabled keeps same-name shadowed global",
+      "group excludes global twin; search filter- intersects",
+      "mark then real mouse disabled selection clears old mark",
+      "toggle disabled fixture on -> list empty; toggle back restores filename and bytes",
+      "invalid toggle reports 0/1 and refuses rename",
+      "minimum picker/cancel/clear then restore size"
+    ],
+    "filterOnlyHashCheck": {
+      "files": 8,
+      "allPreserved": true,
+      "phase": "after status/group/query/mark transitions, before explicit toggle"
+    },
+    "afterExplicitToggle": {
+      "renamedOnly": "<fixture>/project/.dsh/skills/filter-disabled.md.disabled -> filter-disabled.md",
+      "otherFileHashesPreserved": 7,
+      "reverseToggleRestoredBaseline": true
+    },
+    "finalHashes": [
+      {
+        "path": "<fixture>/project/.dsh/skills/filter-enabled.md",
+        "sha256": "00acb896c2920845bf10bc0f1a6cb0726a02878a2cc0c49c2f3bea9e24690f72",
+        "preserved": true
+      },
+      {
+        "path": "<fixture>/project/.dsh/skills/filter-disabled.md.disabled",
+        "sha256": "ebde603bf71fcd071455361b8ee0fce76f7a0427517e8b8b525d94ce02ea44c4",
+        "preserved": true
+      },
+      {
+        "path": "<fixture>/project/.dsh/skills/filter-invalid.md",
+        "sha256": "9fcc128f09772373eee8a7ef003a7e8f6849401ec8ab89abf47231b837b9255e",
+        "preserved": true
+      },
+      {
+        "path": "<fixture>/dsh/skills/filter-enabled.md",
+        "sha256": "00acb896c2920845bf10bc0f1a6cb0726a02878a2cc0c49c2f3bea9e24690f72",
+        "preserved": true
+      },
+      {
+        "path": "<fixture>/dsh/skills/.system/skill-viewer/groups.json",
+        "sha256": "19437c6ea43f8477d52ec4560156f98b2f5a182a53ae58c29ceb94acd7171bb0",
+        "preserved": true
+      },
+      {
+        "path": "<fixture>/panel/config.json",
+        "sha256": "f20f39f6946dad08d752a95c881595b58dacdca3aef4fec3a763b18dac634a04",
+        "preserved": true
+      },
+      {
+        "path": "<fixture>/dsh/profiles/panel-verification/cordis.patch.yml",
+        "sha256": "1006a4777397699fd0f456d79999dd9d1b2e90b6df663fa4225dae51b4c9109d",
+        "preserved": true
+      },
+      {
+        "path": "<fixture>/dsh/cordis.patch.yml",
+        "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90",
+        "preserved": true
+      }
+    ],
+    "finalSkillTrashBatches": 0,
+    "replayAssertions": 12,
+    "screens": {
+      "filter-all": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能状态筛选                                     │\n   │ ❯ 全部 (5) ✓  保留搜索、作用域和分组             │\n   │   启用 (3)  含已启用但被遮蔽的实例               │\n   │   停用 (1)                                       │\n   │   无效 (1)                                       │\n   │ ↑↓ ↵确认 · 1/4 [Esc 取消]                        │\n   ╰──────────────────────────────────────────────────╯\n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                   \n                                                       \n                                                        \n                                                        \n                                                        \n",
+      "enabled-apply": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 3 项\n   目标（当前工作区） <fixture>/p…\n    作用域  全部(5)  工作区(4)  全局(1)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表 · 启用  全部 · 3项                      │\n   │ ❯ filter-enabled            project/.dsh  生效 … │\n   │   filter-enabled            user/~/.dsh  被遮蔽  │\n   │   probe-skill               project/.dsh  生效   │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] \n   [/搜索] [x清除] [r刷新] [?] [o工作区] [f启用]       \n   [i全文] [p路径]                                      \n   状态筛选：启用；已清除批量标记                       \n                                                        \n",
+      "apply-group": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能 MCP  分组 诊断全部 · 1 项 · 分组:Filter fix… \n   目标（当前工作区） <fixture>/p…\n    作用域  全部(5)  工作区(4)  全局(1)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表 · 启用  全部 · 1项                      │\n   │ ❯ filter-enabled            project/.dsh  生效 … │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区] [f启用]       \n   [i全文] [p路径]                                      \n   按分组过滤：Filter fixture（x 清除）                 \n                                                        \n",
+      "mark-enabled": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能 MCP  分组 诊断全部 · 1 项 · 分组:Filter fix… \n   目标（当前工作区） <fixture>/p…\n    作用域  全部(5)  工作区(4)  全局(1)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表 · 启   全部 · 1项 · \"filter-\" · 已标记… │\n   │ ❯ ✓ filter-enabled            project/.dsh  生…  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区] [f启用]       \n   [i全文] [p路径]                                      \n   按分组过滤：Filter fixture（x 清除）                 \n                                                        \n",
+      "mouse-filter-open": "\n   Skill / MCP manager                  skill-mcp-panel\n                                                       \n   ╭──────────────────────────────────────────────────╮\n   │ 技能状态筛选                                     │\n   │   全部 (3)  保留搜索、作用域和分组               │\n   │ ❯ 启用 (1) ✓  含已启用但被遮蔽的实例             │\n   │   停用 (1)                                       │\n   │   无效 (1)                                       │\n   │ ↑↓ ↵确认 · 2/4 [Esc 取消]                        │\n   ╰──────────────────────────────────────────────────╯\n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                       \n                                                        \n   按分组过滤：Filter fixture（x 清除）                 \n                                                        \n",
+      "mouse-disabled": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能 MCP  分组 诊断全部 · 1 项 · 分组:Filter fix… \n   目标（当前工作区） <fixture>/p…\n    作用域  全部(5)  工作区(4)  全局(1)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表 · 停用  全部 · 1项 · \"filter-\"          │\n   │ ❯ filter-disabled           project/.dsh  停用 … │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区] [f停用]       \n   [i全文] [p路径]                                      \n   状态筛选：停用；已清除批量标记                       \n                                                        \n",
+      "toggle-leaves-filter": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能 MCP  分组 诊断全部 · 0 项 · 分组:Filter fix… \n   目标（当前工作区） <fixture>/p…\n    作用域  全部(5)  工作区(4)  全局(1)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表 · 停用  全部 · 0项 · \"filter-\"          │\n   │ 没有匹配的技能（状态：停用；f 更改状态，x        │\n   │ 清除筛选）。                                     │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区] [f停用]       \n   [i全文] [p路径]                                      \n   已切换 1 个技能（热加载中）                          \n                                                        \n",
+      "invalid-apply": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 1 项\n   目标（当前工作区） <fixture>/p…\n    作用域  全部(5)  工作区(4)  全局(1)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表 · 无效  全部 · 1项                      │\n   │ ❯ filter-invalid            project/.dsh  无效 … │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区] [f无效]       \n   [i全文] [p路径]                                      \n   状态筛选：无效；已清除批量标记                       \n                                                        \n",
+      "invalid-refused": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 1 项\n   目标（当前工作区） <fixture>/p…\n    作用域  全部(5)  工作区(4)  全局(1)                \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表 · 无效  全部 · 1项                      │\n   │ ❯ filter-invalid            project/.dsh  无效 … │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组]     \n   [/搜索] [x清除] [r刷新] [?] [o工作区] [f无效]       \n   [i全文] [p路径]                                      \n   已切换 0/1；失败：filter-invalid：技能文件无效，无…  \n                                                        \n",
+      "minimum-44x18-picker": "\n   Skill / MCP manager    skill-mcp-panel\n                                         \n   ╭────────────────────────────────────╮\n   │ 技能状态筛选                       │\n   │   全部 (5)  保留搜索、作用域和分组 │\n   │   启用 (3)  含已启用但被遮蔽的实例 │\n   │   停用 (1)                         │\n   │ ❯ 无效 (1) ✓                       │\n   │ ↑↓ ↵确认 · 4/4 [Esc 取消]          │\n   ╰────────────────────────────────────╯\n                                   \n                                   \n                                         \n           \n   已切换 0/1；失败：filter-invalid：技…\n\n",
+      "minimum-cancel": "\n   Skill / MCP manager skill-mcp-panel ·…\n     技能  MCP  分组  诊断    全部 · 1 项\n   目标（当前工作区） <fixture>…\n    作用域  全部  工作区  全局           \n   ╭────────────────────────────────────╮\n   │ 技能列表 · 无效  全部 · 1项        │\n   │ ❯ filter-inv  project/.dsh  无效 … │\n   │                                    │\n   │                                    │\n   ╰────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] \n   [a添加] [g分组] [/搜索] [x清除] \n   [r刷新] [?] [o工作区] [f无效] [i全文] \n   [p路径] \n   已写入 <fixture>…\n\n",
+      "minimum-clear": "\n   Skill / MCP manager skill-mcp-panel ·…\n     技能  MCP  分组  诊断    全部 · 5 项\n   目标（当前工作区） <fixture>…\n    作用域  全部  工作区  全局           \n   ╭────────────────────────────────────╮\n   │ 技能列表  全部 · 5项               │\n   │   filter-ena  user/~/.dsh  被遮蔽  │\n   │ ❯ filter-inv  project/.dsh  无效 … │\n   │ 3-4 / 5                            │\n   ╰────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] \n   [a添加] [g分组] [/搜索] [x清除] \n   [r刷新] [?] [o工作区] [f筛选] [i全文] \n   [p路径] \n   已清除过滤                            \n\n",
+      "restored-size": "\n   Skill / MCP manager          skill-mcp-panel · 54x22\n     技能  MCP  分组  诊断                  全部 · 5 项\n   目标（当前工作区） <fixture>/p…\n    作用域  全部(5)  工作区(4)  全局(1) \n   ╭──────────────────────────────────────────────────╮\n   │ 技能列表  全部 · 5项                             │\n   │ ❯ filter-disabled           project/.dsh  停用 … │\n   │   filter-enabled            project/.dsh  生效 … │\n   │   filter-enabled            user/~/.dsh  被遮蔽  │\n   │   filter-invalid            project/.dsh  无效 … │\n   │   probe-skill               project/.dsh  生效   │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   │                                                  │\n   ╰──────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] \n   [/搜索] [x清除] [r刷新] [?] [o工作区] [f筛选] \n   [i全文] [p路径] \n   已清除过滤\n\n"
+    },
+    "renderFrames": [
+      {
+        "name": "filter-readonly-frame.txt",
+        "text": "tab=skills scope=all skillStatus=disabled query=\"filter-\" search=false help=false focus=list modal=- groupFilter=fixture marked=0\nscreen=54x22 listWidth=52 detailWidth=52\nsummary total=5 enabled=3 disabled=1 invalid=1 shadowed=1 workspace=4 global=1\nlist(1):\n○ filter-disabled [project/.dsh 停用 groups=Filter fixture]\nselected=filter-disabled status=disabled path=<fixture>/project/.dsh/skills/filter-disabled.md.disabled\ngroups(1): fixture:Filter fixture:3\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=状态筛选：停用；已清除批量标记\ndetail=ready\nfullText=- offset=0 rows=0\n"
+      },
+      {
+        "name": "filter-after-toggle-frame.txt",
+        "text": "tab=skills scope=all skillStatus=disabled query=\"filter-\" search=false help=false focus=list modal=- groupFilter=fixture marked=0\nscreen=54x22 listWidth=52 detailWidth=52\nsummary total=5 enabled=4 disabled=0 invalid=1 shadowed=1 workspace=4 global=1\nlist(0):\nselected=(none) status=- path=-\ngroups(1): fixture:Filter fixture:3\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=-\ndetail=idle\nfullText=- offset=0 rows=0\n"
+      },
+      {
+        "name": "filter-final-frame.txt",
+        "text": "tab=skills scope=all skillStatus=all query=\"\" search=false help=false focus=list modal=- groupFilter=- marked=0\nscreen=40x16 listWidth=38 detailWidth=38\nsummary total=5 enabled=3 disabled=1 invalid=1 shadowed=1 workspace=4 global=1\nlist(5):\n○ filter-disabled [project/.dsh 停用 groups=Filter fixture]\n● filter-enabled [project/.dsh 生效 groups=Filter fixture]\n● filter-enabled [user/~/.dsh 被遮蔽]\n! filter-invalid [project/.dsh 无效 groups=Filter fixture]\n● probe-skill [project/.dsh 生效]\nselected=filter-invalid status=invalid path=<fixture>/project/.dsh/skills/filter-invalid.md\ngroups(1): fixture:Filter fixture:3\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=已清除过滤\ndetail=ready\nfullText=- offset=0 rows=0\n"
+      }
+    ]
+  },
+  "limits": [
+    "Full user acceptance pending",
+    "AC-14 layout/inline/fullscreen final comparison pending; not proved by these filter regressions",
+    "1000-skill open <1s and per-key search <100ms not measured",
+    "Enabled files may remain shadowed; filtering never changes priority",
+    "Different status intentionally clears marks; users must mark targets again",
+    "Added action may consume an extra footer row in narrow layouts"
+  ],
+  "boundaries": {
+    "realUserConfigOrSkillsChanged": false,
+    "installedThirdPartyChanged": false,
+    "ownLinkedPluginBuildChanged": true,
+    "modelRequestsMade": false,
+    "newPermissions": false,
+    "newDependencies": false,
+    "published": false,
+    "tagCreated": false,
+    "fullUserAcceptance": "pending",
+    "AC15": "not passed; KI-01..03 unchanged"
+  },
+  "next": {
+    "source": "docs/需求文档.md §14.1",
+    "item": "Audit AC-14 layout/modes and §8 performance; record original criteria, actual gaps and reproducible timing before changing breakpoints"
+  },
+  "finalReleaseCheck": {
+    "command": "pnpm check:release",
+    "result": "all sequential stages reported success; process completed",
+    "tests": 215,
+    "passed": 215,
+    "failed": 0,
+    "skipped": 0,
+    "layoutAssertions": 432,
+    "layoutSizes": 8,
+    "mouseAssertions": 133,
+    "mouseSizes": 3,
+    "skillFilterAssertions": 52,
+    "skillFilterColumns": [
+      120,
+      58
+    ],
+    "manifest": "passed",
+    "renderSmoke": "passed",
+    "interactionSmoke": "passed",
+    "mcpSmoke": "passed",
+    "crudColumns": [
+      120,
+      58
+    ],
+    "groupColumns": [
+      120,
+      58
+    ],
+    "tarball": {
+      "check": "tarball",
+      "ok": true,
+      "name": "dsh-tui-skill-mcp-panel",
+      "version": "0.1.0-dev.0",
+      "fileCount": 92,
+      "bytes": 118147,
+      "sha256": "2adbb79647a676009fb19980372a1f172545c584ed865feb8cfa81a0cad6122b",
+      "npmIntegrity": "sha512-QTHIQtNh0Sf6PgwQHPESjrAhZdpeNDkQGsZ74zu1LMtwyyDdR6p5r/HE7+vRH6WQP7EBIpkXHsLFSDM4XASQRw==",
+      "dryRunFileCount": 92,
+      "manifestId": "com.dsh-tui.skill-mcp-panel",
+      "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+      "diagnosticVersionSmoke": "plugin metadata from extracted package; Node actual; absent host/kernel unavailable",
+      "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+    },
+    "scope": "final source/tests/package/packed README; subsequent edits only non-packed docs/evidence"
+  }
+}

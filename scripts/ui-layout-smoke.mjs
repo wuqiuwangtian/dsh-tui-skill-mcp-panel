@@ -286,6 +286,18 @@ for (const [columns, rows] of sizes) {
     await check('error-empty-mcp', (s) => s.includes('没有 MCP 行') && s.includes('SCAN-ERROR-END') && (s.includes('home只读') || s.includes('home 全局')))
     await press('3')
     await check('error-empty-groups', (s) => s.includes('还没有') && s.includes('SCAN-ERROR-END'))
+    await press('1'); await press('f')
+    await check('skill-filter-picker-all-sizes', s => s.includes('技能状态筛选') && s.includes('停用') && s.includes('无效'))
+    await press('\x1b[F'); await press('\r')
+    await check('skill-filter-empty-state-visible', s => s.includes('无效') && s.includes('没有匹配的技能') && (s.includes('f无效') || s.includes('f 无效')))
+    const filterCalls = runtime.calls.length
+    await press('d'); await press(' ')
+    await check('skill-filter-empty-does-not-write', () => runtime.calls.length === filterCalls)
+    await press('f'); await press('\x1b')
+    await check('skill-filter-cancel-keeps-value', s => s.includes('f无效') || s.includes('f 无效'))
+    await press('x')
+    await check('skill-filter-clear-restores-empty-default', s => s.includes('没有任何技能') && (s.includes('f筛选') || s.includes('f 状态筛选')))
+
   } finally { app.unmount(); term.dispose() }
 }
 if (dump) await writeFile(join(dump, 'results.json'), JSON.stringify(results, null, 2) + '\n')

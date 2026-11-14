@@ -18,6 +18,7 @@ import type { McpEditSession } from '../domain/mcp/crud.js'
 import { filterMcpRows, groupsForMcpProfile, mcpGroupIds, mcpMemberKey, type McpStatusFilter } from '../domain/mcp/groups.js'
 import { splitFrontmatter } from '../domain/skills/frontmatter.js'
 import type { SkillInstance, SkillScanResult, SkillSource, SkillStatus } from '../domain/skills/types.js'
+import { filterSkills, SKILL_STATUS_FILTERS, type SkillStatusFilter } from '../domain/skills/filter.js'
 import type { ManagerRuntime, ManagerState } from '../host/manager-runtime.js'
 import { cellWidth, firstLines, inputTail, oneLine, padToWidth, truncateToWidth, wrapTextLines } from '../shared/format.js'
 
@@ -26,6 +27,7 @@ const SKILL_ACTIONS = [
   ['undo', 'u 撤销', 'u撤销'], ['create', 'a 添加', 'a添加'], ['group', 'g 分组', 'g分组'],
   ['search', '/ 搜索', '/搜索'], ['clear', 'x 清除', 'x清除'], ['refresh', 'r 刷新', 'r刷新'], ['help', '? 帮助', '?'],
   ['workspace', 'o 工作区', 'o工作区'],
+  ['filter', 'f 状态筛选', 'f筛选'],
   ['fulltext', 'i 全文', 'i全文'], ['paths', 'p 路径', 'p路径'],
 ] as const
 const GROUP_ACTIONS = [
@@ -110,6 +112,7 @@ const STATUS_LABELS: Record<SkillStatus, string> = {
   disabled: '停用',
   invalid: '无效',
 }
+const SKILL_STATUS_LABELS: Record<SkillStatusFilter, string> = { all: '全部', ...STATUS_LABELS }
 
 const STATUS_GLYPHS: Record<SkillStatus, string> = {
   enabled: '●',
@@ -132,7 +135,8 @@ const HELP_LINES = [
   '  o                  选择面板管理工作区；不切换聊天会话',
   '  i / p              原文件全文 / 完整路径（只读，可滚动）',
   '  g                  把选中/标记技能加入或移出分组',
-  '  x                  清除分组过滤 / 清除标记',
+  '  f                  技能状态筛选；与搜索、作用域、分组组合',
+  '  技能页 x           清除搜索/状态/分组/标记；保留作用域',
   '  MCP 页              ↑/↓ 选择 · 空格 启停（仅改 disabled）· r 重新读取 · m 迁移旧启停配置',
   '                     a 新增 · Enter 编辑 · d 删除 · u 撤销（仅本面板受管行）',
   '                     home/表达式行只读；已有 profile 行仅支持启停',
@@ -194,31 +198,6 @@ function statusFlags(instance: SkillInstance): string {
   if (instance.modelInvocable === false) flags.push('模型不可调用')
   if (instance.userInvocable === false) flags.push('用户不可调用')
   return flags.join(' ')
-}
-
-function sortInstances(instances: SkillInstance[]): SkillInstance[] {
-  return [...instances].sort(
-    (left, right) =>
-      left.name.localeCompare(right.name) ||
-      Number(right.effective) - Number(left.effective) ||
-      left.rank - right.rank ||
-      left.providerOrder - right.providerOrder,
-  )
-}
-
-function filterInstances(scan: SkillScanResult | undefined, scope: ScopeFilter, query: string): SkillInstance[] {
-  if (scan === undefined) return []
-  const needle = query.trim().toLowerCase()
-  return sortInstances(
-    scan.instances.filter((instance) => {
-      if (scope !== 'all' && instance.scope !== scope) return false
-      if (needle.length === 0) return true
-      return (
-        instance.name.toLowerCase().includes(needle) ||
-        instance.description.toLowerCase().includes(needle)
-      )
-    }),
-  )
 }
 
 function counts(scan: SkillScanResult | undefined): {
@@ -458,6 +437,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const state = runtime.snapshot()
     const tab: Tab = state.activeTab ?? 'skills'
     const [scope, setScope] = React.useState<ScopeFilter>('all')
+    const [skillStatus, setSkillStatus] = React.useState<SkillStatusFilter>('all')
     const [query, setQuery] = React.useState('')
     const [searchMode, setSearchMode] = React.useState(false)
     const [selectedId, setSelectedId] = React.useState<string | undefined>(undefined)
@@ -493,17 +473,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       workspace: summary.workspace,
       global: summary.global,
     }
-    const scopeKeyOf = (instance: SkillInstance): string =>
-      instance.scope === 'global' ? 'global' : (scan?.projectRoot ?? 'workspace')
-    const baseFiltered = filterInstances(scan, scope, query)
-    const filtered =
-      groupFilter === undefined
-        ? baseFiltered
-        : baseFiltered.filter((instance) => {
-            const group = state.groups[groupFilter]
-            if (group === undefined) return false
-            return (group.scopes[scopeKeyOf(instance)] ?? []).includes(instance.name)
-          })
+    const filtered = React.useMemo(() => filterSkills(scan, { scope, status: skillStatus, query, groupId: groupFilter, groups: state.groups }),
+      [scan, scan?.instances, scope, skillStatus, query, groupFilter, state.groups])
     const previous = previousSelected.current
     const toggledPath = previous === undefined ? undefined
       : previous.path.endsWith('.disabled') ? previous.path.slice(0, -'.disabled'.length) : `${previous.path}.disabled`
@@ -575,7 +546,9 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const mcpActions = (state.mcp.legacyToggles?.length ?? 0) > 0
       ? [...MCP_ACTIONS, ['migrate', 'm 迁移旧启停', 'm迁移'] as const] : MCP_ACTIONS
     const actionDefinitions = tab === 'skills' ? skillActions : tab === 'mcp' ? mcpActions : tab === 'groups' ? GROUP_ACTIONS : DIAG_ACTIONS
-    const actionLabels = actionDefinitions.map(([, full, short]) => ({ label: fullActions ? full : short }))
+    const actionLabel = (id: string, full: string, short: string): string => tab === 'skills' && id === 'filter' && skillStatus !== 'all'
+      ? `f${fullActions ? ' ' : ''}${SKILL_STATUS_LABELS[skillStatus]}` : fullActions ? full : short
+    const actionLabels = actionDefinitions.map(([id, full, short]) => ({ label: actionLabel(id, full, short) }))
     const extraFooterRows = packActions(actionLabels, contentWidth).length - 1
     const statusText =
       state.statusMessage?.text ??
@@ -995,10 +968,27 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
     const clearFilters = (): void => {
       if (tab === 'mcp') { setMcpQuery(''); setMcpStatus('all'); setMcpGroupFilter(undefined) }
+      else if (tab === 'skills') { setQuery(''); setSkillStatus('all'); setGroupFilter(undefined); clearMarks() }
       else if (tab === 'groups' && groupKind === 'mcp') setMcpGroupFilter(undefined)
       else if (groupFilter !== undefined) setGroupFilter(undefined)
       else if (marked.size > 0) clearMarks()
       runtime.setStatus('已清除过滤', 'info')
+    }
+
+    const openSkillFilters = (): void => {
+      const matches = filterSkills(scan, { scope, status: 'all', query, groupId: groupFilter, groups: state.groups })
+      setModal({ kind: 'select', title: '技能状态筛选', index: SKILL_STATUS_FILTERS.indexOf(skillStatus),
+        options: SKILL_STATUS_FILTERS.map(id => ({ id,
+          label: `${SKILL_STATUS_LABELS[id]} (${id === 'all' ? matches.length : matches.filter(row => row.status === id).length})${id === skillStatus ? ' ✓' : ''}`,
+          hint: id === 'enabled' ? '含已启用但被遮蔽的实例' : id === 'all' ? '保留搜索、作用域和分组' : undefined,
+        })), onSubmit: id => {
+          const next = id as SkillStatusFilter
+          if (next !== skillStatus) {
+            setSkillStatus(next); clearMarks(); setSelectedId(undefined); previousSelected.current = undefined; setDetailOffset(0)
+            runtime.setStatus(`状态筛选：${SKILL_STATUS_LABELS[next]}；已清除批量标记`, 'info')
+          }
+          setFocus('list')
+        } })
     }
 
     const openMcpFilters = (): void => {
@@ -1319,6 +1309,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       // skills-tab actions (available regardless of focus)
+      if (char === 'f') return openSkillFilters()
       if (char === 'i') return openFullText()
       if (char === 'p') return openSkillPaths()
       if (char === 'o') return openWorkspaces()
@@ -1460,7 +1451,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       return `${STATUS_GLYPHS[instance.status]} ${instance.name} [${SOURCE_LABELS[instance.source]}${flags.length > 0 ? ` ${flags}` : ''}${groups.length > 0 ? ` groups=${groups.join(',')}` : ''}${marked.has(instance.id) ? ' marked' : ''}]`
     })
     const verificationFrame = [
-      `tab=${tab} scope=${scope} query=${JSON.stringify(query)} search=${searchMode} help=${helpOpen} focus=${focus} modal=${modal?.kind ?? '-'} groupFilter=${groupFilter ?? '-'} marked=${marked.size}`,
+      `tab=${tab} scope=${scope} skillStatus=${skillStatus} query=${JSON.stringify(query)} search=${searchMode} help=${helpOpen} focus=${focus} modal=${modal?.kind ?? '-'} groupFilter=${groupFilter ?? '-'} marked=${marked.size}`,
       `screen=${columns}x${rows} listWidth=${listWidth} detailWidth=${detailWidth}`,
       `summary total=${summary.total} enabled=${summary.enabled} disabled=${summary.disabled} invalid=${summary.invalid} shadowed=${summary.shadowed} workspace=${summary.workspace} global=${summary.global}`,
       `list(${filtered.length}):`,
@@ -1485,7 +1476,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         `tab=${tab} scope=${scope} focus=${focus}${helpOpen ? ' help' : ''}${modal === undefined ? '' : ` modal=${modal.kind}`}`,
         verificationFrame,
       )
-    }, [tab, scope, focus, selected?.id, selectedMcp?.id, state.mcp, state.groupsFingerprint, state.groupsWarning, state.config, state.versions, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.fullText, state.statusMessage?.at, modal?.kind, marked, groupFilter])
+    }, [tab, scope, skillStatus, focus, selected?.id, selectedMcp?.id, state.mcp, state.groupsFingerprint, state.groupsWarning, state.config, state.versions, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.fullText, state.statusMessage?.at, modal?.kind, marked, groupFilter])
 
     const textPager = (at: number, total: number, page: number, setOffset: (value: number) => void): ReactNode => (
       <Box flexDirection="row" height={1}>
@@ -1722,6 +1713,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
             <Text key="empty" dimColor wrap="wrap">
               {scan === undefined
                 ? '扫描中…'
+                : skillStatus !== 'all'
+                  ? `没有匹配的技能（状态：${SKILL_STATUS_LABELS[skillStatus]}；f 更改状态，x 清除筛选）。`
                 : query.length > 0
                   ? '没有匹配的技能（/ 修改搜索）。'
                   : groupFilter !== undefined
@@ -1754,7 +1747,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           })
 
     const listCard = card({
-      title: '技能列表',
+      title: skillStatus === 'all' ? '技能列表' : `技能列表 · ${SKILL_STATUS_LABELS[skillStatus]}`,
       subtitle: `${SCOPE_LABELS[scope]} · ${filtered.length}项${query.length > 0 ? ` · "${query}"` : ''}${marked.size > 0 ? ` · 已标记 ${marked.size}` : ''}`,
       focused: tab === 'skills' && focus === 'list',
       width: listWidth,
@@ -1973,13 +1966,14 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         <Text color="accent">{`[${label}] `}</Text>
       </Box>
     )
-    const actionItems = actionDefinitions.map(([id, full, short]) => ({ label: fullActions ? full : short, onClick: () => {
+    const actionItems = actionDefinitions.map(([id, full, short]) => ({ label: actionLabel(id, full, short), onClick: () => {
       if (id === 'help') { setHelpOffset(0); setHelpOpen(true); return }
       if (id === 'refresh') { if (tab === 'mcp') void runtime.refreshMcp(); else void runtime.refresh('manual'); return }
       if (id === 'clear') { clearFilters(); return }
       if (id === 'versions') { setModal({ kind: 'info', title: '运行版本与来源（只读）', lines: versionLines(state) }); return }
       if (id === 'trash') { setModal({ kind: 'info', title: '技能回收站清理记录', lines: trashCleanupLines(state) }); return }
       if (tab === 'skills') {
+        if (id === 'filter') { openSkillFilters(); return }
         if (id === 'fulltext') { openFullText(); return }
         if (id === 'paths') { openSkillPaths(); return }
         if (id === 'workspace') { openWorkspaces(); return }

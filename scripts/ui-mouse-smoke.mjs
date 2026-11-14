@@ -251,6 +251,20 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
     await click(columns < 110 ? 'o工作区' : 'o 工作区')
     await click('Other workspace'); await click('[y 确认]')
     assert.ok(runtime.calls.includes('workspace:/fixture/other')); passed('workspace pointer confirm invokes selected target')
+    const filterCalls = runtime.calls.length
+    await click(columns < 110 ? '[f筛选]' : '[f 状态筛选]')
+    await check('skill filter pointer opens choices', s => s.includes('技能状态筛选'))
+    await click('停用 (1)')
+    await check('skill filter pointer selects disabled', s => s.includes('mouse-002') && (s.includes('f停用') || s.includes('f 停用')))
+    await click(columns < 110 ? '[f停用]' : '[f 停用]')
+    await click('无效 (0)')
+    await check('skill filter pointer empty state', s => s.includes('没有匹配的技能') && s.includes('无效'))
+    await click(columns < 110 ? '[f无效]' : '[f 无效]'); await click('Esc 取消')
+    await check('skill filter pointer cancellation keeps state', s => s.includes('f无效') || s.includes('f 无效'))
+    await click(columns < 110 ? '[x清除]' : '[x 清除]')
+    await check('skill filter pointer clear restores list', s => s.includes('技能列表') && s.includes('mouse-000') && (s.includes('f筛选') || s.includes('f 状态筛选')))
+    assert.equal(runtime.calls.length, filterCalls); passed('skill filter pointer path is read only')
+
   } finally { app.unmount(); term.dispose() }
 }
 if (process.env.MOUSE_SMOKE_REPORT) await writeFile(process.env.MOUSE_SMOKE_REPORT, JSON.stringify(results, null, 2) + '\n')
