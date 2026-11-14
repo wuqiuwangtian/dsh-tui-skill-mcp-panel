@@ -1,0 +1,1442 @@
+{
+  "date": "2026-11-14",
+  "baseline": "a4b8f68",
+  "version": "0.1.0-dev.0",
+  "decision": {
+    "confirmedByUser": true,
+    "text": "按原设计补齐吧",
+    "choice": "A",
+    "authority": "docs/需求文档.md §6.1, §14.1; docs/release-readiness.md §21"
+  },
+  "changes": {
+    "filesAdded": [
+      "scripts/prepare-skill-layout-probe.mjs",
+      "scripts/skill-navigation-smoke.mjs",
+      "docs/research/evidence/m5-layout-restoration.json"
+    ],
+    "filesModified": [
+      "AGENT.md",
+      "README.md",
+      "docs/release-readiness.md",
+      "docs/research/README.md",
+      "docs/research/evidence/m5-layout-performance-audit.json",
+      "docs/research/evidence/m5-p0-scope-audit.json",
+      "docs/需求文档.md",
+      "package.json",
+      "scripts/skill-filter-smoke.mjs",
+      "scripts/ui-layout-smoke.mjs",
+      "scripts/ui-mouse-smoke.mjs",
+      "src/ui/ManagerScene.tsx"
+    ],
+    "filesDeleted": [],
+    "featuresAdded": [
+      "collapsible scope/group navigation with explicit cursor vs applied filter",
+      "b group picker and clickable chip below 90 columns",
+      "single-pane list/detail breadcrumb",
+      "common filter-focus target guard preserved across resize"
+    ],
+    "featuresModified": [
+      "skill panes now single <64, dual 64-89, navigation/list/detail >=90",
+      "group page, picker and sidebar share selection/reset behavior",
+      "different group clears marks/selection/detail offset; same group/cancel retains marks",
+      "list name budget and explicit ellipsis; stable card heading with truncated subtitle"
+    ],
+    "featuresDeleted": [],
+    "schemasDependenciesVersionChanged": false
+  },
+  "sourceSha256": "807ea3b52f612cef6a7af251af835b1eb1ccd23a4c816f484ef09ffedc9bcfd2",
+  "behavior": {
+    "leftNavigation": "arrows/page/Home/End move cursor only; Enter applies scope/group or folds section; right to list",
+    "folding": "keeps active scope/group; state is scene-only",
+    "compact": "existing scope chip navigation retained; b chooses groups; explicit group chip and breadcrumb visible",
+    "targetGuard": "skills filter focus rejects toggle/delete/mark/membership through keyboard and buttons; same after tree shrinks to chip; add/undo independent flows retained",
+    "groupIdentity": "existing filterSkills exact current projectRoot/global identity; no discovery/shadowing changes",
+    "selection": "different group resets old marks and selection; scope/query keep existing visible intersection; hidden marks never fall back to selected row",
+    "escape": "existing priority retained: Esc first clears marks, then returns from detail; breadcrumb/back button directly returns",
+    "optionalHelp": "help stays modal; group management tab retained; no optional fourth column",
+    "density": "extra compact group row consumes one content row; narrower details wrap more; i/p retain complete read-only content/path access"
+  },
+  "focusedNavigation": {
+    "command": "pnpm test:skills:navigation",
+    "result": "passed in final check:release",
+    "expectedAssertions": 107,
+    "columns": [
+      64,
+      90,
+      110
+    ],
+    "fixture": "60 groups, long CJK/emoji last label, same-name workspace/global sources, disabled skill",
+    "coverage": [
+      "cursor not applied until Enter",
+      "fold retains filter",
+      "last group reachable",
+      "real pointer tree/chip selection and propagation",
+      "all four filters intersect",
+      "40/64/90 resize retains filters and mark",
+      "resized filter focus cannot target a hidden selected skill",
+      "keyboard/button target boundary",
+      "new group clears old marks",
+      "exact new-group deletion and undo; all four skill bytes restored",
+      "active group removed externally clears stale filter",
+      "shared metadata bytes unchanged; foreign config retained; no scene state persisted"
+    ],
+    "assertions": 107,
+    "exitCode": 0
+  },
+  "regressions": {
+    "layoutSizes": [
+      "40x16",
+      "58x20",
+      "63x24",
+      "64x24",
+      "71x24",
+      "72x24",
+      "89x24",
+      "90x24",
+      "92x24",
+      "93x24",
+      "109x24",
+      "110x30",
+      "160x40"
+    ],
+    "expectedLayoutAssertions": 793,
+    "mouseSizes": [
+      "40x16",
+      "58x22",
+      "64x24",
+      "90x24",
+      "116x33"
+    ],
+    "expectedMouseAssertions": 239,
+    "testsAdjustedForBehavior": [
+      "scope Enter activation in 120-column existing filter test",
+      "wheel anchors detail card title instead of new breadcrumb",
+      "wrapped MCP last-key and masked-value text joined before checking both strings; secret-leak checks retained",
+      "500ms same-cell multi-click selection window respected for repeated fold pointer clicks"
+    ],
+    "layoutAssertions": 793,
+    "mouseAssertions": 239
+  },
+  "realTui": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "node": "26.3.0",
+    "method": "Actual installed CLI in owned PTYs; keyboard/SGR/resize; ANSI replay with xterm Unicode11; file SHA256 and skill journals checked",
+    "phases": [
+      {
+        "mode": "inline",
+        "observedHostMount": {
+          "fullscreen": false,
+          "isRecompose": false
+        },
+        "exitCode": 0,
+        "closedBeforeFinalBuild": true,
+        "baselineHashes": [
+          {
+            "path": "<fixture>/project/.dsh/skills/layout-alpha.md",
+            "sha256": "f78998a24be6e0914d3ee2292e7a10f15b80667f6ad14b546918aad913222d7e",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/project/.dsh/skills/layout-beta.md.disabled",
+            "sha256": "66048091bce561beca80006f948dab8e481fa63207d8f43c6da25b65867d2365",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/skills/layout-alpha.md",
+            "sha256": "f78998a24be6e0914d3ee2292e7a10f15b80667f6ad14b546918aad913222d7e",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/skills/.system/skill-viewer/groups.json",
+            "sha256": "96e4a87354a9dace9868d732759221da54f0f66a5a4655ac2e5050b968af9cde",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/panel/config.json",
+            "sha256": "f20f39f6946dad08d752a95c881595b58dacdca3aef4fec3a763b18dac634a04",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/profiles/panel-verification/cordis.patch.yml",
+            "sha256": "1d1f821a75ede6749ad6f2726b2bd2ed30cf8b62eee7d75bed800292c61befe2",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/cordis.patch.yml",
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90",
+            "preserved": true
+          }
+        ],
+        "skillTrashManifestsRemaining": 0,
+        "finalSourceReplay": {
+          "assertions": 10,
+          "passed": 10,
+          "scope": "final source"
+        },
+        "finalSourceScreens": {
+          "list-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项         │ │ 详情  layout-alpha  ↕1/114   │\n   │   ▾ 作用域         │ │ ❯ layout-al…  project/.dsh … │ │ 状态 启用 · 来源 project/.ds │\n   │ ❯ 全部 (4) ✓       │ │   layout-al…  user/~/.dsh  … │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │   layout-be…  project/.dsh … │ │ 形态 平铺 .md · 内核可见     │\n   │   全局 (1)         │ │   probe-ski…  project/.dsh … │ │ 文件 /tmp/skill-mcp-real-tui │\n   │   ▾ 分组 [b]       │ │                              │ │ -q5Wn2T/project/.dsh/skills/ │\n   │   全部分组 ✓       │ │                              │ │ layout-alpha.md              │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-q │\n   │   Group 01         │ │                              │ │ 5Wn2T/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区]    \n   [f筛选] [i全文] [p路径]                                                                  \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json                                          \n                                                                                            \n",
+          "marked-heading-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项 · 已标… │ │ 详情  layout-alpha  ↕1/114   │\n   │   ▾ 作用域         │ │ ❯ ✓ layout-al…  project/.ds… │ │ 状态 启用 · 来源 project/.ds │\n   │ ❯ 全部 (4) ✓       │ │   layout-al…  user/~/.dsh  … │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │   layout-be…  project/.dsh … │ │ 形态 平铺 .md · 内核可见     │\n   │   全局 (1)         │ │   probe-ski…  project/.dsh … │ │ 文件 /tmp/skill-mcp-real-tui │\n   │   ▾ 分组 [b]       │ │                              │ │ -q5Wn2T/project/.dsh/skills/ │\n   │   全部分组 ✓       │ │                              │ │ layout-alpha.md              │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-q │\n   │   Group 01         │ │                              │ │ 5Wn2T/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区]    \n   [f筛选] [i全文] [p路径]                                                                  \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json                                          \n                                                                                            \n",
+          "blocked-filter-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项 · 已标… │ │ 详情  layout-alpha  ↕1/114   │\n   │   ▾ 作用域         │ │ ❯ ✓ layout-al…  project/.ds… │ │ 状态 启用 · 来源 project/.ds │\n   │ ❯ 全部 (4) ✓       │ │   layout-al…  user/~/.dsh  … │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │   layout-be…  project/.dsh … │ │ 形态 平铺 .md · 内核可见     │\n   │   全局 (1)         │ │   probe-ski…  project/.dsh … │ │ 文件 /tmp/skill-mcp-real-tui │\n   │   ▾ 分组 [b]       │ │                              │ │ -q5Wn2T/project/.dsh/skills/ │\n   │   全部分组 ✓       │ │                              │ │ layout-alpha.md              │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-q │\n   │   Group 01         │ │                              │ │ 5Wn2T/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区]    \n   [f筛选] [i全文] [p路径]                                                                  \n   筛选区用于筛选；按 → 到技能列表后再操作技能                                              \n                                                                                            \n",
+          "blocked-membership-minimum": "\n   Skill / MCP manager skill-mcp-panel ·…\n     技能  MCP  分组  诊断    全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-rea…\n   ❯作用域  全部  工作区  全局 \n   [b 分组:全部] 列表\n   ╭────────────────────────────────────╮\n   │ 技能列表  全部 · 4项 · 已标记 1    │\n   │ ❯ ✓ layout-alpha    project/.dsh … │\n   │ 1-1 / 4                            │\n   ╰────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] \n   [a添加] [g分组] [/搜索] [x清除] \n   [r刷新] [?] [o工作区] [f筛选] [i全文] \n   [p路径] \n   筛选区用于筛选；按 → 到技能列表后再操…\n\n",
+          "minimum-detail": "\n   Skill / MCP manager skill-mcp-panel ·…\n     技能  MCP  分组  诊断    全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-rea…\n    作用域  全部  工作区  全局           \n   [b 分组:全部] 列表 › 详情             \n   ╭────────────────────────────────────╮\n   │ 详情  layout-alpha  ↕1/112         │\n   │ 状态 启用 · 来源 project/.dsh · ra │\n   │ nk 100 · 工作区                    │\n   ╰────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] \n   [a添加] [g分组] [/搜索] [x清除] \n   [r刷新] [?] [o工作区] [f筛选] [i全文] \n   [p路径] [←返回] \n   筛选区用于筛选；按 → 到技能列表后再操…\n\n",
+          "minimum-back": "\n   Skill / MCP manager skill-mcp-panel ·…\n     技能  MCP  分组  诊断    全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-rea…\n    作用域  全部  工作区  全局           \n   [b 分组:全部] 列表                    \n   ╭────────────────────────────────────╮\n   │ 技能列表  全部 · 4项               │\n   │ ❯ layout-alpha    project/.dsh  …  │\n   │ 1-1 / 4                            │\n   ╰────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] \n   [a添加] [g分组] [/搜索] [x清除] \n   [r刷新] [?] [o工作区] [f筛选] [i全文] \n   [p路径]         \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX…\n\n",
+          "list-64": "\n   Skill / MCP manager                    skill-mcp-panel · 64x26\n     技能  MCP  分组  诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n    作用域  全部(4)  工作区(3)  全局(1) \n   [b 分组:全部]\n   ╭────────────────────────────╮ ╭─────────────────────────────╮\n   │ 技能列表  全部 · 4项       │ │ 详情  layout-alpha  ↕1/114  │\n   │ ❯ layout-al…  project/.ds… │ │ 状态 启用 · 来源 project/.d │\n   │   layout-al…  user/~/.dsh… │ │ sh · rank 100 · 工作区      │\n   │   layout-be…  project/.ds… │ │ 形态 平铺 .md · 内核可见    │\n   │   probe-ski…  project/.ds… │ │ 文件 /tmp/skill-mcp-real-tu │\n   │                            │ │ i-q5Wn2T/project/.dsh/skill │\n   │                            │ │ s/layout-alpha.md           │\n   │                            │ │ 根 /tmp/skill-mcp-real-tui- │\n   │                            │ │ q5Wn2T/project/.dsh/skills  │\n   │                            │ │ description Layout 中文🧭 f │\n   │                            │ │ ixture                      │\n   │                            │ │ 正文预览（只读）· i 全文 ·  │\n   │                            │ │ p 路径                      │\n   │                            │ │   BODY-000 中文🧭 fixture   │\n   │                            │ │                             │\n   ╰────────────────────────────╯ ╰─────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] \n   [x清除] [r刷新] [?] [o工作区] [f筛选] [i全文] [p路径] \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n",
+          "mark-heading-64": "\n   Skill / MCP manager                    skill-mcp-panel · 64x26\n     技能  MCP  分组  诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n    作用域  全部(4)  工作区(3)  全局(1) \n   [b 分组:全部]\n   ╭────────────────────────────╮ ╭─────────────────────────────╮\n   │ 技能列表  全部 · 4项 · 已… │ │ 详情  layout-alpha  ↕1/114  │\n   │ ❯ ✓ layout-al…  project/.… │ │ 状态 启用 · 来源 project/.d │\n   │   layout-al…  user/~/.dsh… │ │ sh · rank 100 · 工作区      │\n   │   layout-be…  project/.ds… │ │ 形态 平铺 .md · 内核可见    │\n   │   probe-ski…  project/.ds… │ │ 文件 /tmp/skill-mcp-real-tu │\n   │                            │ │ i-q5Wn2T/project/.dsh/skill │\n   │                            │ │ s/layout-alpha.md           │\n   │                            │ │ 根 /tmp/skill-mcp-real-tui- │\n   │                            │ │ q5Wn2T/project/.dsh/skills  │\n   │                            │ │ description Layout 中文🧭 f │\n   │                            │ │ ixture                      │\n   │                            │ │ 正文预览（只读）· i 全文 ·  │\n   │                            │ │ p 路径                      │\n   │                            │ │   BODY-000 中文🧭 fixture   │\n   │                            │ │                             │\n   ╰────────────────────────────╯ ╰─────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] \n   [x清除] [r刷新] [?] [o工作区] [f筛选] [i全文] [p路径] \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n",
+          "list-110": "\n   Skill / MCP manager                                                                 skill-mcp-panel · 110x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                                全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭────────────────────────────────────────╮ ╭────────────────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项                   │ │ 详情  layout-alpha  ↕96/111            │\n   │   ▾ 作用域         │ │ ❯ layout-alpha        project/.dsh  …  │ │   BODY-085 中文🧭 fixture              │\n   │ ❯ 全部 (4) ✓       │ │   layout-alpha        user/~/.dsh  被… │ │   BODY-086 中文🧭 fixture              │\n   │   工作区 (3)       │ │   layout-beta         project/.dsh  …  │ │   BODY-087 中文🧭 fixture              │\n   │   全局 (1)         │ │   probe-skill         project/.dsh  …  │ │   BODY-088 中文🧭 fixture              │\n   │   ▾ 分组 [b]       │ │                                        │ │   BODY-089 中文🧭 fixture              │\n   │   全部分组 ✓       │ │                                        │ │   BODY-090 中文🧭 fixture              │\n   │   Group 00         │ │                                        │ │   BODY-091 中文🧭 fixture              │\n   │   Group 01         │ │                                        │ │   BODY-092 中文🧭 fixture              │\n   │   Group 02         │ │                                        │ │   BODY-093 中文🧭 fixture              │\n   │   Group 03         │ │                                        │ │   BODY-094 中文🧭 fixture              │\n   │   Group 04         │ │                                        │ │   BODY-095 中文🧭 fixture              │\n   │   Group 05         │ │                                        │ │   BODY-096 中文🧭 fixture              │\n   │   Group 06         │ │                                        │ │   BODY-097 中文🧭 fixture              │\n   │   Group 07         │ │                                        │ │   BODY-098 中文🧭 fixture              │\n   │   Group 08         │ │                                        │ │   BODY-099 中文🧭 fixture              │\n   │ 1-15/66            │ │                                        │ │                                        │\n   ╰────────────────────╯ ╰────────────────────────────────────────╯ ╰────────────────────────────────────────╯\n   [空格 启停] [v 标记] [d 删除] [u 撤销] [a 添加] [g 分组] [/ 搜索] [x 清除] [r 刷新] [? 帮助] [o 工作区] 共 …\n   [f 状态筛选] [i 全文] [p 路径]                                      共 4 · 生效 2 · 停用 1 · 无效 0 · 遮蔽 1\n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n",
+          "detail-end-64": "\n   Skill / MCP manager                    skill-mcp-panel · 64x26\n     技能  MCP  分组  诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n    作用域  全部(4)  工作区(3)  全局(1) \n   [b 分组:全部]\n   ╭────────────────────────────╮ ╭─────────────────────────────╮\n   │ 技能列表  全部 · 4项       │ │ 详情  layout-alpha  ↕101/1… │\n   │ ❯ layout-al…  project/.ds… │ │   BODY-087 中文🧭 fixture   │\n   │   layout-al…  user/~/.dsh… │ │   BODY-088 中文🧭 fixture   │\n   │   layout-be…  project/.ds… │ │   BODY-089 中文🧭 fixture   │\n   │   probe-ski…  project/.ds… │ │   BODY-090 中文🧭 fixture   │\n   │                            │ │   BODY-091 中文🧭 fixture   │\n   │                            │ │   BODY-092 中文🧭 fixture   │\n   │                            │ │   BODY-093 中文🧭 fixture   │\n   │                            │ │   BODY-094 中文🧭 fixture   │\n   │                            │ │   BODY-095 中文🧭 fixture   │\n   │                            │ │   BODY-096 中文🧭 fixture   │\n   │                            │ │   BODY-097 中文🧭 fixture   │\n   │                            │ │   BODY-098 中文🧭 fixture   │\n   │                            │ │   BODY-099 中文🧭 fixture   │\n   │                            │ │                             │\n   ╰────────────────────────────╯ ╰─────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] \n   [x清除] [r刷新] [?] [o工作区] [f筛选] [i全文] [p路径] \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n"
+        },
+        "priorFlowReplay": {
+          "assertions": 18,
+          "passed": 18,
+          "scope": "before final heading reserve; navigation/writes unchanged"
+        },
+        "priorFlowBoundary": "Inline full flow preceded title-space reserve and common filter guard; fullscreen full flow preceded common filter guard. Group selection/write transactions unchanged; final-source supplements cover final headings and resize guard.",
+        "priorFlowScreens": {
+          "groups-fold-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills     Groups             全部 · 1 项 · 分组:Group 59 中文🧭 中文🧭 中文🧭 中文🧭…\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 1项         │ │ 详情  layout-beta  ↕1/114    │\n   │   ▾ 作用域         │ │ ❯ layout-be…  project/.dsh … │ │ 状态 停用 · 来源 project/.ds │\n   │   全部 (4) ✓       │ │                              │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │                              │ │ 形态 平铺 .md · 内核不可见   │\n   │   全局 (1)         │ │                              │ │ 文件 /tmp/skill-mcp-real-tui │\n   │ ❯ ▸ 分组 [b]       │ │                              │ │ -q5Wn2T/project/.dsh/skills/ │\n   │                    │ │                              │ │ layout-beta.md.disabled      │\n   │                    │ │                              │ │ 根 /tmp/skill-mcp-real-tui-q │\n   │                    │ │                              │ │ 5Wn2T/project/.dsh/skills    │\n   │                    │ │                              │ │ description Layout 中文🧭 fi │\n   │                    │ │                              │ │ xture                        │\n   │                    │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │                    │ │                              │ │  路径                        │\n   │                    │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │                    │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │                    │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │                    │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   按分组过滤：Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中…\n\n",
+          "groups-reopen-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills     Groups             全部 · 1 项 · 分组:Group 59 中文🧭 中文🧭 中文🧭 中文🧭…\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 1项         │ │ 详情  layout-beta  ↕1/114    │\n   │   ▾ 作用域         │ │ ❯ layout-be…  project/.dsh … │ │ 状态 停用 · 来源 project/.ds │\n   │   全部 (4) ✓       │ │                              │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │                              │ │ 形态 平铺 .md · 内核不可见   │\n   │   全局 (1)         │ │                              │ │ 文件 /tmp/skill-mcp-real-tui │\n   │ ❯ ▾ 分组 [b]       │ │                              │ │ -q5Wn2T/project/.dsh/skills/ │\n   │   全部分组         │ │                              │ │ layout-beta.md.disabled      │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-q │\n   │   Group 01         │ │                              │ │ 5Wn2T/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   按分组过滤：Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中…\n\n",
+          "pointer-group-beta-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断            全部 · 1 项 · 分组:Group 01\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o                           \n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 1项         │ │ 详情  layout-beta  ↕1/114    │\n   │   ▾ 作用域         │ │ ❯ layout-be…  project/.dsh … │ │ 状态 停用 · 来源 project/.ds │\n   │   全部 (4) ✓       │ │                              │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │                              │ │ 形态 平铺 .md · 内核不可见   │\n   │   全局 (1)         │ │                              │ │ 文件 /tmp/skill-mcp-real-tui │\n   │   ▾ 分组 [b]       │ │                              │ │ -q5Wn2T/project/.dsh/skills/ │\n   │   全部分组         │ │                              │ │ layout-beta.md.disabled      │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-q │\n   │ ❯ Group 01 ✓       │ │                              │ │ 5Wn2T/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   按分组过滤：Group 01（x 清除）                                                         \n\n",
+          "form-input-90": "\n   Skill / MCP manager                                                      skill-mcp-panel\n                                                                                           \n   ╭──────────────────────────────────────────────────────────────────────────────────────╮\n   │ MCP serverName                                                                       │\n   │ serverName：                                                                         │\n   │ ❯ design-中文🧭-draft▌                                                               │\n   │ Ctrl+U 清空；已有 !!js 留空保留；Esc 返回表单                                        │\n   │ [Enter 提交] [Esc 取消]                                                              │\n   ╰──────────────────────────────────────────────────────────────────────────────────────╯\n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                           \n                                                  \n\n",
+          "form-cancel-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                       \n   ╭──────────────────────────────────────────────────────────────────────────────────────╮\n   │ MCP servers  3 行 · 启用 0 · 停用 3                                                  │\n   │ 无工作区级配置 · 当前 profile 可写 · home 全局层只读                                 │\n   │ 筛选: 全部 · 分组:全部 · 3/3 行                                                      │\n   │ ❯ mcp-expr                  stdio  停用 · profile · 只读                             │\n   │   mcp-home                  stdio  停用 · home · 只读                                │\n   │   mcp-probe                 stdio  停用 · profile · 仅启停                           │\n   │ ──────────────────────────────────────────────────────────────────────────────────   │\n   │ 分组：(未分组) · g 修改                                                              │\n   │ id mcp-expr · entryId mcp-expr · 层 profile                                          │\n   │ serverName mcp-expr · transport stdio · 停用                                         │\n   │ disabled 表达式 !!js true                                                            │\n   │ 只读：disabled 由 !!js 表达式控制，不提供布尔开关                                    │\n   │                                                                                      │\n   │                                                                                      │\n   │                                                                                      │\n   │                                                                                      │\n   │                                                                                      │\n   │                                                                                      │\n   ╰──────────────────────────────────────────────────────────────────────────────────────╯\n   [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除] [i详情] [r刷新] \n   [?]                     \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n",
+          "toggle-beta-on-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断          工作区 · 0 项 · 分组:Group 01\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o                           \n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表 ·…  工作区 · 0项 …  │ │ 详情                         │\n   │   ▾ 作用域         │ │ 没有匹配的技能（状态：停用； │ │ （未选择技能）               │\n   │   全部 (4)         │ │ f 更改状态，x 清除筛选）。   │ │ 用 ↑/↓ 选择左侧列表中的技能… │\n   │ ❯ 工作区 (3) ✓     │ │                              │ │                              │\n   │   全局 (1)         │ │                              │ │                              │\n   │   ▾ 分组 [b]       │ │                              │ │                              │\n   │   全部分组         │ │                              │ │                              │\n   │   Group 00         │ │                              │ │                              │\n   │   Group 01 ✓       │ │                              │ │                              │\n   │   Group 02         │ │                              │ │                              │\n   │   Group 03         │ │                              │ │                              │\n   │   Group 04         │ │                              │ │                              │\n   │   Group 05         │ │                              │ │                              │\n   │   Group 06         │ │                              │ │                              │\n   │   Group 07         │ │                              │ │                              │\n   │   Group 08         │ │                              │ │                              │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f停用] [i全文] [p路径] \n   已切换 1 个技能（热加载中）                                                            \n\n",
+          "minimum-picker-end": "\n   Skill / MCP manager    skill-mcp-panel\n                                         \n   ╭────────────────────────────────────╮\n   │ 技能分组筛选                       │\n   │   Group 56                         │\n   │   Group 57                         │\n   │   Group 58                         │\n   │ ❯ Group 59 中文🧭 中文🧭 中文🧭 …  │\n   │ ↑↓ ↵确认 · 61/61 [Esc 取消]        │\n   ╰────────────────────────────────────╯\n                                   \n                                   \n                                         \n           \n                                         \n\n"
+        },
+        "writeCase": "only beta enabled then disabled back; other 6 baseline hashes preserved",
+        "renderFrames": {
+          "design-final-guard-frame.txt": "18 @ 2026-11-14T08:59:23.962Z tab=skills scope=all focus=scope ===\ntab=skills scope=all skillStatus=all query=\"\" search=false help=false focus=scope modal=- groupFilter=- marked=1\nscreen=40x16 listWidth=38 detailWidth=38\nlayout=single nav=scope:all navRange=2-2/66 scopeExpanded=true groupsExpanded=true\nsummary total=4 enabled=3 disabled=1 invalid=0 shadowed=1 workspace=3 global=1\nlist(4):\n● layout-alpha [project/.dsh 生效 groups=Group 00 marked]\n● layout-alpha [user/~/.dsh 被遮蔽]\n○ layout-beta [project/.dsh 停用 groups=Group 01,Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭]\n● probe-skill [project/.dsh 生效]\nselected=layout-alpha status=enabled path=<fixture>/project/.dsh/skills/layout-alpha.md\ngroups(60): g0:Group 00:1 g1:Group 01:1 g2:Group 02:0 g3:Group 03:0 g4:Group 04:0 g5:Group 05:0 g6:Group 06:0 g7:Group 07:0 g8:Group 08:0 g9:Group 09:0 g10:Group 10:0 g11:Group 11:0 g12:Group 12:0 g13:Group 13:0 g14:Group 14:0 g15:Group 15:0 g16:Group 16:0 g17:Group 17:0 g18:Group 18:0 g19:Group 19:0 g20:Group 20:0 g21:Group 21:0 g22:Group 22:0 g23:Group 23:0 g24:Group 24:0 g25:Group 25:0 g26:Group 26:0 g27:Group 27:0 g28:Group 28:0 g29:Group 29:0 g30:Group 30:0 g31:Group 31:0 g32:Group 32:0 g33:Group 33:0 g34:Group 34:0 g35:Group 35:0 g36:Group 36:0 g37:Group 37:0 g38:Group 38:0 g39:Group 39:0 g40:Group 40:0 g41:Group 41:0 g42:Group 42:0 g43:Group 43:0 g44:Group 44:0 g45:Group 45:0 g46:Group 46:0 g47:Group 47:0 g48:Group 48:0 g49:Group 49:0 g50:Group 50:0 g51:Group 51:0 g52:Group 52:0 g53:Group 53:0 g54:Group 54:0 g55:Group 55:0 g56:Group 56:0 g57:Group 57:0 g58:Group 58:0 g59:Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭:1\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=筛选区用于筛选；按 → 到技能列表后再操作技能\ndetail=ready\nfullText=- offset=0 rows=0\n",
+          "design-final-narrow-frame.txt": "23 @ 2026-11-14T08:57:05.966Z tab=skills scope=all focus=detail ===\ntab=skills scope=all skillStatus=all query=\"\" search=false help=false focus=detail modal=- groupFilter=- marked=0\nscreen=40x16 listWidth=38 detailWidth=38\nlayout=single nav=scope:all navRange=2-2/66 scopeExpanded=true groupsExpanded=true\nsummary total=4 enabled=3 disabled=1 invalid=0 shadowed=1 workspace=3 global=1\nlist(4):\n● layout-alpha [project/.dsh 生效 groups=Group 00]\n● layout-alpha [user/~/.dsh 被遮蔽]\n○ layout-beta [project/.dsh 停用 groups=Group 01,Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭]\n● probe-skill [project/.dsh 生效]\nselected=layout-alpha status=enabled path=<fixture>/project/.dsh/skills/layout-alpha.md\ngroups(60): g0:Group 00:1 g1:Group 01:1 g2:Group 02:0 g3:Group 03:0 g4:Group 04:0 g5:Group 05:0 g6:Group 06:0 g7:Group 07:0 g8:Group 08:0 g9:Group 09:0 g10:Group 10:0 g11:Group 11:0 g12:Group 12:0 g13:Group 13:0 g14:Group 14:0 g15:Group 15:0 g16:Group 16:0 g17:Group 17:0 g18:Group 18:0 g19:Group 19:0 g20:Group 20:0 g21:Group 21:0 g22:Group 22:0 g23:Group 23:0 g24:Group 24:0 g25:Group 25:0 g26:Group 26:0 g27:Group 27:0 g28:Group 28:0 g29:Group 29:0 g30:Group 30:0 g31:Group 31:0 g32:Group 32:0 g33:Group 33:0 g34:Group 34:0 g35:Group 35:0 g36:Group 36:0 g37:Group 37:0 g38:Group 38:0 g39:Group 39:0 g40:Group 40:0 g41:Group 41:0 g42:Group 42:0 g43:Group 43:0 g44:Group 44:0 g45:Group 45:0 g46:Group 46:0 g47:Group 47:0 g48:Group 48:0 g49:Group 49:0 g50:Group 50:0 g51:Group 51:0 g52:Group 52:0 g53:Group 53:0 g54:Group 54:0 g55:Group 55:0 g56:Group 56:0 g57:Group 57:0 g58:Group 58:0 g59:Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭:1\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=已清除过滤\ndetail=ready\nfullText=- offset=0 rows=0\n",
+          "design-final-frame.txt": "104 @ 2026-11-14T08:39:31.943Z tab=skills scope=all focus=list ===\ntab=skills scope=all skillStatus=all query=\"\" search=false help=false focus=list modal=- groupFilter=- marked=0\nscreen=90x26 listWidth=32 detailWidth=32\nlayout=tree nav=scope:all navRange=1-15/66 scopeExpanded=true groupsExpanded=true\nsummary total=4 enabled=3 disabled=1 invalid=0 shadowed=1 workspace=3 global=1\nlist(4):\n● layout-alpha [project/.dsh 生效 groups=Group 00]\n● layout-alpha [user/~/.dsh 被遮蔽]\n○ layout-beta [project/.dsh 停用 groups=Group 01,Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭]\n● probe-skill [project/.dsh 生效]\nselected=layout-beta status=disabled path=<fixture>/project/.dsh/skills/layout-beta.md.disabled\ngroups(60): g0:Group 00:1 g1:Group 01:1 g2:Group 02:0 g3:Group 03:0 g4:Group 04:0 g5:Group 05:0 g6:Group 06:0 g7:Group 07:0 g8:Group 08:0 g9:Group 09:0 g10:Group 10:0 g11:Group 11:0 g12:Group 12:0 g13:Group 13:0 g14:Group 14:0 g15:Group 15:0 g16:Group 16:0 g17:Group 17:0 g18:Group 18:0 g19:Group 19:0 g20:Group 20:0 g21:Group 21:0 g22:Group 22:0 g23:Group 23:0 g24:Group 24:0 g25:Group 25:0 g26:Group 26:0 g27:Group 27:0 g28:Group 28:0 g29:Group 29:0 g30:Group 30:0 g31:Group 31:0 g32:Group 32:0 g33:Group 33:0 g34:Group 34:0 g35:Group 35:0 g36:Group 36:0 g37:Group 37:0 g38:Group 38:0 g39:Group 39:0 g40:Group 40:0 g41:Group 41:0 g42:Group 42:0 g43:Group 43:0 g44:Group 44:0 g45:Group 45:0 g46:Group 46:0 g47:Group 47:0 g48:Group 48:0 g49:Group 49:0 g50:Group 50:0 g51:Group 51:0 g52:Group 52:0 g53:Group 53:0 g54:Group 54:0 g55:Group 55:0 g56:Group 56:0 g57:Group 57:0 g58:Group 58:0 g59:Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭:1\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=-\ndetail=ready\nfullText=- offset=0 rows=0\n",
+          "design-after-toggle-frame.txt": "62 @ 2026-11-14T08:38:44.279Z tab=skills scope=workspace focus=list ===\ntab=skills scope=workspace skillStatus=disabled query=\"beta\" search=false help=false focus=list modal=- groupFilter=g1 marked=0\nscreen=90x26 listWidth=32 detailWidth=32\nlayout=tree nav=scope:workspace navRange=1-15/66 scopeExpanded=true groupsExpanded=true\nsummary total=4 enabled=4 disabled=0 invalid=0 shadowed=1 workspace=3 global=1\nlist(0):\nselected=(none) status=- path=-\ngroups(60): g0:Group 00:1 g1:Group 01:1 g2:Group 02:0 g3:Group 03:0 g4:Group 04:0 g5:Group 05:0 g6:Group 06:0 g7:Group 07:0 g8:Group 08:0 g9:Group 09:0 g10:Group 10:0 g11:Group 11:0 g12:Group 12:0 g13:Group 13:0 g14:Group 14:0 g15:Group 15:0 g16:Group 16:0 g17:Group 17:0 g18:Group 18:0 g19:Group 19:0 g20:Group 20:0 g21:Group 21:0 g22:Group 22:0 g23:Group 23:0 g24:Group 24:0 g25:Group 25:0 g26:Group 26:0 g27:Group 27:0 g28:Group 28:0 g29:Group 29:0 g30:Group 30:0 g31:Group 31:0 g32:Group 32:0 g33:Group 33:0 g34:Group 34:0 g35:Group 35:0 g36:Group 36:0 g37:Group 37:0 g38:Group 38:0 g39:Group 39:0 g40:Group 40:0 g41:Group 41:0 g42:Group 42:0 g43:Group 43:0 g44:Group 44:0 g45:Group 45:0 g46:Group 46:0 g47:Group 47:0 g48:Group 48:0 g49:Group 49:0 g50:Group 50:0 g51:Group 51:0 g52:Group 52:0 g53:Group 53:0 g54:Group 54:0 g55:Group 55:0 g56:Group 56:0 g57:Group 57:0 g58:Group 58:0 g59:Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭:1\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=没有可切换的技能\ndetail=idle\nfullText=- offset=0 rows=0\n",
+          "design-readonly-frame.txt": "39 @ 2026-11-14T08:37:25.562Z tab=skills scope=all focus=list ===\ntab=skills scope=all skillStatus=all query=\"\" search=false help=false focus=list modal=- groupFilter=g0 marked=1\nscreen=90x26 listWidth=32 detailWidth=32\nlayout=tree nav=group:g0 navRange=1-15/66 scopeExpanded=true groupsExpanded=true\nsummary total=4 enabled=3 disabled=1 invalid=0 shadowed=1 workspace=3 global=1\nlist(1):\n● layout-alpha [project/.dsh 生效 groups=Group 00 marked]\nselected=layout-alpha status=enabled path=<fixture>/project/.dsh/skills/layout-alpha.md\ngroups(60): g0:Group 00:1 g1:Group 01:1 g2:Group 02:0 g3:Group 03:0 g4:Group 04:0 g5:Group 05:0 g6:Group 06:0 g7:Group 07:0 g8:Group 08:0 g9:Group 09:0 g10:Group 10:0 g11:Group 11:0 g12:Group 12:0 g13:Group 13:0 g14:Group 14:0 g15:Group 15:0 g16:Group 16:0 g17:Group 17:0 g18:Group 18:0 g19:Group 19:0 g20:Group 20:0 g21:Group 21:0 g22:Group 22:0 g23:Group 23:0 g24:Group 24:0 g25:Group 25:0 g26:Group 26:0 g27:Group 27:0 g28:Group 28:0 g29:Group 29:0 g30:Group 30:0 g31:Group 31:0 g32:Group 32:0 g33:Group 33:0 g34:Group 34:0 g35:Group 35:0 g36:Group 36:0 g37:Group 37:0 g38:Group 38:0 g39:Group 39:0 g40:Group 40:0 g41:Group 41:0 g42:Group 42:0 g43:Group 43:0 g44:Group 44:0 g45:Group 45:0 g46:Group 46:0 g47:Group 47:0 g48:Group 48:0 g49:Group 49:0 g50:Group 50:0 g51:Group 51:0 g52:Group 52:0 g53:Group 53:0 g54:Group 54:0 g55:Group 55:0 g56:Group 56:0 g57:Group 57:0 g58:Group 58:0 g59:Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭:1\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=按分组过滤：Group 00（x 清除）\ndetail=ready\nfullText=- offset=0 rows=0\n"
+        },
+        "unselectedBaseProbe": {
+          "path": "<fixture>/project/.dsh/skills/probe-skill/SKILL.md",
+          "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd",
+          "matchesUnchangedFixtureTemplate": true
+        }
+      },
+      {
+        "mode": "fullscreen",
+        "observedHostMount": {
+          "fullscreen": true,
+          "isRecompose": false
+        },
+        "exitCode": 0,
+        "closedBeforeFinalBuild": true,
+        "baselineHashes": [
+          {
+            "path": "<fixture>/project/.dsh/skills/layout-alpha.md",
+            "sha256": "f78998a24be6e0914d3ee2292e7a10f15b80667f6ad14b546918aad913222d7e",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/project/.dsh/skills/layout-beta.md.disabled",
+            "sha256": "66048091bce561beca80006f948dab8e481fa63207d8f43c6da25b65867d2365",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/skills/layout-alpha.md",
+            "sha256": "f78998a24be6e0914d3ee2292e7a10f15b80667f6ad14b546918aad913222d7e",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/skills/.system/skill-viewer/groups.json",
+            "sha256": "b48ea52f2a00bdf0ed02078629e1116782479352178c9b8398ef75920202b476",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/panel/config.json",
+            "sha256": "f20f39f6946dad08d752a95c881595b58dacdca3aef4fec3a763b18dac634a04",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/profiles/panel-verification/cordis.patch.yml",
+            "sha256": "1006a4777397699fd0f456d79999dd9d1b2e90b6df663fa4225dae51b4c9109d",
+            "preserved": true
+          },
+          {
+            "path": "<fixture>/dsh/cordis.patch.yml",
+            "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90",
+            "preserved": true
+          }
+        ],
+        "skillTrashManifestsRemaining": 0,
+        "finalSourceReplay": {
+          "assertions": 9,
+          "passed": 9,
+          "scope": "final source"
+        },
+        "finalSourceScreens": {
+          "list-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项         │ │ 详情  layout-alpha  ↕1/114   │\n   │   ▾ 作用域         │ │ ❯ layout-al…  project/.dsh … │ │ 状态 启用 · 来源 project/.ds │\n   │ ❯ 全部 (4) ✓       │ │   layout-al…  user/~/.dsh  … │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │   layout-be…  project/.dsh … │ │ 形态 平铺 .md · 内核可见     │\n   │   全局 (1)         │ │   probe-ski…  project/.dsh … │ │ 文件 /tmp/skill-mcp-real-tui │\n   │   ▾ 分组 [b]       │ │                              │ │ -JlX3jw/project/.dsh/skills/ │\n   │   全部分组 ✓       │ │                              │ │ layout-alpha.md              │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-J │\n   │   Group 01         │ │                              │ │ lX3jw/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区]    \n   [f筛选] [i全文] [p路径]                                                                  \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json                                          \n                                                                                            \n",
+          "mark-heading-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项 · 已标… │ │ 详情  layout-alpha  ↕1/114   │\n   │   ▾ 作用域         │ │ ❯ ✓ layout-al…  project/.ds… │ │ 状态 启用 · 来源 project/.ds │\n   │ ❯ 全部 (4) ✓       │ │   layout-al…  user/~/.dsh  … │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │   layout-be…  project/.dsh … │ │ 形态 平铺 .md · 内核可见     │\n   │   全局 (1)         │ │   probe-ski…  project/.dsh … │ │ 文件 /tmp/skill-mcp-real-tui │\n   │   ▾ 分组 [b]       │ │                              │ │ -JlX3jw/project/.dsh/skills/ │\n   │   全部分组 ✓       │ │                              │ │ layout-alpha.md              │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-J │\n   │   Group 01         │ │                              │ │ lX3jw/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区]    \n   [f筛选] [i全文] [p路径]                                                                  \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json                                          \n                                                                                            \n",
+          "blocked-filter-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项 · 已标… │ │ 详情  layout-alpha  ↕1/114   │\n   │   ▾ 作用域         │ │ ❯ ✓ layout-al…  project/.ds… │ │ 状态 启用 · 来源 project/.ds │\n   │ ❯ 全部 (4) ✓       │ │   layout-al…  user/~/.dsh  … │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │   layout-be…  project/.dsh … │ │ 形态 平铺 .md · 内核可见     │\n   │   全局 (1)         │ │   probe-ski…  project/.dsh … │ │ 文件 /tmp/skill-mcp-real-tui │\n   │   ▾ 分组 [b]       │ │                              │ │ -JlX3jw/project/.dsh/skills/ │\n   │   全部分组 ✓       │ │                              │ │ layout-alpha.md              │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-J │\n   │   Group 01         │ │                              │ │ lX3jw/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区]    \n   [f筛选] [i全文] [p路径]                                                                  \n   筛选区用于筛选；按 → 到技能列表后再操作技能                                              \n                                                                                            \n",
+          "blocked-membership-minimum": "\n   Skill / MCP manager skill-mcp-panel ·…\n     技能  MCP  分组  诊断    全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-rea…\n   ❯作用域  全部  工作区  全局 \n   [b 分组:全部] 列表\n   ╭────────────────────────────────────╮\n   │ 技能列表  全部 · 4项 · 已标记 1    │\n   │ ❯ ✓ layout-alpha    project/.dsh … │\n   │ 1-1 / 4                            │\n   ╰────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] \n   [a添加] [g分组] [/搜索] [x清除] \n   [r刷新] [?] [o工作区] [f筛选] [i全文] \n   [p路径] \n   筛选区用于筛选；按 → 到技能列表后再操…\n\n",
+          "minimum-detail": "\n   Skill / MCP manager skill-mcp-panel ·…\n     技能  MCP  分组  诊断    全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-rea…\n    作用域  全部  工作区  全局           \n   [b 分组:全部] 列表 › 详情             \n   ╭────────────────────────────────────╮\n   │ 详情  layout-alpha  ↕1/112         │\n   │ 状态 启用 · 来源 project/.dsh · ra │\n   │ nk 100 · 工作区                    │\n   ╰────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] \n   [a添加] [g分组] [/搜索] [x清除] \n   [r刷新] [?] [o工作区] [f筛选] [i全文] \n   [p路径] [←返回] \n   已清除过滤                            \n\n",
+          "minimum-back": "\n   Skill / MCP manager skill-mcp-panel ·…\n     技能  MCP  分组  诊断    全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-rea…\n    作用域  全部  工作区  全局           \n   [b 分组:全部] 列表                    \n   ╭────────────────────────────────────╮\n   │ 技能列表  全部 · 4项               │\n   │ ❯ layout-alpha    project/.dsh  …  │\n   │ 1-1 / 4                            │\n   ╰────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] \n   [a添加] [g分组] [/搜索] [x清除] \n   [r刷新] [?] [o工作区] [f筛选] [i全文] \n   [p路径]         \n   已清除过滤                            \n\n",
+          "list-64": "\n   Skill / MCP manager                    skill-mcp-panel · 64x26\n     技能  MCP  分组  诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n    作用域  全部(4)  工作区(3)  全局(1) \n   [b 分组:全部]\n   ╭────────────────────────────╮ ╭─────────────────────────────╮\n   │ 技能列表  全部 · 4项       │ │ 详情  layout-alpha  ↕1/114  │\n   │ ❯ layout-al…  project/.ds… │ │ 状态 启用 · 来源 project/.d │\n   │   layout-al…  user/~/.dsh… │ │ sh · rank 100 · 工作区      │\n   │   layout-be…  project/.ds… │ │ 形态 平铺 .md · 内核可见    │\n   │   probe-ski…  project/.ds… │ │ 文件 /tmp/skill-mcp-real-tu │\n   │                            │ │ i-JlX3jw/project/.dsh/skill │\n   │                            │ │ s/layout-alpha.md           │\n   │                            │ │ 根 /tmp/skill-mcp-real-tui- │\n   │                            │ │ JlX3jw/project/.dsh/skills  │\n   │                            │ │ description Layout 中文🧭 f │\n   │                            │ │ ixture                      │\n   │                            │ │ 正文预览（只读）· i 全文 ·  │\n   │                            │ │ p 路径                      │\n   │                            │ │   BODY-000 中文🧭 fixture   │\n   │                            │ │                             │\n   ╰────────────────────────────╯ ╰─────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] \n   [x清除] [r刷新] [?] [o工作区] [f筛选] [i全文] [p路径] \n   已清除过滤\n\n",
+          "mark-heading-64": "\n   Skill / MCP manager                    skill-mcp-panel · 64x26\n     技能  MCP  分组  诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n    作用域  全部(4)  工作区(3)  全局(1) \n   [b 分组:全部]\n   ╭────────────────────────────╮ ╭─────────────────────────────╮\n   │ 技能列表  全部 · 4项 · 已… │ │ 详情  layout-alpha  ↕1/114  │\n   │ ❯ ✓ layout-al…  project/.… │ │ 状态 启用 · 来源 project/.d │\n   │   layout-al…  user/~/.dsh… │ │ sh · rank 100 · 工作区      │\n   │   layout-be…  project/.ds… │ │ 形态 平铺 .md · 内核可见    │\n   │   probe-ski…  project/.ds… │ │ 文件 /tmp/skill-mcp-real-tu │\n   │                            │ │ i-JlX3jw/project/.dsh/skill │\n   │                            │ │ s/layout-alpha.md           │\n   │                            │ │ 根 /tmp/skill-mcp-real-tui- │\n   │                            │ │ JlX3jw/project/.dsh/skills  │\n   │                            │ │ description Layout 中文🧭 f │\n   │                            │ │ ixture                      │\n   │                            │ │ 正文预览（只读）· i 全文 ·  │\n   │                            │ │ p 路径                      │\n   │                            │ │   BODY-000 中文🧭 fixture   │\n   │                            │ │                             │\n   ╰────────────────────────────╯ ╰─────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] \n   [x清除] [r刷新] [?] [o工作区] [f筛选] [i全文] [p路径] \n   已清除过滤\n\n",
+          "list-110": "\n   Skill / MCP manager                                                                 skill-mcp-panel · 110x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                                全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭────────────────────────────────────────╮ ╭────────────────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项                   │ │ 详情  layout-alpha  ↕1/111             │\n   │   ▾ 作用域         │ │ ❯ layout-alpha        project/.dsh  …  │ │ 状态 启用 · 来源 project/.dsh · rank 1 │\n   │ ❯ 全部 (4) ✓       │ │   layout-alpha        user/~/.dsh  被… │ │ 00 · 工作区                            │\n   │   工作区 (3)       │ │   layout-beta         project/.dsh  …  │ │ 形态 平铺 .md · 内核可见               │\n   │   全局 (1)         │ │   probe-skill         project/.dsh  …  │ │ 文件 /tmp/skill-mcp-real-tui-ROOTXX/pr │\n   │   ▾ 分组 [b]       │ │                                        │ │ oject/.dsh/skills/layout-alpha.md      │\n   │   全部分组 ✓       │ │                                        │ │ 根 /tmp/skill-mcp-real-tui-ROOTXX/proj │\n   │   Group 00         │ │                                        │ │ ect/.dsh/skills                        │\n   │   Group 01         │ │                                        │ │ description Layout 中文🧭 fixture      │\n   │   Group 02         │ │                                        │ │ 正文预览（只读）· i 全文 · p 路径      │\n   │   Group 03         │ │                                        │ │   BODY-000 中文🧭 fixture              │\n   │   Group 04         │ │                                        │ │   BODY-001 中文🧭 fixture              │\n   │   Group 05         │ │                                        │ │   BODY-002 中文🧭 fixture              │\n   │   Group 06         │ │                                        │ │   BODY-003 中文🧭 fixture              │\n   │   Group 07         │ │                                        │ │   BODY-004 中文🧭 fixture              │\n   │   Group 08         │ │                                        │ │   BODY-005 中文🧭 fixture              │\n   │ 1-15/66            │ │                                        │ │                                        │\n   ╰────────────────────╯ ╰────────────────────────────────────────╯ ╰────────────────────────────────────────╯\n   [空格 启停] [v 标记] [d 删除] [u 撤销] [a 添加] [g 分组] [/ 搜索] [x 清除] [r 刷新] [? 帮助] [o 工作区] 共 …\n   [f 状态筛选] [i 全文] [p 路径]                                      共 4 · 生效 2 · 停用 1 · 无效 0 · 遮蔽 1\n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n"
+        },
+        "priorFlowReplay": {
+          "assertions": 27,
+          "passed": 27,
+          "scope": "final source"
+        },
+        "priorFlowBoundary": "Inline full flow preceded title-space reserve and common filter guard; fullscreen full flow preceded common filter guard. Group selection/write transactions unchanged; final-source supplements cover final headings and resize guard.",
+        "priorFlowScreens": {
+          "groups-fold-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills     Groups             全部 · 1 项 · 分组:Group 59 中文🧭 中文🧭 中文🧭 中文🧭…\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 1项         │ │ 详情  layout-beta  ↕1/114    │\n   │   ▾ 作用域         │ │ ❯ layout-be…  project/.dsh … │ │ 状态 停用 · 来源 project/.ds │\n   │   全部 (4) ✓       │ │                              │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │                              │ │ 形态 平铺 .md · 内核不可见   │\n   │   全局 (1)         │ │                              │ │ 文件 /tmp/skill-mcp-real-tui │\n   │ ❯ ▸ 分组 [b]       │ │                              │ │ -JlX3jw/project/.dsh/skills/ │\n   │                    │ │                              │ │ layout-beta.md.disabled      │\n   │                    │ │                              │ │ 根 /tmp/skill-mcp-real-tui-J │\n   │                    │ │                              │ │ lX3jw/project/.dsh/skills    │\n   │                    │ │                              │ │ description Layout 中文🧭 fi │\n   │                    │ │                              │ │ xture                        │\n   │                    │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │                    │ │                              │ │  路径                        │\n   │                    │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │                    │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │                    │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │                    │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   按分组过滤：Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中…\n\n",
+          "groups-reopen-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills     Groups             全部 · 1 项 · 分组:Group 59 中文🧭 中文🧭 中文🧭 中文🧭…\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 1项         │ │ 详情  layout-beta  ↕1/114    │\n   │   ▾ 作用域         │ │ ❯ layout-be…  project/.dsh … │ │ 状态 停用 · 来源 project/.ds │\n   │   全部 (4) ✓       │ │                              │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │                              │ │ 形态 平铺 .md · 内核不可见   │\n   │   全局 (1)         │ │                              │ │ 文件 /tmp/skill-mcp-real-tui │\n   │ ❯ ▾ 分组 [b]       │ │                              │ │ -JlX3jw/project/.dsh/skills/ │\n   │   全部分组         │ │                              │ │ layout-beta.md.disabled      │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-J │\n   │   Group 01         │ │                              │ │ lX3jw/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   按分组过滤：Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中…\n\n",
+          "pointer-group-beta-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断            全部 · 1 项 · 分组:Group 01\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o                           \n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 1项         │ │ 详情  layout-beta  ↕1/114    │\n   │   ▾ 作用域         │ │ ❯ layout-be…  project/.dsh … │ │ 状态 停用 · 来源 project/.ds │\n   │   全部 (4) ✓       │ │                              │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │                              │ │ 形态 平铺 .md · 内核不可见   │\n   │   全局 (1)         │ │                              │ │ 文件 /tmp/skill-mcp-real-tui │\n   │   ▾ 分组 [b]       │ │                              │ │ -JlX3jw/project/.dsh/skills/ │\n   │   全部分组         │ │                              │ │ layout-beta.md.disabled      │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-J │\n   │ ❯ Group 01 ✓       │ │                              │ │ lX3jw/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   按分组过滤：Group 01（x 清除）                                                         \n\n",
+          "form-input-90": "\n   Skill / MCP manager                                                      skill-mcp-panel\n                                                                                           \n   ╭──────────────────────────────────────────────────────────────────────────────────────╮\n   │ MCP serverName                                                                       │\n   │ serverName：                                                                         │\n   │ ❯ design-中文🧭-draft▌                                                               │\n   │ Ctrl+U 清空；已有 !!js 留空保留；Esc 返回表单                                        │\n   │ [Enter 提交] [Esc 取消]                                                              │\n   ╰──────────────────────────────────────────────────────────────────────────────────────╯\n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                           \n                                                  \n\n",
+          "form-cancel-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                                       \n   ╭──────────────────────────────────────────────────────────────────────────────────────╮\n   │ MCP servers  3 行 · 启用 0 · 停用 3                                                  │\n   │ 无工作区级配置 · 当前 profile 可写 · home 全局层只读                                 │\n   │ 筛选: 全部 · 分组:全部 · 3/3 行                                                      │\n   │ ❯ mcp-expr                  stdio  停用 · profile · 只读                             │\n   │   mcp-home                  stdio  停用 · home · 只读                                │\n   │   mcp-probe                 stdio  停用 · profile · 仅启停                           │\n   │ ──────────────────────────────────────────────────────────────────────────────────   │\n   │ 分组：(未分组) · g 修改                                                              │\n   │ id mcp-expr · entryId mcp-expr · 层 profile                                          │\n   │ serverName mcp-expr · transport stdio · 停用                                         │\n   │ disabled 表达式 !!js true                                                            │\n   │ 只读：disabled 由 !!js 表达式控制，不提供布尔开关                                    │\n   │                                                                                      │\n   │                                                                                      │\n   │                                                                                      │\n   │                                                                                      │\n   │                                                                                      │\n   │                                                                                      │\n   ╰──────────────────────────────────────────────────────────────────────────────────────╯\n   [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除] [i详情] [r刷新] \n   [?]                     \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n",
+          "delete-confirm-beta-90": "\n   Skill / MCP manager                                                      skill-mcp-panel\n                                                                                           \n   ╭──────────────────────────────────────────────────────────────────────────────────────╮\n   │ 删除技能                                                                             │\n   │ 将移入回收站（可撤销）：共 1 个                                                      │\n   │ ↑/↓ 滚动 · PgUp/PgDn 翻页 · Home/End 首尾                                            │\n   │ 1. layout-beta                                                                       │\n   │ 作用域：工作区 · 来源：project/.dsh                                                  │\n   │ 删除文件：/tmp/skill-mcp-real-tui-ROOTXX/project/.dsh/skills/layout-beta.md.disabled │\n   │ [首] [上页] [下页] [末] 1-6/6                                                        │\n   │ [y 确认] [n / Esc 取消]                                                              │\n   ╰──────────────────────────────────────────────────────────────────────────────────────╯\n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                           \n                                                                                         \n                           \n                                                                                          \n\n",
+          "delete-beta-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断            全部 · 0 项 · 分组:Group 01\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o                           \n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 0项         │ │ 详情                         │\n   │   ▾ 作用域         │ │ 分组「Group                  │ │ （未选择技能）               │\n   │   全部 (3) ✓       │ │ 01」在当前作用域没有技能（x  │ │ 用 ↑/↓ 选择左侧列表中的技能… │\n   │   工作区 (2)       │ │ 清除过滤）。                 │ │                              │\n   │   全局 (1)         │ │                              │ │                              │\n   │   ▾ 分组 [b]       │ │                              │ │                              │\n   │   全部分组         │ │                              │ │                              │\n   │   Group 00         │ │                              │ │                              │\n   │ ❯ Group 01 ✓       │ │                              │ │                              │\n   │   Group 02         │ │                              │ │                              │\n   │   Group 03         │ │                              │ │                              │\n   │   Group 04         │ │                              │ │                              │\n   │   Group 05         │ │                              │ │                              │\n   │   Group 06         │ │                              │ │                              │\n   │   Group 07         │ │                              │ │                              │\n   │   Group 08         │ │                              │ │                              │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   已移入回收站 1 个技能，可按 u 撤销                                                     \n\n",
+          "undo-beta-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断            全部 · 1 项 · 分组:Group 01\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o                           \n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 1项         │ │ 详情  layout-beta  ↕1/114    │\n   │   ▾ 作用域         │ │ ❯ layout-be…  project/.dsh … │ │ 状态 停用 · 来源 project/.ds │\n   │   全部 (4) ✓       │ │                              │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │                              │ │ 形态 平铺 .md · 内核不可见   │\n   │   全局 (1)         │ │                              │ │ 文件 /tmp/skill-mcp-real-tui │\n   │   ▾ 分组 [b]       │ │                              │ │ -JlX3jw/project/.dsh/skills/ │\n   │   全部分组         │ │                              │ │ layout-beta.md.disabled      │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-J │\n   │ ❯ Group 01 ✓       │ │                              │ │ lX3jw/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   已恢复 1 个                                                                            \n\n",
+          "pointer-wheel-tree-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o                           \n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项         │ │ 详情  layout-beta  ↕1/114    │\n   │   全部 (4) ✓       │ │   layout-al…  project/.dsh … │ │ 状态 停用 · 来源 project/.ds │\n   │   工作区 (3)       │ │   layout-al…  user/~/.dsh  … │ │ h · rank 100 · 工作区        │\n   │   全局 (1)         │ │ ❯ layout-be…  project/.dsh … │ │ 形态 平铺 .md · 内核不可见   │\n   │   ▾ 分组 [b]       │ │   probe-ski…  project/.dsh … │ │ 文件 /tmp/skill-mcp-real-tui │\n   │   全部分组 ✓       │ │                              │ │ -JlX3jw/project/.dsh/skills/ │\n   │   Group 00         │ │                              │ │ layout-beta.md.disabled      │\n   │   Group 01         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-J │\n   │ ❯ Group 02         │ │                              │ │ lX3jw/project/.dsh/skills    │\n   │   Group 03         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 04         │ │                              │ │ xture                        │\n   │   Group 05         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 06         │ │                              │ │  路径                        │\n   │   Group 07         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 09         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 2-16/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区]   \n   [f筛选] [i全文] [p路径] \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n",
+          "pointer-fold-groups-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o                           \n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项         │ │ 详情  layout-beta  ↕1/114    │\n   │   ▾ 作用域         │ │   layout-al…  project/.dsh … │ │ 状态 停用 · 来源 project/.ds │\n   │   全部 (4) ✓       │ │   layout-al…  user/~/.dsh  … │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │ ❯ layout-be…  project/.dsh … │ │ 形态 平铺 .md · 内核不可见   │\n   │   全局 (1)         │ │   probe-ski…  project/.dsh … │ │ 文件 /tmp/skill-mcp-real-tui │\n   │ ❯ ▸ 分组 [b]       │ │                              │ │ -JlX3jw/project/.dsh/skills/ │\n   │                    │ │                              │ │ layout-beta.md.disabled      │\n   │                    │ │                              │ │ 根 /tmp/skill-mcp-real-tui-J │\n   │                    │ │                              │ │ lX3jw/project/.dsh/skills    │\n   │                    │ │                              │ │ description Layout 中文🧭 fi │\n   │                    │ │                              │ │ xture                        │\n   │                    │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │                    │ │                              │ │  路径                        │\n   │                    │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │                    │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │                    │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │                    │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区]   \n   [f筛选] [i全文] [p路径] \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n",
+          "pointer-reopen-groups-90": "\n   Skill / MCP manager                                              skill-mcp-panel · 90x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                            全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o                           \n   ╭────────────────────╮ ╭──────────────────────────────╮ ╭──────────────────────────────╮\n   │ 作用域 / 分组      │ │ 技能列表  全部 · 4项         │ │ 详情  layout-beta  ↕1/114    │\n   │   ▾ 作用域         │ │   layout-al…  project/.dsh … │ │ 状态 停用 · 来源 project/.ds │\n   │   全部 (4) ✓       │ │   layout-al…  user/~/.dsh  … │ │ h · rank 100 · 工作区        │\n   │   工作区 (3)       │ │ ❯ layout-be…  project/.dsh … │ │ 形态 平铺 .md · 内核不可见   │\n   │   全局 (1)         │ │   probe-ski…  project/.dsh … │ │ 文件 /tmp/skill-mcp-real-tui │\n   │ ❯ ▾ 分组 [b]       │ │                              │ │ -JlX3jw/project/.dsh/skills/ │\n   │   全部分组 ✓       │ │                              │ │ layout-beta.md.disabled      │\n   │   Group 00         │ │                              │ │ 根 /tmp/skill-mcp-real-tui-J │\n   │   Group 01         │ │                              │ │ lX3jw/project/.dsh/skills    │\n   │   Group 02         │ │                              │ │ description Layout 中文🧭 fi │\n   │   Group 03         │ │                              │ │ xture                        │\n   │   Group 04         │ │                              │ │ 正文预览（只读）· i 全文 · p │\n   │   Group 05         │ │                              │ │  路径                        │\n   │   Group 06         │ │                              │ │   BODY-000 中文🧭 fixture    │\n   │   Group 07         │ │                              │ │   BODY-001 中文🧭 fixture    │\n   │   Group 08         │ │                              │ │   BODY-002 中文🧭 fixture    │\n   │ 1-15/66            │ │                              │ │                              │\n   ╰────────────────────╯ ╰──────────────────────────────╯ ╰──────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区]   \n   [f筛选] [i全文] [p路径] \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n",
+          "list-89": "\n   Skill / MCP manager                                             skill-mcp-panel · 89x26\n     Skills 技能  MCP  Groups 分组  Diagnostics 诊断                           全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n    作用域  全部(4)  工作区(3)  全局(1) \n   [b 分组:全部]\n   ╭─────────────────────────────────────────╮ ╭─────────────────────────────────────────╮\n   │ 技能列表  全部 · 4项                    │ │ 详情  layout-beta  ↕1/112               │\n   │   layout-alpha         project/.dsh  …  │ │ 状态 停用 · 来源 project/.dsh · rank 10 │\n   │   layout-alpha         user/~/.dsh  被… │ │ 0 · 工作区                              │\n   │ ❯ layout-beta          project/.dsh  …  │ │ 形态 平铺 .md · 内核不可见              │\n   │   probe-skill          project/.dsh  …  │ │ 文件 /tmp/skill-mcp-real-tui-ROOTXX/pro │\n   │                                         │ │ ject/.dsh/skills/layout-beta.md.disable │\n   │                                         │ │ d                                       │\n   │                                         │ │ 根 /tmp/skill-mcp-real-tui-ROOTXX/proje │\n   │                                         │ │ ct/.dsh/skills                          │\n   │                                         │ │ description Layout 中文🧭 fixture       │\n   │                                         │ │ 正文预览（只读）· i 全文 · p 路径       │\n   │                                         │ │   BODY-000 中文🧭 fixture               │\n   │                                         │ │   BODY-001 中文🧭 fixture               │\n   │                                         │ │   BODY-002 中文🧭 fixture               │\n   │                                         │ │                                         │\n   ╰─────────────────────────────────────────╯ ╰─────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] [x清除] [r刷新] [?] [o工作区] \n   [f筛选] [i全文] [p路径] \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n",
+          "list-63": "\n   Skill / MCP manager                   skill-mcp-panel · 63x26\n     技能  MCP  分组  诊断                           全部 · 4 项\n   目标（当前工作区） /tmp/skill-mcp-real-tui-ROOTXX/project · o\n    作用域  全部(4)  工作区(3)  全局(1) \n   [b 分组:全部] 列表\n   ╭───────────────────────────────────────────────────────────╮\n   │ 技能列表  全部 · 4项                                      │\n   │   layout-alpha                  project/.dsh  生效  ◆Gro… │\n   │   layout-alpha                  user/~/.dsh  被遮蔽       │\n   │ ❯ layout-beta                   project/.dsh  停用  ◆Gro… │\n   │   probe-skill                   project/.dsh  生效        │\n   │                                                           │\n   │                                                           │\n   │                                                           │\n   │                                                           │\n   │                                                           │\n   │                                                           │\n   │                                                           │\n   │                                                           │\n   │                                                           │\n   │                                                           │\n   ╰───────────────────────────────────────────────────────────╯\n   [␣启停] [v标记] [d删除] [u撤销] [a添加] [g分组] [/搜索] \n   [x清除] [r刷新] [?] [o工作区] [f筛选] [i全文] [p路径] \n   已写入 /tmp/skill-mcp-real-tui-ROOTXX/dump.json\n\n"
+        },
+        "writeCase": "only beta moved to skill trash then restored; other 6 baseline hashes preserved, no skill trash manifest remains",
+        "renderFrames": {
+          "design-final-guard-frame.txt": "18 @ 2026-11-14T09:01:32.435Z tab=skills scope=all focus=scope ===\ntab=skills scope=all skillStatus=all query=\"\" search=false help=false focus=scope modal=- groupFilter=- marked=1\nscreen=40x16 listWidth=38 detailWidth=38\nlayout=single nav=scope:all navRange=2-2/66 scopeExpanded=true groupsExpanded=true\nsummary total=4 enabled=3 disabled=1 invalid=0 shadowed=1 workspace=3 global=1\nlist(4):\n● layout-alpha [project/.dsh 生效 groups=Group 00 marked]\n● layout-alpha [user/~/.dsh 被遮蔽]\n○ layout-beta [project/.dsh 停用 groups=Group 01,Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭]\n● probe-skill [project/.dsh 生效]\nselected=layout-alpha status=enabled path=<fixture>/project/.dsh/skills/layout-alpha.md\ngroups(60): g0:Group 00:1 g1:Group 01:1 g2:Group 02:0 g3:Group 03:0 g4:Group 04:0 g5:Group 05:0 g6:Group 06:0 g7:Group 07:0 g8:Group 08:0 g9:Group 09:0 g10:Group 10:0 g11:Group 11:0 g12:Group 12:0 g13:Group 13:0 g14:Group 14:0 g15:Group 15:0 g16:Group 16:0 g17:Group 17:0 g18:Group 18:0 g19:Group 19:0 g20:Group 20:0 g21:Group 21:0 g22:Group 22:0 g23:Group 23:0 g24:Group 24:0 g25:Group 25:0 g26:Group 26:0 g27:Group 27:0 g28:Group 28:0 g29:Group 29:0 g30:Group 30:0 g31:Group 31:0 g32:Group 32:0 g33:Group 33:0 g34:Group 34:0 g35:Group 35:0 g36:Group 36:0 g37:Group 37:0 g38:Group 38:0 g39:Group 39:0 g40:Group 40:0 g41:Group 41:0 g42:Group 42:0 g43:Group 43:0 g44:Group 44:0 g45:Group 45:0 g46:Group 46:0 g47:Group 47:0 g48:Group 48:0 g49:Group 49:0 g50:Group 50:0 g51:Group 51:0 g52:Group 52:0 g53:Group 53:0 g54:Group 54:0 g55:Group 55:0 g56:Group 56:0 g57:Group 57:0 g58:Group 58:0 g59:Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭:1\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=筛选区用于筛选；按 → 到技能列表后再操作技能\ndetail=ready\nfullText=- offset=0 rows=0\n",
+          "design-final-frame.txt": "85 @ 2026-11-14T08:49:41.320Z tab=skills scope=all focus=list ===\ntab=skills scope=all skillStatus=all query=\"\" search=false help=false focus=list modal=- groupFilter=- marked=0\nscreen=90x26 listWidth=32 detailWidth=32\nlayout=tree nav=group:g1 navRange=1-15/66 scopeExpanded=true groupsExpanded=true\nsummary total=4 enabled=3 disabled=1 invalid=0 shadowed=1 workspace=3 global=1\nlist(4):\n● layout-alpha [project/.dsh 生效 groups=Group 00]\n● layout-alpha [user/~/.dsh 被遮蔽]\n○ layout-beta [project/.dsh 停用 groups=Group 01,Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭]\n● probe-skill [project/.dsh 生效]\nselected=layout-beta status=disabled path=<fixture>/project/.dsh/skills/layout-beta.md.disabled\ngroups(60): g0:Group 00:1 g1:Group 01:1 g2:Group 02:0 g3:Group 03:0 g4:Group 04:0 g5:Group 05:0 g6:Group 06:0 g7:Group 07:0 g8:Group 08:0 g9:Group 09:0 g10:Group 10:0 g11:Group 11:0 g12:Group 12:0 g13:Group 13:0 g14:Group 14:0 g15:Group 15:0 g16:Group 16:0 g17:Group 17:0 g18:Group 18:0 g19:Group 19:0 g20:Group 20:0 g21:Group 21:0 g22:Group 22:0 g23:Group 23:0 g24:Group 24:0 g25:Group 25:0 g26:Group 26:0 g27:Group 27:0 g28:Group 28:0 g29:Group 29:0 g30:Group 30:0 g31:Group 31:0 g32:Group 32:0 g33:Group 33:0 g34:Group 34:0 g35:Group 35:0 g36:Group 36:0 g37:Group 37:0 g38:Group 38:0 g39:Group 39:0 g40:Group 40:0 g41:Group 41:0 g42:Group 42:0 g43:Group 43:0 g44:Group 44:0 g45:Group 45:0 g46:Group 46:0 g47:Group 47:0 g48:Group 48:0 g49:Group 49:0 g50:Group 50:0 g51:Group 51:0 g52:Group 52:0 g53:Group 53:0 g54:Group 54:0 g55:Group 55:0 g56:Group 56:0 g57:Group 57:0 g58:Group 58:0 g59:Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭:1\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=-\ndetail=ready\nfullText=- offset=0 rows=0\n",
+          "design-after-delete-frame.txt": "51 @ 2026-11-14T08:49:09.184Z tab=skills scope=all focus=list ===\ntab=skills scope=all skillStatus=all query=\"\" search=false help=false focus=list modal=- groupFilter=g1 marked=0\nscreen=90x26 listWidth=32 detailWidth=32\nlayout=tree nav=group:g1 navRange=1-15/66 scopeExpanded=true groupsExpanded=true\nsummary total=3 enabled=3 disabled=0 invalid=0 shadowed=1 workspace=2 global=1\nlist(0):\nselected=(none) status=- path=-\ngroups(60): g0:Group 00:1 g1:Group 01:1 g2:Group 02:0 g3:Group 03:0 g4:Group 04:0 g5:Group 05:0 g6:Group 06:0 g7:Group 07:0 g8:Group 08:0 g9:Group 09:0 g10:Group 10:0 g11:Group 11:0 g12:Group 12:0 g13:Group 13:0 g14:Group 14:0 g15:Group 15:0 g16:Group 16:0 g17:Group 17:0 g18:Group 18:0 g19:Group 19:0 g20:Group 20:0 g21:Group 21:0 g22:Group 22:0 g23:Group 23:0 g24:Group 24:0 g25:Group 25:0 g26:Group 26:0 g27:Group 27:0 g28:Group 28:0 g29:Group 29:0 g30:Group 30:0 g31:Group 31:0 g32:Group 32:0 g33:Group 33:0 g34:Group 34:0 g35:Group 35:0 g36:Group 36:0 g37:Group 37:0 g38:Group 38:0 g39:Group 39:0 g40:Group 40:0 g41:Group 41:0 g42:Group 42:0 g43:Group 43:0 g44:Group 44:0 g45:Group 45:0 g46:Group 46:0 g47:Group 47:0 g48:Group 48:0 g49:Group 49:0 g50:Group 50:0 g51:Group 51:0 g52:Group 52:0 g53:Group 53:0 g54:Group 54:0 g55:Group 55:0 g56:Group 56:0 g57:Group 57:0 g58:Group 58:0 g59:Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭:1\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=20261114T084909Z-2w7isi status=已移入回收站 1 个技能，可按 u 撤销\ndetail=idle\nfullText=- offset=0 rows=0\n",
+          "design-readonly-frame.txt": "40 @ 2026-11-14T08:48:16.422Z tab=skills scope=all focus=list ===\ntab=skills scope=all skillStatus=all query=\"\" search=false help=false focus=list modal=- groupFilter=g0 marked=1\nscreen=90x26 listWidth=32 detailWidth=32\nlayout=tree nav=group:g0 navRange=1-15/66 scopeExpanded=true groupsExpanded=true\nsummary total=4 enabled=3 disabled=1 invalid=0 shadowed=1 workspace=3 global=1\nlist(1):\n● layout-alpha [project/.dsh 生效 groups=Group 00 marked]\nselected=layout-alpha status=enabled path=<fixture>/project/.dsh/skills/layout-alpha.md\ngroups(60): g0:Group 00:1 g1:Group 01:1 g2:Group 02:0 g3:Group 03:0 g4:Group 04:0 g5:Group 05:0 g6:Group 06:0 g7:Group 07:0 g8:Group 08:0 g9:Group 09:0 g10:Group 10:0 g11:Group 11:0 g12:Group 12:0 g13:Group 13:0 g14:Group 14:0 g15:Group 15:0 g16:Group 16:0 g17:Group 17:0 g18:Group 18:0 g19:Group 19:0 g20:Group 20:0 g21:Group 21:0 g22:Group 22:0 g23:Group 23:0 g24:Group 24:0 g25:Group 25:0 g26:Group 26:0 g27:Group 27:0 g28:Group 28:0 g29:Group 29:0 g30:Group 30:0 g31:Group 31:0 g32:Group 32:0 g33:Group 33:0 g34:Group 34:0 g35:Group 35:0 g36:Group 36:0 g37:Group 37:0 g38:Group 38:0 g39:Group 39:0 g40:Group 40:0 g41:Group 41:0 g42:Group 42:0 g43:Group 43:0 g44:Group 44:0 g45:Group 45:0 g46:Group 46:0 g47:Group 47:0 g48:Group 48:0 g49:Group 49:0 g50:Group 50:0 g51:Group 51:0 g52:Group 52:0 g53:Group 53:0 g54:Group 54:0 g55:Group 55:0 g56:Group 56:0 g57:Group 57:0 g58:Group 58:0 g59:Group 59 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭 中文🧭:1\nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=-\ndetail=ready\nfullText=- offset=0 rows=0\n"
+        },
+        "unselectedBaseProbe": {
+          "path": "<fixture>/project/.dsh/skills/probe-skill/SKILL.md",
+          "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd",
+          "matchesUnchangedFixtureTemplate": true
+        }
+      }
+    ],
+    "supplementalReplayTotal": 65,
+    "additionalPointerWheelAssertions": 1,
+    "failedSupplementExcluded": "One quick supplement assumed Esc returned from marked detail; actual existing priority first clears marks. It closed the scene later, was excluded, made no model request, and was rerun with frame/focus checkpoints.",
+    "finalSourceGuardProof": "Both modes shrink active marked tree filter focus to 40x16; d/space/v/g keep modal absent, mark intact and 7 hashes unchanged; explicitly move right before list actions"
+  },
+  "performance": {
+    "date": "2026-11-14T08:54:10.202Z",
+    "baseline": "a4b8f68",
+    "environment": {
+      "node": "26.3.0",
+      "host": "0.19.0",
+      "platform": "linux",
+      "release": "6.18.58.1-microsoft-standard-WSL2",
+      "cpu": "Intel(R) Core(TM) Ultra X7 358H",
+      "logicalCpus": 14,
+      "totalMemoryBytes": 25201803264,
+      "filesystem": "/ /dev/sdd ext4",
+      "physicalSSD": "unverified; virtual block device does not establish physical medium"
+    },
+    "fixture": {
+      "skills": 1000,
+      "bytes": 9027890,
+      "bodyBytes": 8960,
+      "directory": 500,
+      "flat": 500,
+      "workspace": 600,
+      "global": 400,
+      "enabled": 800,
+      "disabled": 200,
+      "groups": 20,
+      "all1000SkillFilesAndGroupBytesPreserved": true
+    },
+    "method": {
+      "coldOpen": "before constructing a fresh runtime -> 1000-row scan committed and actual terminal output parsed; excludes CLI/host startup, metadata/cleanup completion and fixture preparation",
+      "warmOpen": "unmount/remount scene with same runtime and fresh output emulator (includes unmount cost)",
+      "search": "real stdin one Unicode codepoint at a time -> exact query, expected result count and visible search cursor confirmed from real host ANSI output",
+      "observedMs": "includes input scheduling, React, renderer, output and terminal emulator callback; conservative local upper bound",
+      "cache": "OS cache not dropped; files just created and reused across trials; first runtime is not disk-cold",
+      "renderer": "real installed host UI/React with custom streams and headless xterm, not real CLI/PTY or physical display",
+      "debug": "no disk dump; existing verification frame captured in memory",
+      "renderIO": "static audit required separately; selected preview reads asynchronously after commit"
+    },
+    "coldOpenObserved": {
+      "samples": 6,
+      "minMs": 322.3399580000005,
+      "medianMs": 334.7352289999999,
+      "p95Ms": 463.881433,
+      "maxMs": 463.881433
+    },
+    "warmOpenObserved": {
+      "samples": 6,
+      "minMs": 13.635937000000013,
+      "medianMs": 17.795256000000336,
+      "p95Ms": 22.493733999999677,
+      "maxMs": 22.493733999999677
+    },
+    "searchObserved": {
+      "samples": 168,
+      "minMs": 2.5422019999996337,
+      "medianMs": 13.990139999999883,
+      "p95Ms": 24.283695999999964,
+      "maxMs": 26.536169999999856
+    },
+    "localThresholds": {
+      "coldOpenUnder1s": true,
+      "warmOpenUnder1s": true,
+      "everySearchKeyUnder100ms": true
+    },
+    "trials": [
+      {
+        "columns": 58,
+        "trial": 1,
+        "scanReadyMs": 442.648198,
+        "startupReadyMs": 506.3063350000001,
+        "coldOpen": {
+          "observedMs": 463.881433
+        },
+        "warmOpen": {
+          "observedMs": 13.635937000000013
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 6.370686000000205
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 15.11216300000001
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 5.6847969999998895
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 15.176965999999993
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 6.659722000000102
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 14.123348000000078
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 6.351022999999941
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 15.471609999999828
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 22.83428200000003
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 4.218851000000086
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 5.850198999999975
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.288385999999946
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 4.317127000000028
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 14.091756000000032
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 20.728350999999975
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 4.398288000000093
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 16.07622800000013
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 5.0343279999999595
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 17.00388399999997
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 5.021592999999939
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 15.426296999999977
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 3.727476000000024
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 14.72245399999997
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 3.601758999999902
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 5.662156999999979
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 15.752569999999878
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 5.241584999999986
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 14.342088999999987
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 3.601758999999902,
+          "medianMs": 6.659722000000102,
+          "p95Ms": 20.728350999999975,
+          "maxMs": 22.83428200000003
+        }
+      },
+      {
+        "columns": 58,
+        "trial": 2,
+        "scanReadyMs": 367.71157300000004,
+        "startupReadyMs": 434.4336109999999,
+        "coldOpen": {
+          "observedMs": 373.69485099999997
+        },
+        "warmOpen": {
+          "observedMs": 18.47577199999978
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 24.218554999999924
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 8.169702000000143
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 15.253803999999946
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 8.782228999999916
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 15.964082999999846
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 9.044249000000036
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 14.637363999999707
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 21.312116999999944
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 5.087408000000323
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 13.648435000000063
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 24.934132000000318
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 9.261451999999736
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 19.624457999999777
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.815002000000277
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 9.37218699999994
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 26.536169999999856
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 7.703833999999915
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 15.452072000000044
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 7.641903000000184
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 15.048392000000149
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 25.390057999999954
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 4.103047999999944
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 13.990139999999883
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 3.0997769999999036
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 24.283695999999964
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 8.454029999999875
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 19.255424999999832
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.6615960000003724
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 2.6615960000003724,
+          "medianMs": 13.648435000000063,
+          "p95Ms": 25.390057999999954,
+          "maxMs": 26.536169999999856
+        }
+      },
+      {
+        "columns": 58,
+        "trial": 3,
+        "scanReadyMs": 325.95219399999996,
+        "startupReadyMs": 384.24172799999997,
+        "coldOpen": {
+          "observedMs": 331.75579300000027
+        },
+        "warmOpen": {
+          "observedMs": 17.795256000000336
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 7.495078999999805
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 15.22358800000029
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 7.578355999999985
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 15.273971000000074
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 7.950992000000042
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 14.258928000000196
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 7.502931999999873
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 17.842775000000074
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 19.970182000000023
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 2.9704719999999725
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 8.108220000000074
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 15.109487000000172
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 20.200619000000188
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 3.0902640000003885
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 9.193822999999611
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 23.91328599999997
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 8.018409999999676
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 15.024894000000131
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 7.501411999999618
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 15.21756600000026
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 23.732833999999457
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 3.7603870000002644
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 15.329745999999432
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 19.117679999999382
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 7.671892000000298
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.603954000000158
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 19.838262999999642
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.5422019999996337
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 2.5422019999996337,
+          "medianMs": 14.258928000000196,
+          "p95Ms": 23.732833999999457,
+          "maxMs": 23.91328599999997
+        }
+      },
+      {
+        "columns": 120,
+        "trial": 1,
+        "scanReadyMs": 315.26383799999985,
+        "startupReadyMs": 387.72479399999975,
+        "coldOpen": {
+          "observedMs": 322.3399580000005
+        },
+        "warmOpen": {
+          "observedMs": 22.493733999999677
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 9.782342999999855
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 13.876805000000786
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 9.445169000000533
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 16.071368999999322
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 8.211381000000074
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 15.400116999999227
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 8.505286000000524
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 15.248101000000133
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 20.856079000000136
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 3.802349000000504
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 9.154653999999937
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 12.98096600000008
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 20.054339000000255
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 3.105091000000357
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 9.958458000000064
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 24.780104000000392
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 9.617377999999917
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 14.629870999999184
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 7.99631700000009
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 14.540246999999908
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 24.36222600000019
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 4.533333999999741
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 14.910834999999679
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 4.127592999999251
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 7.885392000000138
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 15.225030000000515
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 21.274709999999686
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 2.9518770000004224
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 2.9518770000004224,
+          "medianMs": 9.958458000000064,
+          "p95Ms": 24.36222600000019,
+          "maxMs": 24.780104000000392
+        }
+      },
+      {
+        "columns": 120,
+        "trial": 2,
+        "scanReadyMs": 382.3443299999999,
+        "startupReadyMs": 445.1614099999997,
+        "coldOpen": {
+          "observedMs": 389.9466110000003
+        },
+        "warmOpen": {
+          "observedMs": 16.83954999999969
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 10.291731999999683
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 15.217453000000205
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 7.855553999999756
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 14.826821999999993
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 23.858933999999863
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 8.053433000000041
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 14.876689000000624
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 21.32944000000043
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 5.914221999999427
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 14.250036000000364
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 8.503128999999717
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.027471999999761
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 20.066576999999597
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 3.5246060000008583
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 19.559049000000414
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 11.844989999999598
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 11.507423000000017
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 14.26484100000016
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 24.308309999999437
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 8.371845000000576
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 14.796468999999888
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 21.594935000000078
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 3.8575419999997393
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 14.300584999999955
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 8.73688200000015
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 15.251930999999786
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 21.95670599999994
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 3.003656000000774
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 3.003656000000774,
+          "medianMs": 14.250036000000364,
+          "p95Ms": 23.858933999999863,
+          "maxMs": 24.308309999999437
+        }
+      },
+      {
+        "columns": 120,
+        "trial": 3,
+        "scanReadyMs": 330.60651400000006,
+        "startupReadyMs": 393.5653910000001,
+        "coldOpen": {
+          "observedMs": 334.7352289999999
+        },
+        "warmOpen": {
+          "observedMs": 19.427976000000854
+        },
+        "perKey": [
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 9.282030000000304
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 15.459321000000273
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 9.407463000000462
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 14.675622000000658
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 8.204877999999553
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 15.87025099999937
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 8.310945000000174
+          },
+          {
+            "query": "skill-09",
+            "matches": 100,
+            "observedMs": 15.776010999999926
+          },
+          {
+            "query": "skill-099",
+            "matches": 10,
+            "observedMs": 20.292145000000346
+          },
+          {
+            "query": "skill-0999",
+            "matches": 1,
+            "observedMs": 5.478949999999713
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 9.268309999999474
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 14.361176999998861
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 20.011335999999574
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 3.1369290000002366
+          },
+          {
+            "query": "s",
+            "matches": 1000,
+            "observedMs": 25.468354000000545
+          },
+          {
+            "query": "sk",
+            "matches": 1000,
+            "observedMs": 8.127882999999201
+          },
+          {
+            "query": "ski",
+            "matches": 1000,
+            "observedMs": 14.519953000000896
+          },
+          {
+            "query": "skil",
+            "matches": 1000,
+            "observedMs": 25.33719199999905
+          },
+          {
+            "query": "skill",
+            "matches": 1000,
+            "observedMs": 8.609532999998919
+          },
+          {
+            "query": "skill-",
+            "matches": 1000,
+            "observedMs": 15.149144000000888
+          },
+          {
+            "query": "skill-0",
+            "matches": 1000,
+            "observedMs": 8.415956000000733
+          },
+          {
+            "query": "skill-00",
+            "matches": 100,
+            "observedMs": 15.81797700000061
+          },
+          {
+            "query": "skill-000",
+            "matches": 10,
+            "observedMs": 3.5430209999994986
+          },
+          {
+            "query": "skill-0000",
+            "matches": 1,
+            "observedMs": 14.769255999999586
+          },
+          {
+            "query": "中",
+            "matches": 1000,
+            "observedMs": 8.514750999998796
+          },
+          {
+            "query": "中文",
+            "matches": 1000,
+            "observedMs": 13.701970000000074
+          },
+          {
+            "query": "z",
+            "matches": 0,
+            "observedMs": 19.357342000001154
+          },
+          {
+            "query": "zz",
+            "matches": 0,
+            "observedMs": 3.032429000000775
+          }
+        ],
+        "searchObserved": {
+          "samples": 28,
+          "minMs": 3.032429000000775,
+          "medianMs": 13.701970000000074,
+          "p95Ms": 25.33719199999905,
+          "maxMs": 25.468354000000545
+        }
+      }
+    ],
+    "limits": [
+      "Local observation only; not physical SSD or disk-cold certification",
+      "No full user manual acceptance or model requests",
+      "Input pacing waits for each completed key; burst backlog and physical terminal transport not measured"
+    ],
+    "startupReadyObserved": {
+      "samples": 6,
+      "maxMs": 506.3063350000001
+    }
+  },
+  "boundaries": {
+    "realUserConfigOrSkillsChanged": false,
+    "installedThirdPartyChanged": false,
+    "ownLinkedPluginBuildChanged": true,
+    "modelRequestsMade": false,
+    "newDependencies": false,
+    "newPermissions": false,
+    "published": false,
+    "tagCreated": false,
+    "AC14": "design implementation gap resolved; full user/manual/physical terminal matrix still pending",
+    "AC15": "not passed; KI-01..03 unchanged",
+    "fullUserAcceptance": "pending",
+    "performanceAcceptance": "local ext4 warm OS cache under target; physical SSD/disk-cold and user environment not certified"
+  },
+  "finalReleaseCheck": {
+    "command": "pnpm check:release",
+    "status": "passed",
+    "exitCode": 0,
+    "tests": 215,
+    "passed": 215,
+    "failed": 0,
+    "skipped": 0,
+    "layoutAssertions": 793,
+    "layoutSizes": 13,
+    "mouseAssertions": 239,
+    "mouseSizes": 5,
+    "skillFilterAssertions": 52,
+    "navigationAssertions": 107,
+    "manifest": "passed",
+    "renderSmoke": "passed",
+    "interactionSmoke": "passed",
+    "mcpSmoke": "passed",
+    "crudColumns": [
+      120,
+      58
+    ],
+    "groupColumns": [
+      120,
+      58
+    ],
+    "tarballAtFullCheck": {
+      "check": "tarball",
+      "ok": true,
+      "name": "dsh-tui-skill-mcp-panel",
+      "version": "0.1.0-dev.0",
+      "fileCount": 92,
+      "bytes": 119886,
+      "sha256": "3c6f69cea432916e07a7ef09f6ff4da10225653a20a0a1458445ebcce011888f",
+      "npmIntegrity": "sha512-OMXh97FIob7uIp5wGfRYsDtShY/5TrlxyC2CHjzu5fqz3ldNUdL+hPulhfP4YLHs9IiQArvRf5XJ6bTwh5Q1Lg==",
+      "dryRunFileCount": 92,
+      "manifestId": "com.dsh-tui.skill-mcp-panel",
+      "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+      "diagnosticVersionSmoke": "plugin metadata from extracted package; Node actual; absent host/kernel unavailable",
+      "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+    },
+    "scope": "Final product source/tests; README current-status table clarified after full run, final tarball checked separately"
+  },
+  "next": {
+    "source": "docs/需求文档.md §14.1 and docs/release-readiness.md §4",
+    "item": "Prepare final user acceptance package with executable steps, expected results and unresolved boundaries; retain P1 deferral and no real-install compatibility patch"
+  },
+  "finalTarballCheck": {
+    "command": "pnpm check:tarball",
+    "exitCode": 0,
+    "result": {
+      "check": "tarball",
+      "ok": true,
+      "name": "dsh-tui-skill-mcp-panel",
+      "version": "0.1.0-dev.0",
+      "fileCount": 92,
+      "bytes": 119936,
+      "sha256": "9e79ff0ccbf4bee916a01fe570834e25bf73322c8e0d31cd1def5f5f258477cc",
+      "npmIntegrity": "sha512-xpbdWz8r28CelugmBttGKb+cAkc42Cs9j9L8PJkAGkdKczx1CLRL2yqLNbqYbgyM73JxwTqNYXpGOKb1bom6XA==",
+      "dryRunFileCount": 92,
+      "manifestId": "com.dsh-tui.skill-mcp-panel",
+      "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+      "diagnosticVersionSmoke": "plugin metadata from extracted package; Node actual; absent host/kernel unavailable",
+      "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+    },
+    "scope": "Final packed README/current-status table and unchanged final product source; subsequent edits only non-packed docs/evidence"
+  }
+}

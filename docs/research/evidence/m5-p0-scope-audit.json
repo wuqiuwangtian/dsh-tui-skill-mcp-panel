@@ -307,8 +307,8 @@
       "AC-14 layout/modes versus §6.1",
       "§8 1000 skills and per-keystroke search timing"
     ],
-    "condition": "Original layout table and FR/AC preserved; wait for user decision on restoring design or explicitly adopting current layout before dependent changes",
-    "status": "Local layout/mode/performance audit completed; layout decision and full user acceptance pending",
-    "resolutionEvidence": "m5-layout-performance-audit.json"
+    "condition": "Keep original FR/AC and KI-01..03; prepare final user acceptance package after related regressions; do not reinterpret local checks as full user acceptance",
+    "status": "User chose A; design alignment implemented and locally verified, final check:release passed; full user acceptance pending",
+    "resolutionEvidence": "m5-layout-restoration.json"
   }
 }

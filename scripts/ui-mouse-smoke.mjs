@@ -105,7 +105,7 @@ class Input extends Readable {
 }
 let checks = 0
 const results = []
-for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
+for (const [columns, rows] of [[40, 16], [58, 22], [64, 24], [90, 24], [116, 33]]) {
   const runtime = new Runtime(), stdout = new Output(columns, rows), stdin = new Input()
   const term = new Terminal({ cols: columns, rows, allowProposedApi: true, scrollback: 0 })
   term.loadAddon(new Unicode11Addon()); term.unicode.activeVersion = '11'
@@ -133,8 +133,8 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
   const check = async (label, condition) => { const lines = await screen(); assert.ok(condition(lines.join('\n')), `${columns}x${rows}: ${label}\n${lines.join('\n')}`); passed(label) }
   try {
     await click('mouse-001')
-    await check('row click selects the skill and opens narrow detail', s => s.includes('详情') && (columns >= 72 || !s.includes('技能列表')))
-    if (columns < 72) {
+    await check('row click selects the skill and opens narrow detail', s => s.includes('详情') && (columns >= 64 || !s.includes('技能列表')))
+    if (columns < 64) {
       await check('narrow detail has mouse return', s => s.includes('←返回'))
       await click('←返回')
       await check('return restores list', s => s.includes('技能列表'))
@@ -142,9 +142,9 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
     await wheel('技能列表')
     await check('list wheel advances selection', s => /❯.*mouse-002/u.test(s))
     await click('mouse-002')
-    await wheel('详情')
+    await wheel('详情  ') // Card title, not the single-pane breadcrumb.
     await check('detail wheel scrolls text', s => s.includes('↕2/'))
-    if (columns < 72) await click('←返回')
+    if (columns < 64) await click('←返回')
     await click(columns < 110 ? '␣启停' : '空格 启停')
     assert.deepEqual(runtime.calls, ['toggle:s2']); passed('toggle targets selected skill')
     await check('toggle preserves the selected logical skill after scan ID changes', s => /❯.*mouse-002/u.test(s))
@@ -196,7 +196,10 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
     await click(columns < 110 ? 'i详情' : 'i 详情')
     await wheel('MCP 详情')
     await click('[末]')
-    await check('info last page is readable and masked', s => s.replace(/[│\s]/gu, '').includes('MOUSE_ENV_079') && s.includes('值已隐藏'))
+    await check('info last page is readable and masked', s => {
+      const joined = s.replace(/[│\s]/gu, '')
+      return joined.includes('MOUSE_ENV_079') && joined.includes('值已隐藏')
+    })
     await click('Enter/Esc 关闭')
     await click(columns < 110 ? 'a新增' : 'a 新增')
     await click('serverName')
@@ -265,7 +268,26 @@ for (const [columns, rows] of [[40, 16], [58, 22], [116, 33]]) {
     await check('skill filter pointer clear restores list', s => s.includes('技能列表') && s.includes('mouse-000') && (s.includes('f筛选') || s.includes('f 状态筛选')))
     assert.equal(runtime.calls.length, filterCalls); passed('skill filter pointer path is read only')
 
+    const navigationCalls = runtime.calls.length
+    if (columns >= 90) {
+      await click('▾ 分组 [b]')
+      await check('navigation pointer collapses groups', s => s.includes('▸ 分组 [b]'))
+      await sleep(550)
+      await click('▸ 分组 [b]')
+      await click('Mouse group 0')
+      await check('navigation pointer applies group', s => s.includes('没有技能') && s.includes('Mouse group 000'))
+      await click(columns < 110 ? '[x清除]' : '[x 清除]')
+    } else {
+      await click('[b 分组:')
+      await check('group chip opens pointer picker', s => s.includes('技能分组筛选'))
+      await click('Mouse group 002')
+      await check('group chip pointer applies filter', s => s.includes('没有技能') && s.includes('Mouse group 002'))
+      await click('[x清除]')
+    }
+    await check('navigation clear restores list', s => s.includes('技能列表') && s.includes('mouse-000'))
+    assert.equal(runtime.calls.length, navigationCalls); passed('group navigation pointer never invokes writers')
+
   } finally { app.unmount(); term.dispose() }
 }
 if (process.env.MOUSE_SMOKE_REPORT) await writeFile(process.env.MOUSE_SMOKE_REPORT, JSON.stringify(results, null, 2) + '\n')
-console.log(`ui-mouse-smoke OK: ${checks} assertions across 3 sizes (SGR click/release + wheel)`)
+console.log(`ui-mouse-smoke OK: ${checks} assertions across 5 sizes (SGR click/release + wheel)`)

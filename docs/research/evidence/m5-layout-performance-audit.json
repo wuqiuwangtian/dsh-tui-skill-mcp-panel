@@ -1411,5 +1411,11 @@
   "next": {
     "source": "docs/需求文档.md §14.1",
     "item": "Wait for explicit layout choice, then implement design alignment or adopted requirement change and run affected regressions before full user acceptance"
+  },
+  "layoutDecisionFollowup": {
+    "date": "2026-11-14",
+    "decision": "User chose A: restore original design",
+    "implementationEvidence": "m5-layout-restoration.json",
+    "statusBoundary": "This file retains the pre-implementation audit and timing; current requirements/acceptance status lives in docs/需求文档.md §14.1"
   }
 }

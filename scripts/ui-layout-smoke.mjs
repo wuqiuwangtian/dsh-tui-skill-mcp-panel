@@ -113,7 +113,7 @@ class Input extends Readable {
   ref() {}
   unref() {}
 }
-const sizes = process.argv[2] ? [process.argv[2].split('x').map(Number)] : [[40, 16], [58, 20], [64, 24], [72, 24], [92, 24], [93, 24], [110, 30], [160, 40]]
+const sizes = process.argv[2] ? [process.argv[2].split('x').map(Number)] : [[40, 16], [58, 20], [63, 24], [64, 24], [71, 24], [72, 24], [89, 24], [90, 24], [92, 24], [93, 24], [109, 24], [110, 30], [160, 40]]
 for (const [columns, rows] of sizes) {
   const runtime = new Runtime()
   const stdout = new Output(columns, rows)
@@ -142,9 +142,16 @@ for (const [columns, rows] of sizes) {
   try {
     await sleep(120)
     await check('skills-header-footer', (s) => s.includes('启停') && (s.includes('g分组') || s.includes('g 分组')))
+    await check('design-column-count', s => (s.split('\n').find(line => line.includes('╭'))?.match(/╭/gu) ?? []).length === (columns < 64 ? 1 : columns < 90 ? 2 : 3))
+    await check('design-group-navigation-visible', s => columns < 90 ? s.includes('[b 分组:全部]') : s.includes('作用域 / 分组') && s.includes('分组 [b]'))
+    await check('skill-name-keeps-distinguishing-digit', s => s.includes('skill-000'))
+    await press('v')
+    await check('marked-skill-keeps-list-heading', s => s.includes('技能列表'))
+    await press('v')
     await press('\x1b[F'); await check('last-skill-reachable', (s) => s.includes('skill-059'))
     await press('\r'); await press('\x1b[F')
     await check('skill-detail-end', (s) => s.includes('BODY-END'))
+    await check('design-detail-navigation', s => columns < 64 ? s.includes('列表 › 详情') && s.includes('←返回') && !s.includes('技能列表') : s.includes('技能列表') && s.includes('详情'))
     const loadedDetail = runtime.state.detail
     runtime.state.detail = { ...loadedDetail, status: 'error', error: `READ-ERROR ${word}` }; runtime.notify()
     await check('detail-error-clamps-offset', (s) => s.includes('读取失败') && s.includes('READ-ERROR'))
@@ -171,6 +178,10 @@ for (const [columns, rows] of sizes) {
     await press('?'); await press('\x1b[F')
     await check('help-last-page-footer', (s) => s.includes('迁移/复制') && s.includes('关闭帮助'))
     await press('\x1b')
+    await press('b'); await press('\x1b[F')
+    await check('quick-group-picker-last', s => s.includes('技能分组筛选') && s.includes('group-059'))
+    await press('\x1b')
+    await check('quick-group-picker-cancel', s => s.includes('技能列表') && !s.includes('技能分组筛选'))
     await press('3'); await press('\x1b[F')
     await check('last-group-reachable', (s) => s.includes('group-059'))
     await press('\x1b[H'); await press('\x1b[A'); await press('a')

@@ -91,6 +91,10 @@ const TAB_LABELS_NARROW: Record<Tab, string> = {
 
 const SCOPE_FILTERS = ['all', 'workspace', 'global'] as const
 type ScopeFilter = (typeof SCOPE_FILTERS)[number]
+type SkillNavigationItem =
+  | { id: string; kind: 'section'; section: 'scope' | 'groups'; label: string; expanded: boolean }
+  | { id: string; kind: 'scope'; scope: ScopeFilter; label: string }
+  | { id: string; kind: 'group'; groupId?: string; label: string }
 
 const SCOPE_LABELS: Record<ScopeFilter, string> = {
   all: '全部',
@@ -136,6 +140,9 @@ const HELP_LINES = [
   '  i / p              原文件全文 / 完整路径（只读，可滚动）',
   '  g                  把选中/标记技能加入或移出分组',
   '  f                  技能状态筛选；与搜索、作用域、分组组合',
+  '  b                  技能分组筛选；90 列起左栏 Enter 应用/折叠',
+  '  左栏 ↑↓/翻页/首尾  移动指针；Enter 选择，→ 到列表',
+  '  筛选区只做筛选      启停/删除/标记/成员修改先 → 到技能列表',
   '  技能页 x           清除搜索/状态/分组/标记；保留作用域',
   '  MCP 页              ↑/↓ 选择 · 空格 启停（仅改 disabled）· r 重新读取 · m 迁移旧启停配置',
   '                     a 新增 · Enter 编辑 · d 删除 · u 撤销（仅本面板受管行）',
@@ -450,6 +457,9 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const [detailOffset, setDetailOffset] = React.useState(0)
     const [marked, setMarked] = React.useState<Set<string>>(() => new Set())
     const [groupFilter, setGroupFilter] = React.useState<string | undefined>(undefined)
+    const [skillNavId, setSkillNavId] = React.useState('scope:all')
+    const [scopeExpanded, setScopeExpanded] = React.useState(true)
+    const [groupsExpanded, setGroupsExpanded] = React.useState(true)
     const [groupSelectedId, setGroupSelectedId] = React.useState<string | undefined>(undefined)
     const [modal, setModal] = React.useState<Modal | undefined>(undefined)
     const [mcpSelectedId, setMcpSelectedId] = React.useState<string | undefined>(undefined)
@@ -537,8 +547,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
     // ── layout metrics ──────────────────────────────────────────────────────
     const contentWidth = Math.max(20, columns - 2)
-    const wide = columns >= 110
-    const twoPane = columns >= 72
+    const wide = columns >= 90
+    const twoPane = columns >= 64
     const narrow = !twoPane
     const fullActions = columns >= 110
     const skillActions = narrow && focus === 'detail'
@@ -556,9 +566,23 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const statusTone = state.statusMessage?.tone ?? (state.status === 'error' ? 'error' : 'info')
     const cardsHeight = Math.max(
       5,
-      rows - 4 - extraFooterRows - (tab === 'skills' ? (wide ? 1 : 2) : 0) - (statusText === undefined ? 0 : 1),
+      rows - 4 - extraFooterRows - (tab === 'skills' ? (wide ? 1 : 3) : 0) - (statusText === undefined ? 0 : 1),
     )
     const bodyRows = Math.max(2, cardsHeight - 3)
+    const skillNavigation: SkillNavigationItem[] = [
+      { id: 'section:scope', kind: 'section', section: 'scope', label: '作用域', expanded: scopeExpanded },
+      ...(scopeExpanded ? SCOPE_FILTERS.map(candidate => ({ id: `scope:${candidate}`, kind: 'scope' as const, scope: candidate,
+        label: `${SCOPE_LABELS[candidate]} (${scopeCounts[candidate]})${candidate === scope ? ' ✓' : ''}` })) : []),
+      { id: 'section:groups', kind: 'section', section: 'groups', label: '分组 [b]', expanded: groupsExpanded },
+      ...(groupsExpanded ? [
+        { id: 'group:', kind: 'group' as const, label: `全部分组${groupFilter === undefined ? ' ✓' : ''}` },
+        ...groupEntries.map(([id, group]) => ({ id: `group:${id}`, kind: 'group' as const, groupId: id,
+          label: `${group.name}${groupFilter === id ? ' ✓' : ''}` })),
+      ] : []),
+    ]
+    const skillNavIndex = Math.max(0, skillNavigation.findIndex(item => item.id === skillNavId))
+    const skillNavPageRows = Math.max(1, bodyRows - (skillNavigation.length > bodyRows ? 1 : 0))
+    const skillNavStart = Math.max(0, Math.min(skillNavIndex - Math.floor(skillNavPageRows / 2), Math.max(0, skillNavigation.length - skillNavPageRows)))
     const scopeCardWidth = 22
     const gap = 1
     const listWidth = wide
@@ -572,7 +596,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         ? Math.max(24, contentWidth - gap - listWidth)
         : contentWidth
     const listInner = listWidth - 6
-    const nameWidth = Math.max(8, Math.min(28, listInner - 22))
+    const nameWidth = Math.max(10, Math.min(28, listInner - 18))
     const detailLines = React.useMemo(() => skillDetailLines(selected, state, detailWidth - 4), [selected, state.detail, detailWidth])
     const detailAt = Math.min(detailOffset, Math.max(0, detailLines.length - bodyRows))
     const bodyLines = diagnosticLines(state, contentWidth - 4)
@@ -601,8 +625,14 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           : [selected]
 
     const clearMarks = (): void => setMarked(new Set())
+    const blockNavigationTarget = (): boolean => {
+      if (tab !== 'skills' || focus !== 'scope') return false
+      runtime.setStatus('筛选区用于筛选；按 → 到技能列表后再操作技能', 'info')
+      return true
+    }
 
     const runToggle = (): void => {
+      if (blockNavigationTarget()) return
       const targets = targetInstances()
       if (targets.length === 0) {
         runtime.setStatus('没有可切换的技能', 'warning')
@@ -613,6 +643,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     }
 
     const askDelete = (): void => {
+      if (blockNavigationTarget()) return
       const targets = targetInstances()
       if (targets.length === 0) {
         runtime.setStatus('没有可删除的技能', 'warning')
@@ -831,6 +862,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           } })
         return
       }
+      if (blockNavigationTarget()) return
       const targets = targetInstances()
       if (targets.length === 0) {
         runtime.setStatus('先选择一个技能', 'warning')
@@ -870,6 +902,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     }
 
     const pressMark = (): void => {
+      if (blockNavigationTarget()) return
       if (selected === undefined) {
         runtime.setStatus('先选择一个技能', 'warning')
         return
@@ -878,6 +911,39 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       if (next.has(selected.id)) next.delete(selected.id)
       else next.add(selected.id)
       setMarked(next)
+    }
+
+    const applySkillGroupFilter = (id: string | undefined): void => {
+      if (id !== groupFilter) {
+        setGroupFilter(id); clearMarks(); setSelectedId(undefined); previousSelected.current = undefined; setDetailOffset(0)
+      }
+      setSkillNavId(`group:${id ?? ''}`)
+      setFocus('list')
+      runtime.setStatus(id === undefined ? '已清除分组过滤' : `按分组过滤：${state.groups[id]?.name ?? id}（x 清除）`, 'info')
+    }
+
+    const openSkillGroupFilters = (): void => {
+      setModal({ kind: 'select', title: '技能分组筛选', index: groupFilter === undefined ? 0 : Math.max(0, groupEntries.findIndex(([id]) => id === groupFilter) + 1),
+        options: [
+          { id: 'all', label: `全部分组${groupFilter === undefined ? ' ✓' : ''}` },
+          ...groupEntries.map(([id, group]) => ({ id: `group:${id}`, label: `${group.name}${groupFilter === id ? ' ✓' : ''}` })),
+        ], onSubmit: id => applySkillGroupFilter(id === 'all' ? undefined : id.slice(6)),
+      })
+    }
+
+    const moveSkillNavigation = (delta: number): void => {
+      const next = Math.max(0, Math.min(skillNavigation.length - 1, skillNavIndex + delta))
+      setSkillNavId(skillNavigation[next]!.id); setFocus('scope')
+    }
+    const activateSkillNavigation = (item: SkillNavigationItem): void => {
+      setSkillNavId(item.id)
+      if (item.kind === 'section') {
+        if (item.section === 'scope') setScopeExpanded(!scopeExpanded)
+        else setGroupsExpanded(!groupsExpanded)
+        setFocus('scope')
+      } else if (item.kind === 'scope') {
+        setScope(item.scope); setFocus('list')
+      } else applySkillGroupFilter(item.groupId)
     }
 
     const toggleGroupFilter = (): void => {
@@ -893,9 +959,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         return
       }
       const enabling = selectedGroupId !== groupFilter
-      setGroupFilter(enabling ? selectedGroupId : undefined)
-      const group = state.groups[selectedGroupId]
-      runtime.setStatus(enabling ? `按分组过滤：${group?.name ?? selectedGroupId}（x 清除）` : '已清除分组过滤', 'info')
+      applySkillGroupFilter(enabling ? selectedGroupId : undefined)
       if (enabling) goTab('skills')
     }
 
@@ -1309,6 +1373,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       // skills-tab actions (available regardless of focus)
+      if (char === 'b') return openSkillGroupFilters()
       if (char === 'f') return openSkillFilters()
       if (char === 'i') return openFullText()
       if (char === 'p') return openSkillPaths()
@@ -1318,15 +1383,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         return
       }
       if (char === 'a') return openAdd()
-      if (char === 'v') {
-        if (selected !== undefined) {
-          const next = new Set(marked)
-          if (next.has(selected.id)) next.delete(selected.id)
-          else next.add(selected.id)
-          setMarked(next)
-        }
-        return
-      }
+      if (char === 'v') return pressMark()
       if (char === 'g') return openGroupPicker()
       if (char === ' ') return runToggle()
       if (char === 'd') return askDelete()
@@ -1339,6 +1396,20 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       }
 
       if (focus === 'scope') {
+        if (wide) {
+          if (key.upArrow || char === 'k') {
+            if (skillNavIndex === 0) setFocus('tabs')
+            else moveSkillNavigation(-1)
+          } else if (key.downArrow || char === 'j') moveSkillNavigation(1)
+          else if (key.pageUp) moveSkillNavigation(-skillNavPageRows)
+          else if (key.pageDown) moveSkillNavigation(skillNavPageRows)
+          else if (key.home) setSkillNavId(skillNavigation[0]!.id)
+          else if (key.end) setSkillNavId(skillNavigation[skillNavigation.length - 1]!.id)
+          else if (key.return) activateSkillNavigation(skillNavigation[skillNavIndex]!)
+          else if (key.rightArrow || char === 'l') setFocus('list')
+          else if (key.leftArrow || char === 'h') setFocus('tabs')
+          return
+        }
         if (key.upArrow || char === 'k') {
           const index = SCOPE_FILTERS.indexOf(scope)
           if (index <= 0) setFocus('tabs')
@@ -1403,9 +1474,11 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         onWheel={options.onWheel}
       >
         <Box flexDirection="row" height={1}>
-          <Text bold={options.focused} color={options.focused ? 'accent' : undefined} dimColor={!options.focused} wrap="truncate">
-            {options.title}
-          </Text>
+          <Box flexShrink={0}>
+            <Text bold={options.focused} color={options.focused ? 'accent' : undefined} dimColor={!options.focused} wrap="truncate">
+              {options.title}
+            </Text>
+          </Box>
           {options.subtitle === undefined ? null : (
             <Text dimColor wrap="truncate">
               {`  ${options.subtitle}`}
@@ -1453,6 +1526,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const verificationFrame = [
       `tab=${tab} scope=${scope} skillStatus=${skillStatus} query=${JSON.stringify(query)} search=${searchMode} help=${helpOpen} focus=${focus} modal=${modal?.kind ?? '-'} groupFilter=${groupFilter ?? '-'} marked=${marked.size}`,
       `screen=${columns}x${rows} listWidth=${listWidth} detailWidth=${detailWidth}`,
+      `layout=${wide ? 'tree' : twoPane ? 'dual' : 'single'} nav=${skillNavigation[skillNavIndex]?.id} navRange=${skillNavStart + 1}-${Math.min(skillNavigation.length, skillNavStart + skillNavPageRows)}/${skillNavigation.length} scopeExpanded=${scopeExpanded} groupsExpanded=${groupsExpanded}`,
       `summary total=${summary.total} enabled=${summary.enabled} disabled=${summary.disabled} invalid=${summary.invalid} shadowed=${summary.shadowed} workspace=${summary.workspace} global=${summary.global}`,
       `list(${filtered.length}):`,
       ...verificationRows,
@@ -1476,7 +1550,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         `tab=${tab} scope=${scope} focus=${focus}${helpOpen ? ' help' : ''}${modal === undefined ? '' : ` modal=${modal.kind}`}`,
         verificationFrame,
       )
-    }, [tab, scope, skillStatus, focus, selected?.id, selectedMcp?.id, state.mcp, state.groupsFingerprint, state.groupsWarning, state.config, state.versions, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.fullText, state.statusMessage?.at, modal?.kind, marked, groupFilter])
+    }, [tab, scope, skillStatus, focus, columns, rows, skillNavId, scopeExpanded, groupsExpanded, selected?.id, selectedMcp?.id, state.mcp, state.groupsFingerprint, state.groupsWarning, state.config, state.versions, state.scan?.scannedAt, helpOpen, searchMode, query, mcpQuery, mcpStatus, mcpGroupFilter, groupKind, state.detail.status, state.fullText, state.statusMessage?.at, modal?.kind, marked, groupFilter])
 
     const textPager = (at: number, total: number, page: number, setOffset: (value: number) => void): ReactNode => (
       <Box flexDirection="row" height={1}>
@@ -1641,7 +1715,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
               backgroundColor={candidate === tab ? 'selectionBg' : undefined}
               dimColor={candidate !== tab}
             >
-              {` ${twoPane ? TAB_LABELS[candidate] : TAB_LABELS_NARROW[candidate]} `}
+              {` ${columns >= 72 ? TAB_LABELS[candidate] : TAB_LABELS_NARROW[candidate]} `}
             </Text>
           </Box>
         ))}
@@ -1685,6 +1759,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
             key={candidate}
             onClick={() => {
               setScope(candidate)
+              setScopeExpanded(true)
+              setSkillNavId(`scope:${candidate}`)
               setFocus('scope')
             }}
           >
@@ -1698,6 +1774,16 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
             </Text>
           </Box>
         ))}
+      </Box>
+    )
+
+    const breadcrumb = narrow && focus === 'detail' && selected !== undefined ? '列表 › 详情' : narrow ? '列表' : ''
+    const groupChipLabel = oneLine(`[b 分组:${groupFilter === undefined ? '全部' : state.groups[groupFilter]?.name ?? groupFilter}]`,
+      Math.max(10, contentWidth - (breadcrumb ? cellWidth(breadcrumb) + 2 : 0)))
+    const groupChip = (
+      <Box flexDirection="row" height={1}>
+        <Box onClick={openSkillGroupFilters}><Text color="accent" bold={groupFilter !== undefined}>{groupChipLabel}</Text></Box>
+        {breadcrumb ? <Box marginLeft={1} onClick={() => setFocus('list')}><Text dimColor>{breadcrumb}</Text></Box> : null}
       </Box>
     )
 
@@ -1731,7 +1817,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
               .map((id) => state.groups[id]?.name)
               .filter((name): name is string => name !== undefined)
             const content = truncateToWidth(
-              `${markedFlag(instance)}${padToWidth(instance.name, nameWidth)}  ${SOURCE_LABELS[instance.source]}${flags.length > 0 ? `  ${flags}` : ''}${groupNames.length > 0 ? `  ◆${groupNames.join('/')}` : ''}`,
+              `${markedFlag(instance)}${padToWidth(truncateToWidth(instance.name, nameWidth), nameWidth)}  ${SOURCE_LABELS[instance.source]}${flags.length > 0 ? `  ${flags}` : ''}${groupNames.length > 0 ? `  ◆${groupNames.join('/')}` : ''}`,
               listInner,
             )
             return rowNode(instance.id, content, {
@@ -1792,21 +1878,19 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     })
 
     const scopeCard = card({
-      title: '作用域',
+      title: '作用域 / 分组',
       focused: tab === 'skills' && focus === 'scope',
       width: scopeCardWidth,
       onClick: () => setFocus('scope'),
-      children: SCOPE_FILTERS.map((candidate) => {
-        const isSelected = candidate === scope
-        return rowNode(candidate, truncateToWidth(`${SCOPE_LABELS[candidate]} (${scopeCounts[candidate]})`, scopeCardWidth - 6), {
-          selected: isSelected,
-          dim: !isSelected,
-          onClick: () => {
-            setScope(candidate)
-            setFocus('scope')
-          },
-        })
-      }),
+      onWheel: event => { if (event.deltaY !== 0) moveSkillNavigation(Math.sign(event.deltaY)) },
+      children: [
+        ...skillNavigation.slice(skillNavStart, skillNavStart + skillNavPageRows).map(item => rowNode(item.id,
+          oneLine(item.kind === 'section' ? `${item.expanded ? '▾' : '▸'} ${item.label}` : `  ${item.label}`, scopeCardWidth - 6), {
+            selected: item.id === skillNavigation[skillNavIndex]?.id,
+            onClick: event => { event.stopImmediatePropagation(); activateSkillNavigation(item) },
+          })),
+        ...(skillNavigation.length > bodyRows ? [<Text key="nav-pager" dimColor>{`${skillNavStart + 1}-${Math.min(skillNavigation.length, skillNavStart + skillNavPageRows)}/${skillNavigation.length}`}</Text>] : []),
+      ],
     })
 
     const skillsBody = wide ? (
@@ -2017,6 +2101,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         {tabBar}
         {tab === 'skills' ? <Box height={1} onClick={openWorkspaces}><Text dimColor wrap="truncate">{`目标${state.workspaces?.selectedCwd !== state.workspaces?.currentCwd ? '（其他工作区）' : '（当前工作区）'} ${scan?.projectRoot ?? '(pending)'} · o`}</Text></Box> : null}
         {tab === 'skills' && !wide ? scopeChips : null}
+        {tab === 'skills' && !wide ? groupChip : null}
         {tab === 'skills' ? skillsBody : tab === 'groups' ? groupsCard : tab === 'mcp' ? mcpCard : bodyCard}
         {packActions(actionItems, contentWidth).map((items, index) => <Box key={`actions-${index}`} flexDirection="row" height={1}>
           {items.map((item) => actionButton(item.label, item.onClick))}

@@ -78,7 +78,9 @@ try {
   await press('3'); await press('\x1b[H'); await press('\r')
   check(JSON.stringify(visible()) === JSON.stringify(['status-off','status-on']), 'group excludes same-name global instance')
   await choose(2); await search('status-off')
-  await press('\x1b[D'); await press('\x1b[B'); await press('\x1b[C')
+  if (columns >= 90) {
+    await press('\x1b[D'); await press('\x1b[H'); await press('\x1b[B'); await press('\x1b[B'); await press('\r')
+  } else { await press('\x1b[D'); await press('\x1b[B'); await press('\x1b[C') }
   check(frame.includes('scope=workspace') && JSON.stringify(visible()) === JSON.stringify(['status-off']), 'scope, group, search and status combine')
   await press('x')
   check(frame.includes('scope=workspace') && frame.includes('skillStatus=all') && frame.includes('groupFilter=-') && visible().length === 4, 'x retains workspace and clears other filters')
