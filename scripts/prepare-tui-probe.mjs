@@ -20,11 +20,12 @@ const hostDir = process.argv[2] === undefined
 const cli = await realpath(execFileSync('which', ['dsh'], { encoding: 'utf8' }).trim())
 const hostPackage = JSON.parse(await readFile(join(hostDir, 'package.json'), 'utf8'))
 assert.equal(hostPackage.name, '@deepseek-harness-tui/dsh-tui')
-assert.ok(['0.19.0', '0.20.0'].includes(hostPackage.version), 'review a new host before reusing this real-TUI fixture')
+assert.ok(['0.19.0', '0.20.0', '0.20.1'].includes(hostPackage.version), 'review a new host before reusing this real-TUI fixture')
 const kernelPath = createRequire(cli).resolve('@deepseek-ai/dsh-app-boot/package.json')
 const kernelVersion = JSON.parse(await readFile(kernelPath, 'utf8')).version
-assert.ok(['0.2.2-rc.1', '0.2.2-rc.2'].includes(kernelVersion), 'review a new kernel before reusing this real-TUI fixture')
-assert.ok(hostPackage.version !== '0.19.0' || kernelVersion !== '0.2.2-rc.2', 'DSH rc.2 needs host 0.20.0; host 0.19.0 remains a separate rc.1 validation line')
+assert.ok(['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3'].includes(kernelVersion), 'review a new kernel before reusing this real-TUI fixture')
+assert.ok(hostPackage.version !== '0.19.0' || kernelVersion === '0.2.2-rc.1', 'host 0.19.0 remains a separate DSH rc.1 validation line')
+assert.ok(hostPackage.version !== '0.20.0' || kernelVersion !== '0.2.2-rc.3', 'DSH rc.3 fixture needs reviewed host 0.20.1; do not mix old host peers')
 const root = await mkdtemp(join(tmpdir(), 'skill-mcp-real-tui-'))
 const profile = join(root, 'dsh', 'profiles', 'panel-verification')
 const project = join(root, 'project')
@@ -50,9 +51,37 @@ await writeFile(join(userDir, '.dsh-tui', 'settings.json'), JSON.stringify({ ver
 // Host 0.19 clears pre-migration inline preferences once. Model a deliberate
 // post-migration choice in this owned test home; never change real preferences.
 await writeFile(join(userDir, '.dsh-tui', 'migrations.json'), JSON.stringify({ 'fullscreen-factory-default': new Date().toISOString() }, null, 2) + '\n')
-// dsh-tui 0.19 ignores DSH_TUI_HOME. Redirect only this Node process's os.homedir,
-// without changing HOME or any real host preference. The actual CLI/UI still run.
-await writeFile(join(root, 'test-home.mjs'), `import os from 'node:os'\nimport { syncBuiltinESMExports } from 'node:module'\nos.homedir = () => ${JSON.stringify(userDir)}\nsyncBuiltinESMExports()\n`)
+// Redirect only this process's preferences. Observe actual terminal mode without
+// pretending to be a restart child (ordinary boots need not write restart.log).
+const modeObservation = join(root, 'terminal-mode.json')
+await writeFile(join(root, 'test-home.mjs'), `import os from 'node:os'
+import { syncBuiltinESMExports } from 'node:module'
+import { writeFileSync } from 'node:fs'
+os.homedir = () => ${JSON.stringify(userDir)}
+syncBuiltinESMExports()
+const file = ${JSON.stringify(modeObservation)}
+const observation = { pid: process.pid, observedOutput: false, enteredAlternateScreen: false, leftAlternateScreen: false, alternateScreenActive: false }
+const save = () => { try { writeFileSync(file, JSON.stringify(observation, null, 2) + '\\n', { mode: 0o600 }) } catch { /* Observation must never break terminal output. */ } }
+save()
+let tail = ''
+const write = process.stdout.write
+process.stdout.write = function(chunk, ...args) {
+  const text = tail + (Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk))
+  let entered = observation.enteredAlternateScreen, left = observation.leftAlternateScreen, active = observation.alternateScreenActive
+  for (const match of text.matchAll(/\\x1b\\[\\?1049([hl])/g)) {
+    if (match.index + match[0].length <= tail.length) continue
+    active = match[1] === 'h'
+    entered ||= active
+    left ||= !active
+  }
+  if (!observation.observedOutput || entered !== observation.enteredAlternateScreen || left !== observation.leftAlternateScreen || active !== observation.alternateScreenActive) {
+    Object.assign(observation, { observedOutput: true, enteredAlternateScreen: entered, leftAlternateScreen: left, alternateScreenActive: active })
+    save()
+  }
+  tail = text.slice(-16)
+  return Reflect.apply(write, this, [chunk, ...args])
+}
+`)
 const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`
 const variables = {
   DSH_HOME: join(root, 'dsh'), DSH_AGENTS_HOME: join(root, 'agents'),
@@ -60,6 +89,6 @@ const variables = {
   SKILL_MCP_PANEL_RENDER_DUMP: join(root, 'render.txt'), TERM: 'xterm-256color',
 }
 const launcher = join(root, 'run.sh')
-await writeFile(launcher, `#!/bin/sh\nset -eu\nunset DSH_PROFILE DSH_PROFILE_DIR DSH_SESSION_ID DSH_BUNDLED_SKILL_DIR DSH_TUI_BACKEND_HANDOFF DSH_TUI_HOST_ENTRY_PATH\ncd ${quote(project)}\n${Object.entries(variables).map(([key, value]) => `export ${key}=${quote(value)}`).join('\n')}\nexec ${quote(process.execPath)} --import ${quote(join(root, 'test-home.mjs'))} ${quote(cli)} --profile panel-verification "$@"\n`)
+await writeFile(launcher, `#!/bin/sh\nset -eu\nunset DSH_PROFILE DSH_PROFILE_DIR DSH_SESSION_ID DSH_BUNDLED_SKILL_DIR DSH_TUI_BACKEND_HANDOFF DSH_TUI_HOST_ENTRY_PATH DSH_TUI_RESTART_CHILD\ncd ${quote(project)}\n${Object.entries(variables).map(([key, value]) => `export ${key}=${quote(value)}`).join('\n')}\nexec ${quote(process.execPath)} --import ${quote(join(root, 'test-home.mjs'))} ${quote(cli)} --profile panel-verification "$@"\n`)
 await chmod(launcher, 0o700)
-console.log(JSON.stringify({ root, launcher, profile, project, hostDir, hostVersion: hostPackage.version, kernelVersion, nodeVersion: process.versions.node, mode: fullscreen ? 'fullscreen' : 'inline' }, null, 2))
+console.log(JSON.stringify({ root, launcher, profile, project, hostDir, hostVersion: hostPackage.version, kernelVersion, nodeVersion: process.versions.node, mode: fullscreen ? 'fullscreen' : 'inline', modeObservation }, null, 2))

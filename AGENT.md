@@ -17,11 +17,13 @@
 
 ## 2. 当前阶段与边界
 
-- **阶段：首版 P0 差异补齐与 M5 验收准备并行，尚不可发布（2026-11-14）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
+- **阶段：首版 P0 差异补齐与 M5 验收准备并行，尚不可发布（2026-11-15）**。阶段状态与里程碑以 [`docs/需求文档.md`](docs/需求文档.md) §10/§14 为唯一权威，这里不复制。
 - **当前能力边界**：`/skill-mcp` 技能管理、MCP 列表/启停 + 本面板受管行新增/编辑/删除/撤销。已有 profile 行仅启停、home 层只读，这是用户确认的 D-10。证据见 [`06`](docs/research/06-m1-skill-scan-verification.md)/[`07`](docs/research/07-m2-skill-write-verification.md)/[`08`](docs/research/08-m3-mcp-verification.md)/[`09`](docs/research/09-m4-managed-crud-verification.md)；MCP 分组/搜索筛选见 [`10`](docs/research/10-m4-groups-filter-verification.md)；M5 manifest/打包检查、A–G 自查见 [`发布准备`](docs/release-readiness.md)；共享技能分组 TUI 写入保护与 web 边界见同文档 §6；布局/异常交互回归及最小可用区域见 §7；实际 tgz 安装/停用/再启用/卸载与信任提示见 §8；鼠标回归、窄屏导航与启停选中项保持见 §9；技能启停与实际 agent 目录/`/skills` 同步见 §10；完整 web/TUI 顺序共存历史失败见 §11；D-12 精确 disabled 编辑与旧覆盖迁移见 §11.1；剩余 web/TTY 根因与官方 2.3.12 对照见 §11.2；内核 stderr 候选、原宿主组合复验和暂不推荐的宿主恢复实验见 §11.3；真实安装局部变更/恢复历史提案见 §11.4；用户于 2026-11-12 决定保持现状、不实施，KI-01～KI-03 速查处理入口见 §11.5；完整人工验收与发布仍待执行；**不可发布**。
 - **首版范围 D-13（2026-11-12 用户确认）**：P1 延后，先补齐 P0、修复缺陷并完成验收。主要流程可用不等于 P0 全部完成；实际差异与下一项以需求文档 §14.1 为准。技能删除/清理的三项安全补强及验证见发布准备 §12，完整删除确认与局部真机验证见 §13；跨设备复制校验、失败恢复与部分撤销保护见 §14；撤销冲突的备份/其他作用域选择及验证见 §15；启动/删除后清理、执行前诊断快照及失败保护见 §16；FR-2 页签记忆、已知本地工作区入口与 channel.cwd 根对齐见 §17；FR-3 有界预览、分页全文和完整路径见 §18；FR-18 运行版本/来源及不可读降级见 §19；FR-2 技能状态筛选、组合过滤与可见项批量边界见 §20；AC-14 布局/双模式与 §8 本机性能核对见 §21；用户于 2026-11-14 确认按原设计补齐，64/90 分档、折叠分组树和窄屏入口实施见 §22；新版基线与可重建用户验收包见发布准备 §23/§4.1，下一项交用户完整验收并收敛需求 §14.1 剩余缺口，原 FR/AC 不降级；不以文档声明代替实现。
 - 已获用户授权（2026-11-08）：仓库内安装依赖、创建 GitHub 远端并 push。**仍需逐次授权**：打 tag、发布 npm、修改 `~/.dsh` 下真实配置（探针实验应使用独立 profile / 项目内夹具）。
-- **宿主更新（2026-11-14）**：用户已将本机更新至 TUI 0.20.0 / DSH 0.2.2-rc.2，并确认项目开发主线对齐新版、验证后保留 0.19 兼容。开发依赖/准入 pin 已对齐 0.20.0；检查结果、双版本证据与旧问题状态见发布准备 §23。用户验收包入口为 `pnpm prepare:acceptance <CLI 已安装宿主目录>`，步骤见发布准备 §4.1；下一项交用户完整验收并按需求 §14.1 收敛剩余 P0，KI-01～03 不自动关闭。
+- **宿主更新（2026-11-14）**：用户已将本机更新至 TUI 0.20.0 / DSH 0.2.2-rc.2，并确认项目开发主线对齐新版、验证后保留 0.19 兼容。当前本机宿主/内核为 0.20.1 / rc.3，开发宿主依赖及准入 pin 精确为 0.20.1；旧更新记录见发布准备 §23，最新检查及旧问题状态见 §24。用户验收包入口为 `pnpm prepare:acceptance <CLI 已安装宿主目录>`，步骤见发布准备 §4.1；下一项交用户完整验收并按需求 §14.1 收敛剩余 P0，KI-01～03 不自动关闭。
+
+- **用户交付偏好（2026-11-15）**：需要用户阅读或操作时，直接列出文档用途、可点击链接/绝对路径及具体章节或行号；启动与填写结果也给出完整地址，不让用户自行查找。
 
 ## 3. 阅读顺序（必须）
 
@@ -29,18 +31,18 @@
 2. [`docs/需求文档.md`](docs/需求文档.md) —— **唯一需求权威**：范围、功能需求（FR）、非功能需求（NFR）、验收标准、里程碑、未决问题；
 3. [`docs/research/README.md`](docs/research/README.md) 及调研（`01`–`05`）—— 证据、限制与参考实现拆解；**`05` 是真机实测结论，优先读**；
 4. 上游权威资料（版本会漂移，以本机已装版本为准，见 §4）：
-   - dsh-TUI 0.20.0 已安装包（类型面、manifest、cordis patch、locale；旧 0.19 结论需核对版本）：
+   - dsh-TUI 0.20.1 已安装包（类型面、manifest、cordis patch、locale；旧 0.19 结论需核对版本）：
      `~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui`
    - 插件准入与开发指南（唯一整合入口；npm 包内不随附 `docs/`，以本地源码仓库为准）：
      `/home/wqwt/code/dsh-TUI/tui-profile/docs/plugin-admission-and-development.md`（源码仓库为 v0.17.0 checkout，与 0.19.0 的差异见调研 `01`）
-   - DSH 内核 0.2.2-rc.2：`~/.local/node/lib/node_modules/@deepseek-ai/dsh`
+   - DSH 内核 0.2.2-rc.3：`~/.local/node/lib/node_modules/@deepseek-ai/dsh`
 
 ## 4. 版本基线（首版）
 
 | 项 | 值 | 说明 |
 | --- | --- | --- |
-| 目标宿主 | `@deepseek-harness-tui/dsh-tui` `>=0.19.0 <0.21.0` | 开发依赖/准入 pin 为 0.20.0；保留 0.19.0 既有验证线，证据见发布准备 §23 |
-| DSH 内核 | `@deepseek-ai/dsh` 0.2.2-rc.2 主线 | 0.19.0 / rc.1 为旧验证组合；不把 0.19.0 / rc.2 当成已验证组合 |
+| 目标宿主 | `@deepseek-harness-tui/dsh-tui` `>=0.19.0 <0.21.0` | 开发依赖/准入 pin 为 0.20.1；保留 0.19.0 既有验证线，最新证据见发布准备 §24 |
+| DSH 内核 | `@deepseek-ai/dsh` 0.2.2-rc.3 主线 | 0.19.0 / rc.1 为旧验证组合；不把 0.19.0 / rc.2 当成已验证组合 |
 | Node | `^22.19 \|\| >=24`（dsh-tui 声明） | 注意 DSH CLI 自身 `engines` 为 `>=24.9.0`，**实际运行下限按 Node ≥24.9 对待** |
 | 包管理 / 构建 | pnpm 12.6.0（本机验证）、TypeScript、`tsc` 输出 `lib/types/` | 纯 ESM，相对导入带 `.js` 后缀 |
 | 许可证 | MIT | 与 dsh-TUI 主包、生态模板、参考版一致 |
@@ -162,7 +164,7 @@ node scripts/prepare-tui-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules/@deepsee
 
 技能布局/分组真机夹具：`node scripts/prepare-skill-layout-probe.mjs <CLI 已安装宿主目录> [--mode=inline|--mode=fullscreen]`，含 60 分组、同名来源和停用成员；步骤见发布准备 §22。
 
-基础真机探针可在宿主目录后加 `--mode=inline` 或 `--mode=fullscreen`（默认）；会在新建的临时 home 预设显示偏好和已完成的 fullscreen factory migration，避免首次迁移清除 inline 选择。实际模式仍需核对宿主日志，步骤见[发布准备 §21](docs/release-readiness.md#21-布局模式与性能核对2026-11-14)。
+基础真机探针可在宿主目录后加 `--mode=inline` 或 `--mode=fullscreen`（默认）；会在新建的临时 home 预设显示偏好和已完成的 fullscreen factory migration，避免首次迁移清除 inline 选择。实际聊天模式在打开面板再关闭回到普通聊天页后核对临时 `terminal-mode.json` 的 `alternateScreenActive`，inline 场景本身也会临时进入备用屏幕；步骤见[发布准备 §21](docs/release-readiness.md#21-布局模式与性能核对2026-11-14)。
 
 完整 web/TUI 同一宿主探针用 `node scripts/prepare-web-interop-probe.mjs <CLI 已安装宿主目录> <已安装 web 面板目录>`；复验步骤、认证链接保护与 AC-15 失败证据见 [发布准备 §11](docs/release-readiness.md#11-webtui-完整-ui-顺序共存)。只准备临时目录，仍需真实 UI 操作。
 

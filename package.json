@@ -62,7 +62,7 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-harness-tui/dsh-tui": "0.20.0",
+    "@deepseek-harness-tui/dsh-tui": "0.20.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@xterm/addon-unicode11": "0.9.0",

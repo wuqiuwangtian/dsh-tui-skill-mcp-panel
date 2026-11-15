@@ -74,7 +74,7 @@ pnpm prepare:acceptance ~/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-t
 
 第二条命令只构建/打包自己的插件并准备 `/tmp` 夹具，不启动 UI、不安装 tgz、不请求模型、不写真实用户配置。输出 `instructions` 指向 `START.txt`，`results` 指向结果模板；四个互相独立的临时环境分别用于 fullscreen、inline、实际 tgz 安装/生命周期、真实 agent 技能目录同步。每次重新生成都会记录当前 commit、工作区是否未提交、实际 host/kernel/Node、tgz 摘要及全部初始为 `pending` 的用例。生成成功不自动改变任何 AC 状态。
 
-先阅读 `START.txt`，按其中的绝对路径启动单个夹具，输入 `/skill-mcp`，对照上表及 §8/§10/§22 填写 `results.json` 的 `status`、`actual`、脱敏证据路径；可使用 `pass` / `fail` / `blocked` / `pending`，未执行不要填 `pass`。两种布局夹具均含 60 分组、同名工作区/全局来源及停用技能。按标题的**场景宽**调整终端，不能把终端列数直接当场景列数。
+先阅读 `START.txt`，按其中的绝对路径启动单个夹具，输入 `/skill-mcp`，对照上表及 §8/§10/§22 填写 `results.json` 的 `status`、`actual`、脱敏证据路径；可使用 `pass` / `fail` / `blocked` / `pending`，未执行不要填 `pass`。两种布局夹具均含 60 分组、同名工作区/全局来源及停用技能。按标题的**场景宽**调整终端，不能把终端列数直接当场景列数。聊天显示模式先打开面板，再 Esc 关闭回到普通聊天页，读取对应临时 `terminal-mode.json`：`observedOutput:true` 后，fullscreen 的 `alternateScreenActive:true`、inline 为 false。inline 的宿主落地页和全屏场景也会临时进入备用屏幕，不能用落地页或面板打开时的备用屏幕状态区分聊天模式。保持 TUI 运行，在另一终端读取记录；退出后备用屏幕会关闭，不能再据此判断。普通启动不保证生成 `restart.log`，不以缺少它判断启动失败。
 
 真实 tgz 安装先使用包内提供的临时 `manage.sh add <archive>`；停用/再启用/卸载同样只针对该临时 profile，细节见 §8。模型回合、HTTP 测试端点、不同 profile MCP 分组隔离及 web 共存仍需补对应测试条件，不能由本地 `ping` 或目录观察代替。KI-01～03、FR-17 MCP 强制覆盖及元数据/共享分组并发边界继续按需求 §14.1 保留；AC-15 未通过。代码或依赖升级后重新生成，不复用旧的 `/tmp` launcher。
 
@@ -1026,3 +1026,48 @@ node scripts/prepare-skill-layout-probe.mjs ~/.dsh/profiles/dsh-tui/node_modules
 **KI-01/02 与 AC-15 不关闭。** web 面板未升级，已知前端空卡片与 flow YAML 问题没有因此得到修复；本轮未重跑完整 web UI，旧原始证据继续有效。共享分组无锁写入、FR-17 MCP 强制覆盖、元数据保留边界仍见需求 §14.1，不将这些 P0 差异改列为 P1。
 
 下一项依据需求 §14.1 / 本文 §4：将已准备的验收包交给用户，在其实际终端完成完整操作与记录；先确认安装/模式和本地交互，再补模型请求、HTTP、自有测试 profile 的隔离与共存验证。用户验收失败先保存最短复现；满足原 AC 与剩余 P0 后才进入 §5 发布准备。版本仍 `0.1.0-dev.0`，未打 tag、未发布；本轮没有修改真实 `~/.dsh` 配置或第三方安装，但仓库源码链接插件的编译产物会随构建更新。
+
+
+## 24. 宿主 0.20.1 / DSH rc.3 更新检查（2026-11-15）
+
+承接用户已确认的“对齐新版并保留已验证旧线”。本机 `dst version` 的 launcher/profile 均为 **0.20.1**，`dsh --version` 与实际 app-boot / mcp-client / skill-filesystem 为 **0.2.2-rc.3**；web 面板仍 **2.3.7**，Node **26.3.0**。0.20.1 已在 `>=0.19.0 <0.21.0` 范围内，本次不扩大支持范围；开发依赖与准入 pin 前移到精确 0.20.1，旧线证据继续保留在 §22/§23。环境及验证记录见 [host-0201-update.json](research/evidence/host-0201-update.json)。
+
+### 24.1 更新内容与问题边界
+
+[官方 TUI v0.20.1 说明](https://github.com/ccch1mneyyy/dsh-TUI/releases/tag/v0.20.1)主要涉及 rc.3 适配、实验性插件 `@` 补全、迁移及 Claude 检测修复，以及 reporter 销毁后的迟到 stderr 通知；[DSH rc.3 说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-rc.3)另包含 web 会话导入和 Windows 桌面更新修复。面板不消费新补全接缝，本轮没有借更新增加 P1 功能。
+
+**退出崩溃修复与 KI-03 不是同一问题。** 旧 reporter 在 `dispose()` 后收到 `push()`，仍可重建计时器并调用已经失效的 Channel；新版在入口检查终态并清理私有冷却状态。用官方 0.20.0 归档与当前实际 0.20.1 模块做局部对照：销毁后通知次数从 1 变为 0，销毁前排队项两版均取消，活动期通知两版均正常。本次验证通知回调边界，没有把它写成完整 `/update` / Channel exit-7 故障重放。
+
+KI-03 涉及 MCP 子进程启动时继承 TTY、退出后改变 canonical/echo。rc.3 stdio transport 仍未在内核侧显式设置 stderr；当前 CLI SDK 的三个自建 PTY 实验中，cold-inherit 关闭后 canonical/echo 仍变 true，而 cachedRaw 仍 true；warm-inherit / cold-pipe 保持 false。因此 KI-03 继续开放，不部署旧临时补丁。新版 reporter 修复不能作为关闭 KI-03 的证据。KI-01/02 及共享分组无锁并发也没有随之关闭，AC-15 仍未通过。
+
+### 24.2 具体修改、影响与验证
+
+本轮产品 `src/` 无修改，未删除功能；变更集中于依赖/准入、探针版本保护、文档入口和证据：
+
+- 开发依赖精确 0.20.1；准入 core/parser/registry 摘要及 revision 与 0.20.0 一致，保留摘要漂移拒绝；原 peer/manifest 范围不变。
+- pnpm 自动为明确安装的、发布未满本机 24 小时等待期的 0.20.1 生成单版本例外。移除它会使后续脚本出现依赖预检失败；本轮保留 `pnpm-workspace.yaml` 中仅 `@deepseek-harness-tui/dsh-tui@0.20.1` 一项，不关闭其他版本/依赖的检查。恢复后 frozen-lockfile 预检、类型与准入检查通过；锁文件仍固定完整性摘要。
+- 实际安装包的 scenes / workspaces / presets、UI 声明、JSX runtime 等接缝摘要一致；childStderr 实现变化已单独核对。
+- 安装、技能同步、web 共存准备脚本接受已审查的 0.20.1 / rc.3；仍明确拒绝 0.19 / 新内核、0.20.0 / rc.3 的探针混用，未知版本继续先审查，不删除版本保护。
+- `prepare-acceptance.mjs` 继续提供四类隔离夹具，补充文档用途、绝对路径和实际行号，避免让用户自行检索。用户阅读偏好记入 AGENT.md。
+- 普通启动不保证写重启诊断日志，探针改为旁观终端 DEC 1049 控制序列，写私有 `terminal-mode.json`，不记录终端正文、不模拟重启。stdout 字节、Buffer、跨块序列和回调透明性已核对。必须在聊天页打开面板前/关闭后判读：inline 的落地页及全屏场景临时进入备用屏幕属于正常行为；不能把落地页/打开面板后的状态误报为聊天模式故障。探针保持原落地页初始化；先打开面板再关闭回到普通聊天页，核对当前备用屏幕状态，不以启动时的场景状态判断。这个核对时机已由源码及两种真实终端关闭场景后的差异证实。
+
+`pnpm check:release` 退出码 0，215 项域层/发布测试、793 项布局/239 项鼠标/107 项导航/52 项状态筛选断言及全部 MCP 冒烟通过，完整回归日志无发布年龄预检失败。恢复单版本例外后的 frozen-lockfile 预检、类型和准入检查通过；最终 `check:tarball` 干净通过，92 文件、120,037 bytes，SHA256 `5a195a3afaa71b650fdaf59c797aecb566f7fad6e8bac1783cf0f5d9b41b7adf`。
+
+实际 rc.3 agent 目录中 `sync-local` 随启停移除/恢复；本地 MCP 从停用到 active，再到 disposed，场景与诊断正常。fullscreen / inline 均打开真实面板，关闭后仍运行的聊天页备用屏幕状态分别为 true / false，随后均正常退出。实际 tgz 在临时 profile 安装后打开成功，版本来源指向临时解包目录，命令/场景各一份并正常退出；未重做整套信任/启停/卸载人工流程。验收包四类夹具、11 项全部 pending 的模板、生成 JS/shell 语法及四条文档实际行号均已核对；交付用户前再按最终提交生成未启动、未安装的干净夹具。
+
+完整结果见链接 JSON；未做的项目继续列为未验证，不沿用 §23 的旧内核结果冒充 rc.3。常规功能和回归通过不等于完整人工验收，模型请求、HTTP、web/TUI 共存以及目标终端/存储仍按 §4 执行。
+
+### 24.3 需要用户阅读的地址与下一步
+
+用户只需先看**新验收包输出的 `instructions` 绝对路径（START.txt）**，再按其中地址填写 **`results`（results.json）**；脚本会列出四个 launcher、对应临时 profile、实际包版本/摘要及本文具体章节行号。不复用上轮 `/tmp/skill-mcp-acceptance-s6W2uo`：其中虽保留旧提交/模板，但链接的本机宿主与 CLI 已更新，不能当成固定的 0.20.0 / rc.2 环境。
+
+持久文档地址如下，交付回复同时给出可点击链接及当前新包的完整地址：
+
+| 用途 | 文档绝对路径 / 章节 |
+| --- | --- |
+| 完整验收步骤与预期 | `/home/wqwt/code/dsh-tui-skill-mcp-panel/docs/release-readiness.md` §4 / §4.1 |
+| 本轮升级核对、影响与限制 | `/home/wqwt/code/dsh-tui-skill-mcp-panel/docs/release-readiness.md` §24 |
+| 遇到已知问题时快速定位 | `/home/wqwt/code/dsh-tui-skill-mcp-panel/docs/release-readiness.md` §11.5 |
+| 项目剩余 P0 与推进顺序（参考） | `/home/wqwt/code/dsh-tui-skill-mcp-panel/docs/需求文档.md` §14.1 |
+
+按需求 §14.1，下一项仍是用户完整验收并收敛剩余 P0，P1 延后；不把新版本适配当成消除 FR-17 MCP 强制覆盖、元数据或共享分组并发缺口。版本仍 `0.1.0-dev.0`，未打 tag、未发布。本轮只改本仓库及隔离夹具，不改真实用户配置或第三方安装；构建会更新自己的源码链接插件产物。

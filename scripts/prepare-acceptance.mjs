@@ -21,6 +21,18 @@ const sync = prepare('prepare-skill-sync-probe.mjs')
 const pkg = JSON.parse(await readFile(join(repo, 'package.json'), 'utf8'))
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim()
 const dirty = execFileSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' }).trim() !== ''
+const documents = await Promise.all([
+  ['docs/release-readiness.md', '## 4. ', '完整验收步骤与预期'],
+  ['docs/release-readiness.md', '## 24. ', '本轮升级核对、影响与限制'],
+  ['docs/release-readiness.md', '### 11.5 ', '遇到已知问题时快速定位'],
+  ['docs/需求文档.md', '### 14.1 ', '剩余 P0 与推进顺序（参考）'],
+].map(async ([file, prefix, purpose]) => {
+  const path = join(repo, file)
+  const lines = (await readFile(path, 'utf8')).split('\n')
+  const index = lines.findIndex(line => line.startsWith(prefix))
+  assert.ok(index >= 0, `acceptance document heading missing: ${path} ${prefix}`)
+  return { purpose, path, line: index + 1, heading: lines[index] }
+}))
 const cases = [
   ['AC-9', '实际 tgz 安装、信任提示、停用/再启用、卸载后配置与数据保留', 'install'],
   ['AC-10', '目录束/平铺、同名回退、只读 bundled、/skills 与模型请求级技能同步', 'sync'],
@@ -29,7 +41,7 @@ const cases = [
   ['AC-13', '技能/受管 MCP 删除、冷启动撤销、外部变更冲突与备份恢复', 'fullscreen'],
   ['FR-8/9', '技能及 MCP 分组、搜索/状态交集、重开保留；另建 profile 验证 MCP 分组隔离', 'fullscreen'],
   ['AC-14-fullscreen', '场景宽 <64、64–89、≥90；键盘/鼠标、缩放、长内容、空结果和取消', 'fullscreen'],
-  ['AC-14-inline', '同一布局/交互矩阵；实际模式核对临时 user/.dsh-tui/restart.log', 'inline'],
+  ['AC-14-inline', '同一布局/交互矩阵；关闭面板返回普通聊天页后核对 terminal-mode.json：不在备用屏幕', 'inline'],
   ['AC-15', 'web/TUI 顺序共存；KI-01～03 与无锁分组并发仍未关闭', null],
   ['AC-16/18', '只读和作用域限制、诊断版本来源、信任提示、退出后宿主键盘正常', 'fullscreen'],
   ['NFR-performance', '目标存储和用户终端环境的首次打开、搜索性能', null],
@@ -37,6 +49,7 @@ const cases = [
 const report = { preparedAt: new Date().toISOString(), plugin: pkg.version, commit, dirty,
   host: fullscreen.hostVersion, kernel: fullscreen.kernelVersion, node: fullscreen.nodeVersion,
   fixtures: { install, fullscreen, inline, sync },
+  documents,
   cases: cases.map(([id, expected, fixture]) => ({ id, expected, fixture, status: 'pending', actual: '', evidence: [] })),
   limitations: ['准备成功不代表验收通过', '模型请求、HTTP 端点及 web 共存需用户自行准备',
     'FR-17 MCP 强制覆盖、元数据保留和共享分组并发边界仍按需求 §14.1；不因本包自动豁免',
@@ -47,13 +60,20 @@ const quote = value => `'${value.replaceAll("'", "'\\''")}'`
 const text = `手工验收包 · ${pkg.version} · ${commit}${dirty ? '（工作区有未提交修改）' : ''}
 环境：host ${report.host} / DSH ${report.kernel} / Node ${report.node}
 结果：${join(root, 'results.json')}（全部 pending，逐项填写实际结果和脱敏证据）
-权威步骤与剩余缺口：${join(repo, 'docs/release-readiness.md')} §4 / §23；需求 §14.1。
+先读本文件，再按以下具体地址阅读；用例结果填写上面的 results.json：
+${documents.map((doc, index) => `${index + 1}. ${doc.purpose}：${doc.path}:${doc.line}`).join('\n')}
 
 先关闭其他测试 TUI，再分别运行；不要同时改同一个夹具。
 1. fullscreen：${quote(fullscreen.launcher)}
 2. inline：${quote(inline.launcher)}
    /skill-mcp → 1 技能、2 MCP、3 分组、4 诊断；? 查看对应快捷键。
    在上述两种模式调整终端，按标题显示的场景宽检查 <64 / 64–89 / ≥90。
+   先打开面板，再 Esc 关闭并回到普通聊天页，核对模式记录（observedOutput 应为 true）：
+   fullscreen：${fullscreen.modeObservation}（alternateScreenActive 应为 true）
+   inline：${inline.modeObservation}（alternateScreenActive 应为 false）
+   注意：宿主落地页和全屏面板都会临时进入备用屏幕，停留其上时不要据此判断聊天模式。
+   保持 TUI 运行，在另一终端读取该记录；退出 TUI 后备用屏幕会关闭，不能再用其状态判断聊天模式。
+   记录缺失或不可读时标为未验证，不能用配置值代替。
    初始 mcp-probe 停用；冷启动已启用 MCP 的 TTY 风险见 KI-03，专项另行记录。
 3. 技能同步：${quote(sync.launcher)}；观察步骤见发布准备 §10。
 4. 实际安装：${quote(install.manage)} add ${quote(install.archive)}
