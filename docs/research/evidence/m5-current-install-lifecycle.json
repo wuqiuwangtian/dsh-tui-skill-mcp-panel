@@ -1,0 +1,621 @@
+{
+  "date": "2026-11-16",
+  "productBase": "a578383",
+  "version": "0.1.0-dev.0",
+  "environment": {
+    "root": "/tmp/skill-mcp-real-tui-UBJZjj",
+    "launcher": "/tmp/skill-mcp-real-tui-UBJZjj/run.sh",
+    "profile": "/tmp/skill-mcp-real-tui-UBJZjj/dsh/profiles/panel-verification",
+    "project": "/tmp/skill-mcp-real-tui-UBJZjj/project",
+    "hostDir": "/home/wqwt/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui",
+    "hostVersion": "0.20.1",
+    "kernelVersion": "0.2.2-rc.3",
+    "nodeVersion": "26.3.0",
+    "mode": "fullscreen",
+    "modeObservation": "/tmp/skill-mcp-real-tui-UBJZjj/terminal-mode.json",
+    "manage": "/tmp/skill-mcp-real-tui-UBJZjj/manage.sh",
+    "archive": "/tmp/skill-mcp-real-tui-UBJZjj/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+    "sha256": "5a195a3afaa71b650fdaf59c797aecb566f7fad6e8bac1783cf0f5d9b41b7adf",
+    "fileCount": 92,
+    "limits": "Installed host/kernel reused via link; actual panel tgz and its dependencies use the DSH CLI; not a clean full-host registry install."
+  },
+  "artifact": {
+    "sha256": "5a195a3afaa71b650fdaf59c797aecb566f7fad6e8bac1783cf0f5d9b41b7adf",
+    "files": 92,
+    "bytes": 120037,
+    "note": "Built before the HTTP recovery fix in this delivery; final fixed tarball is checked separately."
+  },
+  "installMethod": "actual CLI add tgz; panel and dependencies extracted into isolated profile, host/kernel reused via link",
+  "baselineFiles": {
+    "panel/backups/1794839936855-252b64e1-5adb-4cbf-adb1-025bdf3ddc4b/cordis.patch.yml": {
+      "bytes": 978,
+      "sha256": "aae2c8c426d60b61b014960e5abc04ec2f8504d8faf8d9fa1f0284e5bfa93945"
+    },
+    "panel/backups/skill-groups/f42406d2-d7f2-48af-9162-2511b23973f8/groups.json": {
+      "bytes": 141,
+      "sha256": "e78629efd55751061d7265e96f137e7763848fbcba97886faf09269a59cca8c1"
+    },
+    "panel/config.json": {
+      "bytes": 321,
+      "sha256": "bb46c99e655121c438851972b6e4e8addd856a09648df0e4b5329e47984400fa"
+    },
+    "panel/trash/20261116T143853Z-6b9fvn/manifest.json": {
+      "bytes": 681,
+      "sha256": "05dbe820b0d2c847fd4666887b74bbab4cf5cba08d43a7d58f5ba33a0735c973"
+    },
+    "panel/trash/20261116T143853Z-6b9fvn/workspace/probe-skill/SKILL.md": {
+      "bytes": 104,
+      "sha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+    },
+    "project-skills/retained-disabled/SKILL.md.disabled": {
+      "bytes": 109,
+      "sha256": "a82c55d27bfc28e848204b0eaca49a8f444903ff07d32301de5856931e270ca1"
+    },
+    "shared-skill-groups": {
+      "bytes": 228,
+      "sha256": "0d16b369a12bf4a1df10780740e1d02f87d10c9c1f3060be9ab39a18d7aeb977"
+    },
+    "home-patch": {
+      "bytes": 381,
+      "sha256": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90"
+    },
+    "profile-patch": {
+      "bytes": 957,
+      "sha256": "5ed22c2f666ce08d97de81632c596b77a03264d0f72613f597fb05b8d0e726c5"
+    }
+  },
+  "phases": [
+    {
+      "phase": "baseline",
+      "expected": "on",
+      "observer": {
+        "at": "2026-11-16T14:38:14.530Z",
+        "pid": 1651493,
+        "servicesReady": true,
+        "command": true,
+        "scenes": [
+          "skill-mcp-panel"
+        ],
+        "rows": [
+          {
+            "id": "skill-mcp-panel",
+            "disabled": false,
+            "state": 2
+          }
+        ]
+      },
+      "installSpec": "file:/tmp/skill-mcp-real-tui-UBJZjj/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "disabled",
+      "expected": "off",
+      "observer": {
+        "at": "2026-11-16T14:39:27.370Z",
+        "pid": 1651493,
+        "servicesReady": true,
+        "command": false,
+        "scenes": [],
+        "rows": []
+      },
+      "installSpec": "file:/tmp/skill-mcp-real-tui-UBJZjj/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "enable-before-confirm",
+      "expected": "off",
+      "observer": {
+        "at": "2026-11-16T14:39:27.370Z",
+        "pid": 1651493,
+        "servicesReady": true,
+        "command": false,
+        "scenes": [],
+        "rows": []
+      },
+      "installSpec": "file:/tmp/skill-mcp-real-tui-UBJZjj/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "enabled",
+      "expected": "on",
+      "observer": {
+        "at": "2026-11-16T14:40:10.748Z",
+        "pid": 1651493,
+        "servicesReady": true,
+        "command": true,
+        "scenes": [
+          "skill-mcp-panel"
+        ],
+        "rows": [
+          {
+            "id": "skill-mcp-panel",
+            "disabled": false,
+            "state": 2
+          }
+        ]
+      },
+      "installSpec": "file:/tmp/skill-mcp-real-tui-UBJZjj/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "remove-before-confirm",
+      "expected": "on",
+      "observer": {
+        "at": "2026-11-16T14:40:10.748Z",
+        "pid": 1651493,
+        "servicesReady": true,
+        "command": true,
+        "scenes": [
+          "skill-mcp-panel"
+        ],
+        "rows": [
+          {
+            "id": "skill-mcp-panel",
+            "disabled": false,
+            "state": 2
+          }
+        ]
+      },
+      "installSpec": "file:/tmp/skill-mcp-real-tui-UBJZjj/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "remove-cancelled",
+      "expected": "on",
+      "observer": {
+        "at": "2026-11-16T14:40:10.748Z",
+        "pid": 1651493,
+        "servicesReady": true,
+        "command": true,
+        "scenes": [
+          "skill-mcp-panel"
+        ],
+        "rows": [
+          {
+            "id": "skill-mcp-panel",
+            "disabled": false,
+            "state": 2
+          }
+        ]
+      },
+      "installSpec": "file:/tmp/skill-mcp-real-tui-UBJZjj/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "removed",
+      "expected": "removed",
+      "observer": {
+        "at": "2026-11-16T14:41:27.892Z",
+        "pid": 1651493,
+        "servicesReady": true,
+        "command": false,
+        "scenes": [],
+        "rows": []
+      },
+      "installSpec": null,
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "removed-restarted",
+      "expected": "removed",
+      "observer": {
+        "at": "2026-11-16T14:41:45.794Z",
+        "pid": 1672716,
+        "servicesReady": true,
+        "command": false,
+        "scenes": [],
+        "rows": []
+      },
+      "installSpec": null,
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "install-before-confirm",
+      "expected": "removed",
+      "observer": {
+        "at": "2026-11-16T14:41:45.794Z",
+        "pid": 1672716,
+        "servicesReady": true,
+        "command": false,
+        "scenes": [],
+        "rows": []
+      },
+      "installSpec": null,
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "install-cancelled",
+      "expected": "removed",
+      "observer": {
+        "at": "2026-11-16T14:41:45.794Z",
+        "pid": 1672716,
+        "servicesReady": true,
+        "command": false,
+        "scenes": [],
+        "rows": []
+      },
+      "installSpec": null,
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "reinstalled",
+      "expected": "on",
+      "observer": {
+        "at": "2026-11-16T14:43:00.608Z",
+        "pid": 1672716,
+        "servicesReady": true,
+        "command": true,
+        "scenes": [
+          "skill-mcp-panel"
+        ],
+        "rows": [
+          {
+            "id": "skill-mcp-panel",
+            "disabled": false,
+            "state": 2
+          }
+        ]
+      },
+      "installSpec": "file:/tmp/skill-mcp-real-tui-UBJZjj/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+      "sameNineFilesAsBaseline": true
+    },
+    {
+      "phase": "reinstalled-restarted",
+      "expected": "on",
+      "observer": {
+        "at": "2026-11-16T14:44:22.159Z",
+        "pid": 1695886,
+        "servicesReady": true,
+        "command": true,
+        "scenes": [
+          "skill-mcp-panel"
+        ],
+        "rows": [
+          {
+            "id": "skill-mcp-panel",
+            "disabled": false,
+            "state": 2
+          }
+        ]
+      },
+      "installSpec": "file:/tmp/skill-mcp-real-tui-UBJZjj/dsh-tui-skill-mcp-panel-0.1.0-dev.0.tgz",
+      "sameNineFilesAsBaseline": true
+    }
+  ],
+  "trustAndTtyObservations": [
+    {
+      "label": "boot",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "boot-ready",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "open-command",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "open-scene",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "assign-skill-group",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "commit-skill-group",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "delete-confirm",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "delete-skill",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "mcp-tab",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "last-mcp",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "enable-mcp",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "mcp-membership",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "new-mcp-group",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "group-name",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "save-mcp-group",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "close-manager",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "disable-command",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "disable-submit",
+      "truncated": false,
+      "excerpt": [
+        "已关闭 dsh-tui-skill-mcp-panel：已应用"
+      ]
+    },
+    {
+      "label": "enable-command",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "enable-preview",
+      "truncated": false,
+      "excerpt": [
+        "要启用：dsh-tui-skill-mcp-panel@0.1.0-dev.0",
+        "无法验证已装代码的来源：启用后它在本进程内运行、无沙箱。本页列出的权限就",
+        "是要授予的内容；授权是行为约束，不是安全隔离。"
+      ]
+    },
+    {
+      "label": "enable-cancel",
+      "truncated": false,
+      "excerpt": [
+        "已关闭 dsh-tui-skill-mcp-panel：已应用"
+      ]
+    },
+    {
+      "label": "enable-retry-command",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "enable-retry-preview",
+      "truncated": false,
+      "excerpt": [
+        "要启用：dsh-tui-skill-mcp-panel@0.1.0-dev.0",
+        "无法验证已装代码的来源：启用后它在本进程内运行、无沙箱。本页列出的权限就",
+        "是要授予的内容；授权是行为约束，不是安全隔离。"
+      ]
+    },
+    {
+      "label": "enable-confirm",
+      "truncated": false,
+      "excerpt": [
+        "已关闭 dsh-tui-skill-mcp-panel：已应用",
+        "已启用 dsh-tui-skill-mcp-panel：已应用"
+      ]
+    },
+    {
+      "label": "remove-command",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "remove-preview",
+      "truncated": false,
+      "excerpt": [
+        "要卸载：dsh-tui-skill-mcp-panel@0.1.0-dev.0"
+      ]
+    },
+    {
+      "label": "remove-cancel",
+      "truncated": false,
+      "excerpt": [
+        "已关闭 dsh-tui-skill-mcp-panel：已应用",
+        "已启用 dsh-tui-skill-mcp-panel：已应用"
+      ]
+    },
+    {
+      "label": "remove-retry-command",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "remove-retry-preview",
+      "truncated": false,
+      "excerpt": [
+        "要卸载：dsh-tui-skill-mcp-panel@0.1.0-dev.0"
+      ]
+    },
+    {
+      "label": "remove-confirm",
+      "truncated": false,
+      "excerpt": [
+        "已关闭 dsh-tui-skill-mcp-panel：已应用",
+        "已启用 dsh-tui-skill-mcp-panel：已应用",
+        "已卸载 dsh-tui-skill-mcp-panel：已应用"
+      ]
+    },
+    {
+      "label": "tools-after-remove-command",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "tools-after-remove",
+      "truncated": false,
+      "excerpt": [
+        "已关闭 dsh-tui-skill-mcp-panel：已应用",
+        "mcp-probe（1 个工具）: ping"
+      ]
+    },
+    {
+      "label": "first-exit",
+      "exitCode": 0,
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "restart-after-remove",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "restart-ready",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "restart-mcp-command",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "restart-mcp",
+      "truncated": false,
+      "excerpt": [
+        "mcp-probe（1 个工具）: ping"
+      ]
+    },
+    {
+      "label": "install-preview-command",
+      "truncated": false,
+      "excerpt": [
+        "mcp-probe（1 个工具）: ping"
+      ]
+    },
+    {
+      "label": "install-preview",
+      "truncated": false,
+      "excerpt": [
+        "要安装：（服务未给出包名） · tarball · bundle=unknown",
+        "信任确认：插件与本应用同进程运行——",
+        "进程内全信任、无沙箱；装上后不会自动更新；它的行为受声明的grants",
+        "约束（授权是行为约束，不是安全隔离）。"
+      ]
+    },
+    {
+      "label": "install-cancel",
+      "truncated": false,
+      "excerpt": [
+        "mcp-probe（1 个工具）: ping"
+      ]
+    },
+    {
+      "label": "install-retry-command",
+      "truncated": false,
+      "excerpt": [
+        "mcp-probe（1 个工具）: ping"
+      ]
+    },
+    {
+      "label": "install-retry-preview",
+      "truncated": false,
+      "excerpt": [
+        "要安装：（服务未给出包名） · tarball · bundle=unknown",
+        "信任确认：插件与本应用同进程运行——",
+        "进程内全信任、无沙箱；装上后不会自动更新；它的行为受声明的grants",
+        "约束（授权是行为约束，不是安全隔离）。"
+      ]
+    },
+    {
+      "label": "install-confirm",
+      "truncated": false,
+      "excerpt": [
+        "mcp-probe（1 个工具）: ping"
+      ]
+    },
+    {
+      "label": "second-exit",
+      "exitCode": 0,
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "restart-after-reinstall",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "third-boot-ready",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "reopen-command",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "reopen-manager",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "skills-tab",
+      "truncated": false,
+      "excerpt": []
+    },
+    {
+      "label": "undo-after-cold-reinstall",
+      "truncated": false,
+      "excerpt": [
+        "已恢复 1 个"
+      ]
+    },
+    {
+      "label": "close-after-cold-undo",
+      "truncated": true,
+      "excerpt": []
+    },
+    {
+      "label": "third-exit",
+      "exitCode": 0,
+      "truncated": false,
+      "excerpt": []
+    }
+  ],
+  "coldSkillUndo": {
+    "expectedSha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd",
+    "actualSha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd",
+    "restored": true,
+    "disabledFixturePreserved": true
+  },
+  "ownedChildProcessesStopped": [
+    {
+      "pid": 1696388,
+      "parent": 1695886,
+      "fixture": true
+    }
+  ],
+  "limits": [
+    "No user home/profile configuration or third-party installation changed.",
+    "Nine-file equality is before explicit cold undo; undo intentionally changes source/trash/config.",
+    "Enable cancellation was operated, but has no separate post-cancel hash snapshot.",
+    "No model turn, clean full-host registry install, cross-platform or publication proof.",
+    "KI-01/02/03 and AC-15 remain open."
+  ]
+}

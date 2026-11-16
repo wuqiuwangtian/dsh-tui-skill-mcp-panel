@@ -1,0 +1,950 @@
+{
+  "date": "2026-11-16",
+  "productBase": "a578383 plus current ManagerRuntime revision gate",
+  "version": "0.1.0-dev.0",
+  "environment": {
+    "root": "/tmp/skill-mcp-real-tui-AjiOTS",
+    "launcher": "/tmp/skill-mcp-real-tui-AjiOTS/run.sh",
+    "profile": "/tmp/skill-mcp-real-tui-AjiOTS/dsh/profiles/panel-verification",
+    "project": "/tmp/skill-mcp-real-tui-AjiOTS/project",
+    "hostDir": "/home/wqwt/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui",
+    "hostVersion": "0.20.1",
+    "kernelVersion": "0.2.2-rc.3",
+    "nodeVersion": "26.3.0",
+    "mode": "fullscreen",
+    "modeObservation": "/tmp/skill-mcp-real-tui-AjiOTS/terminal-mode.json"
+  },
+  "installMethod": "source-linked compiled panel; actual installed CLI, kernel and MCP client",
+  "protocol": {
+    "check": "actual-cli-http-mcp-protocol",
+    "ok": true,
+    "sdkEntry": "/home/wqwt/.local/node/lib/node_modules/@deepseek-ai/dsh/node_modules/@modelcontextprotocol/client/dist/index.cjs",
+    "tools": [
+      "ping"
+    ],
+    "missingHeaderStatus": 401,
+    "requests": [
+      {
+        "sequence": 1,
+        "method": "POST",
+        "path": "/mcp",
+        "headerMatched": false,
+        "status": 401
+      },
+      {
+        "sequence": 2,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "initialize",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 3,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "notifications/initialized",
+        "headerMatched": true,
+        "status": 202
+      },
+      {
+        "sequence": 4,
+        "method": "GET",
+        "path": "/mcp",
+        "headerMatched": true,
+        "status": 405
+      },
+      {
+        "sequence": 5,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "tools/list",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 6,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "tools/call",
+        "headerMatched": true,
+        "status": 200
+      }
+    ],
+    "scope": "loopback protocol/authentication/tool call, no model or UI; actual panel form evidence is separate"
+  },
+  "create": {
+    "requests": [
+      {
+        "sequence": 1,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "server/discover",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 2,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "initialize",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 3,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "notifications/initialized",
+        "headerMatched": true,
+        "status": 202
+      },
+      {
+        "sequence": 4,
+        "method": "GET",
+        "path": "/mcp",
+        "headerMatched": true,
+        "status": 405
+      },
+      {
+        "sequence": 5,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "tools/list",
+        "headerMatched": true,
+        "status": 200
+      }
+    ],
+    "expressionPreserved": true,
+    "resolvedValueNotInPatchDumpOrRender": true
+  },
+  "edit": {
+    "authenticatedEditedUrl": true,
+    "expressionPreserved": true,
+    "requestCount": 10
+  },
+  "coldUndo": {
+    "byteIdenticalRestore": true,
+    "sha256": "ec1c6e55a920235339522ea48846a63bbc1b8e092e78f796f584c3cb504f2ced",
+    "requestCount": 15,
+    "authenticatedReconnect": true
+  },
+  "observedDefect": {
+    "symptom": "After failed endpoint edited to a working URL, real /mcp had ping but panel prematurely reported previous failed state.",
+    "source": "src/host/manager-runtime.ts runMcpMutation: failed check before HMR revision gate",
+    "fixed": "Only report replacement revision failure; deletion waits for removal.",
+    "beforeFixRegression": "scripts/mcp-crud-smoke.mjs 120 failed: old failed fiber must not end a new edit; error !== saved",
+    "afterFixRegression": [
+      "stale failed revision remains saved while waiting",
+      "replacement active applies",
+      "replacement failed reports error",
+      "failed row deletion applies"
+    ]
+  },
+  "finalRequests": [
+    {
+      "sequence": 1,
+      "method": "POST",
+      "path": "/mcp",
+      "rpcMethod": "server/discover",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 2,
+      "method": "POST",
+      "path": "/mcp",
+      "rpcMethod": "initialize",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 3,
+      "method": "POST",
+      "path": "/mcp",
+      "rpcMethod": "notifications/initialized",
+      "headerMatched": true,
+      "status": 202
+    },
+    {
+      "sequence": 4,
+      "method": "GET",
+      "path": "/mcp",
+      "headerMatched": true,
+      "status": 405
+    },
+    {
+      "sequence": 5,
+      "method": "POST",
+      "path": "/mcp",
+      "rpcMethod": "tools/list",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 6,
+      "method": "POST",
+      "path": "/mcp?revision=2",
+      "rpcMethod": "server/discover",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 7,
+      "method": "POST",
+      "path": "/mcp?revision=2",
+      "rpcMethod": "initialize",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 8,
+      "method": "POST",
+      "path": "/mcp?revision=2",
+      "rpcMethod": "notifications/initialized",
+      "headerMatched": true,
+      "status": 202
+    },
+    {
+      "sequence": 9,
+      "method": "GET",
+      "path": "/mcp?revision=2",
+      "headerMatched": true,
+      "status": 405
+    },
+    {
+      "sequence": 10,
+      "method": "POST",
+      "path": "/mcp?revision=2",
+      "rpcMethod": "tools/list",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 11,
+      "method": "POST",
+      "path": "/mcp?revision=2",
+      "rpcMethod": "server/discover",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 12,
+      "method": "POST",
+      "path": "/mcp?revision=2",
+      "rpcMethod": "initialize",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 13,
+      "method": "POST",
+      "path": "/mcp?revision=2",
+      "rpcMethod": "notifications/initialized",
+      "headerMatched": true,
+      "status": 202
+    },
+    {
+      "sequence": 14,
+      "method": "GET",
+      "path": "/mcp?revision=2",
+      "headerMatched": true,
+      "status": 405
+    },
+    {
+      "sequence": 15,
+      "method": "POST",
+      "path": "/mcp?revision=2",
+      "rpcMethod": "tools/list",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 16,
+      "method": "POST",
+      "path": "/broken",
+      "headerMatched": true,
+      "status": 404
+    },
+    {
+      "sequence": 17,
+      "method": "POST",
+      "path": "/broken",
+      "headerMatched": true,
+      "status": 404
+    },
+    {
+      "sequence": 18,
+      "method": "POST",
+      "path": "/mcp?revision=3",
+      "rpcMethod": "server/discover",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 19,
+      "method": "POST",
+      "path": "/mcp?revision=3",
+      "rpcMethod": "initialize",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 20,
+      "method": "POST",
+      "path": "/mcp?revision=3",
+      "rpcMethod": "notifications/initialized",
+      "headerMatched": true,
+      "status": 202
+    },
+    {
+      "sequence": 21,
+      "method": "GET",
+      "path": "/mcp?revision=3",
+      "headerMatched": true,
+      "status": 405
+    },
+    {
+      "sequence": 22,
+      "method": "POST",
+      "path": "/mcp?revision=3",
+      "rpcMethod": "tools/list",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 23,
+      "method": "POST",
+      "path": "/mcp?revision=3",
+      "rpcMethod": "server/discover",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 24,
+      "method": "POST",
+      "path": "/mcp?revision=3",
+      "rpcMethod": "initialize",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 25,
+      "method": "POST",
+      "path": "/mcp?revision=3",
+      "rpcMethod": "notifications/initialized",
+      "headerMatched": true,
+      "status": 202
+    },
+    {
+      "sequence": 26,
+      "method": "GET",
+      "path": "/mcp?revision=3",
+      "headerMatched": true,
+      "status": 405
+    },
+    {
+      "sequence": 27,
+      "method": "POST",
+      "path": "/mcp?revision=3",
+      "rpcMethod": "tools/list",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 28,
+      "method": "POST",
+      "path": "/broken",
+      "headerMatched": true,
+      "status": 404
+    },
+    {
+      "sequence": 29,
+      "method": "POST",
+      "path": "/broken",
+      "headerMatched": true,
+      "status": 404
+    },
+    {
+      "sequence": 30,
+      "method": "POST",
+      "path": "/mcp?revision=4",
+      "rpcMethod": "server/discover",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 31,
+      "method": "POST",
+      "path": "/mcp?revision=4",
+      "rpcMethod": "initialize",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 32,
+      "method": "POST",
+      "path": "/mcp?revision=4",
+      "rpcMethod": "notifications/initialized",
+      "headerMatched": true,
+      "status": 202
+    },
+    {
+      "sequence": 33,
+      "method": "GET",
+      "path": "/mcp?revision=4",
+      "headerMatched": true,
+      "status": 405
+    },
+    {
+      "sequence": 34,
+      "method": "POST",
+      "path": "/mcp?revision=4",
+      "rpcMethod": "tools/list",
+      "headerMatched": true,
+      "status": 200
+    },
+    {
+      "sequence": 35,
+      "method": "POST",
+      "path": "/broken",
+      "headerMatched": true,
+      "status": 404
+    },
+    {
+      "sequence": 36,
+      "method": "POST",
+      "path": "/broken",
+      "headerMatched": true,
+      "status": 404
+    }
+  ],
+  "failureRender": " 20 @ 2026-11-16T15:03:14.179Z tab=mcp scope=all focus=list ===\ntab=mcp scope=all skillStatus=all query=\"\" search=false help=false focus=list modal=- groupFilter=- marked=0\nscreen=76x22 listWidth=36 detailWidth=37\nlayout=dual nav=scope:all navRange=1-6/6 scopeExpanded=true groupsExpanded=true\nsummary total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\nlist(1):\n● probe-skill [project/.dsh 生效]\nselected=probe-skill status=enabled path=/tmp/skill-mcp-real-tui-AjiOTS/project/.dsh/skills/probe-skill/SKILL.md\ngroups(0): \nmcp(4): mcp-http-live:on:profile mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=MCP 修改失败：配置已保存，但 MCP 插件加载失败；请检查诊断/宿主日志\ndetail=ready\nfullText=- offset=0 rows=0\n无工作区级配置 · 当前 profile 可写 · home 全局层只读\nid mcp-http-live · entryId mcp-http-live · 层 profile\nserverName http-live · transport streamable-http · 启用 · failed\n本面板受管行：Enter 编辑 · d 删除 · u 撤销\n\n配置（敏感值已脱敏）\n  transport streamable-http\n  serverName http-live\n  command \n  args \n  url http://127.0.0.1:39523/broken\n  headers keys X-Panel-Test-Token（值已隐藏）\n  failOnStartupError true\n",
+  "recoveryRender": " 32 @ 2026-11-16T15:03:31.726Z tab=mcp scope=all focus=list ===\ntab=mcp scope=all skillStatus=all query=\"\" search=false help=false focus=list modal=- groupFilter=- marked=0\nscreen=76x22 listWidth=36 detailWidth=37\nlayout=dual nav=scope:all navRange=1-6/6 scopeExpanded=true groupsExpanded=true\nsummary total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\nlist(1):\n● probe-skill [project/.dsh 生效]\nselected=probe-skill status=enabled path=/tmp/skill-mcp-real-tui-AjiOTS/project/.dsh/skills/probe-skill/SKILL.md\ngroups(0): \nmcp(4): mcp-http-live:on:profile mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=已生效：http-live 已修改\ndetail=ready\nfullText=- offset=0 rows=0\n无工作区级配置 · 当前 profile 可写 · home 全局层只读\nid mcp-http-live · entryId mcp-http-live · 层 profile\nserverName http-live · transport streamable-http · 启用 · active\n本面板受管行：Enter 编辑 · d 删除 · u 撤销\n\n配置（敏感值已脱敏）\n  transport streamable-http\n  serverName http-live\n  command \n  args \n  url http://127.0.0.1:39523/mcp?revision=4\n  headers keys X-Panel-Test-Token（值已隐藏）\n  failOnStartupError true\n",
+  "deleteFailedRender": " 53 @ 2026-11-16T15:04:01.516Z tab=mcp scope=all focus=list ===\ntab=mcp scope=all skillStatus=all query=\"\" search=false help=false focus=list modal=- groupFilter=- marked=0\nscreen=76x22 listWidth=36 detailWidth=37\nlayout=dual nav=scope:all navRange=1-6/6 scopeExpanded=true groupsExpanded=true\nsummary total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\nlist(1):\n● probe-skill [project/.dsh 生效]\nselected=probe-skill status=enabled path=/tmp/skill-mcp-real-tui-AjiOTS/project/.dsh/skills/probe-skill/SKILL.md\ngroups(0): \nmcp(3): mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=已生效：http-live 已删除，可按 u 撤销\ndetail=ready\nfullText=- offset=0 rows=0\n无工作区级配置 · 当前 profile 可写 · home 全局层只读\nid mcp-expr · entryId mcp-expr · 层 profile\nserverName mcp-expr · transport stdio · 停用\ndisabled 表达式 !!js true\n只读：disabled 由 !!js 表达式控制，不提供布尔开关\ndisabled 由 !!js 表达式控制，不提供布尔开关\n· !!js true\n\n配置（敏感值已脱敏）\n  transport stdio\n  serverName mcp-expr\n  command /home/wqwt/.local/node/bin/node\n  args /home/wqwt/code/dsh-tui-skill-mcp-panel/test/fixtures/mcp-stdio-se…\n  env keys PANEL_TEST_TOKEN（值已隐藏）\n",
+  "ttyObservations": [
+    {
+      "label": "boot",
+      "truncated": false
+    },
+    {
+      "label": "boot-ready",
+      "truncated": false
+    },
+    {
+      "label": "open-command",
+      "truncated": false
+    },
+    {
+      "label": "open-manager",
+      "truncated": false
+    },
+    {
+      "label": "mcp-tab",
+      "truncated": false
+    },
+    {
+      "label": "new-http-form",
+      "truncated": false
+    },
+    {
+      "label": "name-field",
+      "truncated": false
+    },
+    {
+      "label": "clear-name",
+      "truncated": false
+    },
+    {
+      "label": "server-name",
+      "truncated": false
+    },
+    {
+      "label": "save-name",
+      "truncated": false
+    },
+    {
+      "label": "transport-field",
+      "truncated": false
+    },
+    {
+      "label": "transport-picker",
+      "truncated": false
+    },
+    {
+      "label": "select-http",
+      "truncated": false
+    },
+    {
+      "label": "commit-http",
+      "truncated": false
+    },
+    {
+      "label": "url-field",
+      "truncated": false
+    },
+    {
+      "label": "edit-url",
+      "truncated": false
+    },
+    {
+      "label": "clear-url",
+      "truncated": false
+    },
+    {
+      "label": "url",
+      "truncated": false
+    },
+    {
+      "label": "save-url",
+      "truncated": false
+    },
+    {
+      "label": "header-field",
+      "truncated": false
+    },
+    {
+      "label": "edit-header",
+      "truncated": false
+    },
+    {
+      "label": "header-reference",
+      "truncated": false
+    },
+    {
+      "label": "save-header",
+      "truncated": false
+    },
+    {
+      "label": "save-option",
+      "truncated": false
+    },
+    {
+      "label": "save-preview",
+      "truncated": false
+    },
+    {
+      "label": "save-http",
+      "truncated": false
+    },
+    {
+      "label": "edit-http",
+      "truncated": false
+    },
+    {
+      "label": "url-down-one",
+      "truncated": false
+    },
+    {
+      "label": "url-down-two",
+      "truncated": false
+    },
+    {
+      "label": "edit-url",
+      "truncated": false
+    },
+    {
+      "label": "clear-url",
+      "truncated": false
+    },
+    {
+      "label": "new-url",
+      "truncated": false
+    },
+    {
+      "label": "commit-url",
+      "truncated": false
+    },
+    {
+      "label": "save-edit-option",
+      "truncated": false
+    },
+    {
+      "label": "save-edit-preview",
+      "truncated": false
+    },
+    {
+      "label": "save-edit",
+      "truncated": false
+    },
+    {
+      "label": "delete-http",
+      "truncated": false
+    },
+    {
+      "label": "confirm-delete",
+      "truncated": false
+    },
+    {
+      "label": "close-panel-before-restart",
+      "truncated": true
+    },
+    {
+      "label": "exit-http-first-1",
+      "truncated": true
+    },
+    {
+      "label": "exit-http-first-2",
+      "exitCode": 0,
+      "truncated": false
+    },
+    {
+      "label": "cold-restart-after-delete",
+      "truncated": false
+    },
+    {
+      "label": "open-after-cold-delete",
+      "truncated": false
+    },
+    {
+      "label": "cold-undo-http",
+      "truncated": false
+    },
+    {
+      "label": "clear-unsent-chat",
+      "truncated": false
+    },
+    {
+      "label": "enter-manager-command",
+      "truncated": false
+    },
+    {
+      "label": "submit-manager",
+      "truncated": false
+    },
+    {
+      "label": "open-manager-after-selection",
+      "truncated": false
+    },
+    {
+      "label": "actual-cold-undo-http",
+      "truncated": false
+    },
+    {
+      "label": "edit-for-failure",
+      "truncated": false
+    },
+    {
+      "label": "url-down1",
+      "truncated": false
+    },
+    {
+      "label": "url-down2",
+      "truncated": false
+    },
+    {
+      "label": "edit-url",
+      "truncated": false
+    },
+    {
+      "label": "clear-url",
+      "truncated": false
+    },
+    {
+      "label": "bad-url",
+      "truncated": false
+    },
+    {
+      "label": "accept-url",
+      "truncated": false
+    },
+    {
+      "label": "timeout-down",
+      "truncated": false
+    },
+    {
+      "label": "timeout-down2",
+      "truncated": false
+    },
+    {
+      "label": "failure-down",
+      "truncated": false
+    },
+    {
+      "label": "edit-failure-policy",
+      "truncated": false
+    },
+    {
+      "label": "clear-policy",
+      "truncated": false
+    },
+    {
+      "label": "true-policy",
+      "truncated": false
+    },
+    {
+      "label": "accept-policy",
+      "truncated": false
+    },
+    {
+      "label": "last-save",
+      "truncated": false
+    },
+    {
+      "label": "preview-failure",
+      "truncated": false
+    },
+    {
+      "label": "save-failure",
+      "truncated": false
+    },
+    {
+      "label": "edit-to-recover",
+      "truncated": false
+    },
+    {
+      "label": "url-down1-recover",
+      "truncated": false
+    },
+    {
+      "label": "url-down2-recover",
+      "truncated": false
+    },
+    {
+      "label": "edit-recover-url",
+      "truncated": false
+    },
+    {
+      "label": "clear-recover-url",
+      "truncated": false
+    },
+    {
+      "label": "working-url",
+      "truncated": false
+    },
+    {
+      "label": "accept-recovery",
+      "truncated": false
+    },
+    {
+      "label": "save-end",
+      "truncated": false
+    },
+    {
+      "label": "preview-recovery",
+      "truncated": false
+    },
+    {
+      "label": "confirm-recovery",
+      "truncated": false
+    },
+    {
+      "label": "close-manager-for-tools",
+      "truncated": false
+    },
+    {
+      "label": "native-mcp-command",
+      "truncated": false
+    },
+    {
+      "label": "submit-native-mcp",
+      "truncated": false
+    },
+    {
+      "label": "exit-http-second-1",
+      "truncated": false
+    },
+    {
+      "label": "exit-http-second-2",
+      "exitCode": 0,
+      "truncated": false
+    },
+    {
+      "label": "restart-fixed-plugin",
+      "truncated": false
+    },
+    {
+      "label": "open-fixed-panel",
+      "truncated": false
+    },
+    {
+      "label": "submit-fixed-panel",
+      "truncated": false
+    },
+    {
+      "label": "fixed-failure-edit",
+      "truncated": false
+    },
+    {
+      "label": "d1",
+      "truncated": false
+    },
+    {
+      "label": "d2",
+      "truncated": false
+    },
+    {
+      "label": "url",
+      "truncated": false
+    },
+    {
+      "label": "clear",
+      "truncated": false
+    },
+    {
+      "label": "fixed-broken-url",
+      "truncated": false
+    },
+    {
+      "label": "accept",
+      "truncated": false
+    },
+    {
+      "label": "end",
+      "truncated": false
+    },
+    {
+      "label": "preview",
+      "truncated": false
+    },
+    {
+      "label": "confirm-fixed-failure",
+      "truncated": false
+    },
+    {
+      "label": "fixed-recovery-edit",
+      "truncated": false
+    },
+    {
+      "label": "r-d1",
+      "truncated": false
+    },
+    {
+      "label": "r-d2",
+      "truncated": false
+    },
+    {
+      "label": "r-url",
+      "truncated": false
+    },
+    {
+      "label": "r-clear",
+      "truncated": false
+    },
+    {
+      "label": "fixed-working-url",
+      "truncated": false
+    },
+    {
+      "label": "r-accept",
+      "truncated": false
+    },
+    {
+      "label": "r-end",
+      "truncated": false
+    },
+    {
+      "label": "r-preview",
+      "truncated": false
+    },
+    {
+      "label": "confirm-fixed-recovery",
+      "truncated": false
+    },
+    {
+      "label": "delete-case-edit",
+      "truncated": false
+    },
+    {
+      "label": "dc-d1",
+      "truncated": false
+    },
+    {
+      "label": "dc-d2",
+      "truncated": false
+    },
+    {
+      "label": "dc-url",
+      "truncated": false
+    },
+    {
+      "label": "dc-clear",
+      "truncated": false
+    },
+    {
+      "label": "delete-case-broken-url",
+      "truncated": false
+    },
+    {
+      "label": "dc-accept",
+      "truncated": false
+    },
+    {
+      "label": "dc-end",
+      "truncated": false
+    },
+    {
+      "label": "dc-preview",
+      "truncated": false
+    },
+    {
+      "label": "dc-confirm",
+      "truncated": false
+    },
+    {
+      "label": "delete-failed-http",
+      "truncated": false
+    },
+    {
+      "label": "confirm-delete-failed-http",
+      "truncated": false
+    },
+    {
+      "label": "close-fixed-panel",
+      "truncated": false
+    },
+    {
+      "label": "exit-http-fixed-1",
+      "truncated": false
+    },
+    {
+      "label": "exit-http-fixed-2",
+      "exitCode": 0,
+      "truncated": false
+    }
+  ],
+  "nativeMcpAfterPrematureFailure": "http-live（1 个工具）: ping",
+  "maskChecks": {
+    "patchRenderDumpDoNotContainResolvedTestValue": true,
+    "requestLogDoesNotContainHeaderValue": true
+  },
+  "ownedHttpServerStopped": true,
+  "ttyExitCodes": [
+    0,
+    0,
+    0
+  ],
+  "limits": [
+    "Only loopback stateless Streamable HTTP with controlled test header; no TLS, OAuth, SSE, proxy, remote or user credentials.",
+    "Protocol tool call uses actual CLI SDK directly; real panel path proves initialize/tools-list and native /mcp registration, not a model tool call.",
+    "HTTP cold undo restores exact YAML and authenticates again; no claim about arbitrary user environments.",
+    "Loader revision proof reuses existing options/fiber/config-signature observation; unusual hosts without observable revisions time out instead of reporting success.",
+    "No user configuration or third-party installation changed; KI-01/02/03 and AC-15 remain open."
+  ],
+  "validation": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "domainReleaseTests": 215,
+    "layoutAssertions": 793,
+    "mouseAssertions": 239,
+    "navigationAssertions": 107,
+    "skillFilterAssertions": 52,
+    "mcpCrudSizes": [
+      120,
+      58
+    ],
+    "mcpGroupsSizes": [
+      120,
+      58
+    ],
+    "runtimeSourceSha256": "6f88f1a9b24e1aaaab1480ed983b9fba27e317d0f5d4bda91dfd5123793362e0",
+    "fullLocalLogSha256": "6e5e8f13dfe8b9f158a6aa4900b20839e2e0be67c05bf64fad709110f223df87",
+    "finalArtifact": {
+      "files": 92,
+      "bytes": 120106,
+      "sha256": "dc1fae197c149716a53d620c62dc83a3a6e8b914dbca21270744cc7ade2048ec"
+    },
+    "protocolCommand": "node scripts/mcp-http-probe.mjs",
+    "protocolExitCode": 0
+  }
+}

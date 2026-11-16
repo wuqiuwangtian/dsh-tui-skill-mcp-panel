@@ -892,7 +892,11 @@ export class ManagerRuntime {
           const current = this.state.mcp.rows.find((row) => row.id === target.id)
           const after = this.loaderRevision(target.id)
           const revised = after.options !== before.options || after.fiber !== before.fiber || after.signature !== before.signature
-          if (current?.enabled && current.phase === 'failed') throw new Error('配置已保存，但 MCP 插件加载失败；请检查诊断/宿主日志')
+          // HMR keeps the previous failed entry until the replacement is ready.
+          // Only a new revision can fail this mutation; deletion waits for removal.
+          if (action !== 'delete' && revised && current?.enabled && current.phase === 'failed') {
+            throw new Error('配置已保存，但 MCP 插件加载失败；请检查诊断/宿主日志')
+          }
           const ready = action === 'delete' ? current === undefined : current !== undefined &&
             current.enabled === !disabled && (disabled ? current.phase === undefined || current.phase === 'disposed' : current.phase === 'active') &&
             (action !== 'edit' || revised)

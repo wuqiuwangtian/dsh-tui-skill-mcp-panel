@@ -40,6 +40,7 @@ let entries = []
 let seen = ''
 let pending
 let polling = false
+let failedId
 const recompose = (text) => {
   const parsed = parsePatchText(text)
   assert.equal(parsed.ok, true)
@@ -50,7 +51,7 @@ const recompose = (text) => {
   }
   entries = [...table.values()].filter((row) => row.name === MCP_MODULE).map((row) => ({
     options: { id: row.id, name: row.name, config: row.config }, disabled: row.disabled === true,
-    fiber: row.disabled === true ? undefined : { state: 2 },
+    fiber: row.disabled === true ? undefined : { state: row.id === failedId ? 3 : 2 },
   }))
 }
 recompose(original)
@@ -158,6 +159,24 @@ try {
   assert.deepEqual(entry.config.future, future)
   assert.ok(entry.config.env.SMOKE_TOKEN.__js.includes('MCP_SMOKE_TOKEN'))
   assert.deepEqual(entry.config.args, ['server.js', '--edited'])
+
+  // A previous failure remains visible until HMR replaces the stable loader entry.
+  entries.find((row) => row.options.id === id).fiber.state = 3
+  await runtime.refreshMcp()
+  const recoverySession = await runtime.openMcpForm(id)
+  const recovery = runtime.saveMcpForm(recoverySession, { ...recoverySession.config, args: ['server.js', '--recovered'] })
+  await sleep(450)
+  assert.equal(runtime.snapshot().mcp.lastAction?.outcome, 'saved', 'old failed fiber must not end a new edit')
+  await recovery
+  assert.ok(applied('edit'), 'failed entry recovers after actual reload')
+
+  // A failure of the replacement is still an error; deleting that failure must work.
+  failedId = id
+  const failingSession = await runtime.openMcpForm(id)
+  await runtime.saveMcpForm(failingSession, { ...failingSession.config, args: ['server.js', '--fails'] })
+  assert.equal(runtime.snapshot().mcp.lastAction?.outcome, 'error', 'new activation failure is reported')
+  assert.match(runtime.snapshot().statusMessage?.text ?? '', /插件加载失败/u)
+  failedId = undefined
   const beforeDelete = await readFile(patchPath, 'utf8')
   await press('d'); await press('\x1b')
   assert.equal(await readFile(patchPath, 'utf8'), beforeDelete)
