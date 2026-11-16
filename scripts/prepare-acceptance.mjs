@@ -50,17 +50,23 @@ const report = { preparedAt: new Date().toISOString(), plugin: pkg.version, comm
   host: fullscreen.hostVersion, kernel: fullscreen.kernelVersion, node: fullscreen.nodeVersion,
   fixtures: { install, fullscreen, inline, sync },
   documents,
-  cases: cases.map(([id, expected, fixture]) => ({ id, expected, fixture, status: 'pending', actual: '', evidence: [] })),
-  limitations: ['准备成功不代表验收通过', '模型请求、HTTP 端点及 web 共存需用户自行准备',
+  executionPolicy: { decision: 'D-14', fixedRegressionOwner: 'agent',
+    userRole: '真实使用、现场体验及 agent 无法访问的环境反馈；不要求重复跑固定清单或填写 JSON',
+    evidenceRule: '先复用对应当前代码/环境的有效证据；未覆盖的固定流程由 agent 补齐，不自动勾选通过',
+    externalConditions: '私有账号/服务、模型费用或不可访问环境先说明具体条件和有限请求范围，再沿用或取得必要授权' },
+  cases: cases.map(([id, expected, fixture]) => ({ id, owner: 'agent', expected, fixture, status: 'pending', actual: '', evidence: [] })),
+  limitations: ['准备成功不代表验收通过', '本地 HTTP/web 夹具由 agent 准备；私有服务、真实账号或模型请求先明确条件与授权',
     'FR-17 MCP 强制覆盖、元数据保留和共享分组并发边界仍按需求 §14.1；不因本包自动豁免',
     '未启动 UI、未安装 tgz、未请求模型、未改真实用户配置；只构建自己的插件并准备临时夹具'],
 }
 await writeFile(join(root, 'results.json'), JSON.stringify(report, null, 2) + '\n', { mode: 0o600 })
 const quote = value => `'${value.replaceAll("'", "'\\''")}'`
-const text = `手工验收包 · ${pkg.version} · ${commit}${dirty ? '（工作区有未提交修改）' : ''}
+const text = `验收/复现工具包 · ${pkg.version} · ${commit}${dirty ? '（工作区有未提交修改）' : ''}
+分工 D-14：固定流程由 agent 负责，优先复用已有有效证据，再补缺口。
+用户正常使用并反馈现场问题，不要求例行执行整表或填写 JSON。
 环境：host ${report.host} / DSH ${report.kernel} / Node ${report.node}
-结果：${join(root, 'results.json')}（全部 pending，逐项填写实际结果和脱敏证据）
-先读本文件，再按以下具体地址阅读；用例结果填写上面的 results.json：
+结果：${join(root, 'results.json')}（供执行者记录；初始 pending 不代表用户欠测）
+以下为执行者的参考地址；只有需用户复现具体故障时，才另给最小步骤：
 ${documents.map((doc, index) => `${index + 1}. ${doc.purpose}：${doc.path}:${doc.line}`).join('\n')}
 
 先关闭其他测试 TUI，再分别运行；不要同时改同一个夹具。
