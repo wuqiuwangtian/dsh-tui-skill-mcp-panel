@@ -19,7 +19,7 @@ import { filterMcpRows, groupsForMcpProfile, mcpGroupIds, mcpMemberKey, type Mcp
 import { splitFrontmatter } from '../domain/skills/frontmatter.js'
 import type { SkillInstance, SkillScanResult, SkillSource, SkillStatus } from '../domain/skills/types.js'
 import { filterSkills, SKILL_STATUS_FILTERS, type SkillStatusFilter } from '../domain/skills/filter.js'
-import type { ManagerRuntime, ManagerState } from '../host/manager-runtime.js'
+import type { ManagerRuntime, ManagerState, McpConflictView } from '../host/manager-runtime.js'
 import { cellWidth, firstLines, inputTail, oneLine, padToWidth, truncateToWidth, wrapTextLines } from '../shared/format.js'
 
 const SKILL_ACTIONS = [
@@ -292,6 +292,8 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   if (state.groupsWarning !== undefined) push(`  警告：${state.groupsWarning}`)
   if (state.groupsBackupPath !== undefined) push(`  上次写前备份：${state.groupsBackupPath}`)
   push('  web 2.3.7 不使用分组锁；外部变化时按 R 刷新，不强制覆盖')
+  push('MCP 文件变化：可重新加载，或覆盖前备份后重试当前目标；再次变化仍拒写。')
+  push('  撤销/旧覆盖迁移不强制覆盖；home、表达式和受管边界不变。')
   push('')
   push('MCP（当前 profile patch + home 层 + loader）')
   push(`  profile patch: ${state.mcp.profilePatchPath ?? '(unknown)'}`)
@@ -820,6 +822,64 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       setModal({ kind: 'info', title: `MCP 详情 · ${selectedMcp.serverName}`,
         lines: mcpDetailLines(selectedMcp, Number.MAX_SAFE_INTEGER) })
     }
+
+    const showMcpConflict = (conflict: McpConflictView): void => {
+      const cancel = (): void => runtime.cancelMcpConflict(conflict.token)
+      setModal({ kind: 'select', title: `MCP 文件已变化 · ${conflict.serverName}`, index: 0,
+        options: [
+          { id: 'reload', label: '重新加载（放弃本次操作/草稿）' },
+          { id: 'backup', label: '覆盖前备份，重试本次操作…', hint: '只处理目标；确认期间再变化仍拒写' },
+          { id: 'cancel', label: '取消（保留磁盘现状）' },
+        ],
+        onCancel: cancel,
+        onSubmit: (choice) => {
+          if (choice === 'reload') { cancel(); void runtime.refreshMcp(); return }
+          if (choice !== 'backup') { cancel(); return }
+          void runtime.previewMcpConflict(conflict.token).then((preview) => {
+            if (runtime.snapshot().mcp.conflict?.token !== conflict.token) return
+            if (preview === undefined) {
+              setModal({ kind: 'info', title: '无法安全重试 MCP 操作', lines: [
+                `profile：${conflict.patchPath}`, `home（只读）：${conflict.homePatchPath}`,
+                runtime.snapshot().statusMessage?.text ?? '请重新加载后检查目标',
+                '关闭后按 r 重新加载；未覆盖外部修改。',
+              ] })
+              cancel()
+              return
+            }
+            setModal({ kind: 'confirm', title: '确认 MCP 覆盖前备份', danger: true,
+              message: [`目标：${preview.serverName} · entryId ${preview.id ?? '(新增)'}`, `操作：${preview.operation}`,
+                ...(preview.nextServerName === undefined ? [] : [`重命名为：${preview.nextServerName}`]),
+                `profile：${preview.patchPath}`, `home（只读）：${preview.homePatchPath}`,
+                `本次变更：${preview.fields.join(', ') || '(无)'}`,
+                `外部变化字段：${preview.externalFields.join(', ') || '文件或启停状态变化'}`,
+                '保留其他行及未编辑字段；env/headers 按本次改动的键合并，值不显示。',
+                ...(preview.action === 'delete' ? ['将删除当前目标的最新内容，断开连接/注销工具；可按 u 撤销。'] : []),
+                `最新原文备份目录：${preview.backupRoot}`,
+                '确认后先备份并校验；失败不写入。成功后显示具体备份路径。',
+                '确认期间 profile/home 再次变化则停止；不会恢复整份旧文件。'],
+              onCancel: () => showMcpConflict(conflict),
+              onConfirm: () => {
+                void runtime.commitMcpConflict(preview.token, preview.confirmation).then((outcome) => {
+                  if (runtime.snapshot().mcp.conflict !== undefined) return
+                  setModal({ kind: 'info', title: 'MCP 重试结果', lines: [
+                    runtime.snapshot().statusMessage?.text ?? '请检查诊断中的操作状态',
+                    ...(outcome?.backupPath === undefined ? [] : [`覆盖前备份：${outcome.backupPath}`]),
+                    `profile：${preview.patchPath}`,
+                  ] })
+                })
+              },
+            })
+          })
+        },
+      })
+    }
+
+    React.useEffect(() => {
+      const conflict = state.mcp.conflict
+      if (conflict === undefined) return
+      showMcpConflict(conflict)
+      return () => runtime.cancelMcpConflict(conflict.token)
+    }, [state.mcp.conflict?.token])
 
     const askMigrateMcp = (): void => {
       const expected = state.mcp

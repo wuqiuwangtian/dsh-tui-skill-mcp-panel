@@ -41,7 +41,9 @@ let seen = ''
 let pending
 let polling = false
 let failedId
+let holdReload = false
 const recompose = (text) => {
+  if (holdReload) return
   const parsed = parsePatchText(text)
   assert.equal(parsed.ok, true)
   const table = new Map()
@@ -90,9 +92,10 @@ class Input extends Readable {
 const stdout = new Output()
 const stdin = new Input()
 const Component = createManagerScene(runtime, 'crud-smoke')
-const instance = ui.renderSync(React.createElement(Component, { React, ui, channel: {}, close() {} }), {
+const mount = () => ui.renderSync(React.createElement(Component, { React, ui, channel: {}, close() {} }), {
   stdout, stdin, stderr: stdout, patchConsole: false, exitOnCtrlC: false, terminalImages: false,
 })
+let instance = mount()
 const press = async (value) => { stdin.push(value); await sleep(100) }
 const paste = async (value) => { await press(`\x1b[200~${value}\x1b[201~`) }
 const screen = async () => {
@@ -160,13 +163,65 @@ try {
   assert.ok(entry.config.env.SMOKE_TOKEN.__js.includes('MCP_SMOKE_TOKEN'))
   assert.deepEqual(entry.config.args, ['server.js', '--edited'])
 
+  // Drive the real scene's conflict choices without letting its refresh discard a draft.
+  const conflictSession = await runtime.openMcpForm(id)
+  const draft = { ...conflictSession.config, args: ['server.js', '--draft'],
+    env: { ...conflictSession.config.env, EXTRA: 'retry-private-value' } }
+  let external = editManagedMcp(await readFile(patchPath, 'utf8'), id, 'crud-test', {
+    ...conflictSession.config, command: 'external-node', env: { ...conflictSession.config.env, ADDED: jsValue('process.env.EXTERNAL') },
+  }) + '# external conflict fixture\n'
+  await writeFile(patchPath, external)
+  await runtime.saveMcpForm(conflictSession, draft)
+  await sleep(150)
+  assert.ok((await screen()).includes('MCP 文件已变化'))
+  await press('\x1b')
+  assert.equal(runtime.snapshot().mcp.conflict, undefined, 'Esc cancels pending retry')
+  assert.equal(await readFile(patchPath, 'utf8'), external)
+
+  await runtime.saveMcpForm(conflictSession, draft)
+  await sleep(150)
+  await down(); await enter()
+  assert.ok((await screen()).includes('确认 MCP 覆盖前备份'))
+  assert.ok(!(await screen()).includes('retry-private-value'))
+  await press('n')
+  assert.equal(await readFile(patchPath, 'utf8'), external, 'confirmation cancel is read-only')
+  await down(); await enter()
+  external += '# changed again during confirmation\n'
+  await writeFile(patchPath, external)
+  await press('y')
+  await waitFor(() => !runtime.snapshot().busy && runtime.snapshot().mcp.conflict !== undefined, 'second change offers fresh choices')
+  assert.equal(await readFile(patchPath, 'utf8'), external, 'stale preview never overwrites another edit')
+  await enter()
+  await waitFor(() => runtime.snapshot().mcp.conflict === undefined, 'reload cancels the draft')
+  assert.equal(await readFile(patchPath, 'utf8'), external)
+
+  await runtime.saveMcpForm(conflictSession, draft)
+  await sleep(150)
+  await down(); await enter(); await press('y')
+  await waitFor(() => applied('edit'), 'confirmed backup retry applies')
+  assert.equal(await readFile(runtime.snapshot().mcp.lastAction.backupPath, 'utf8'), external)
+  const retried = managedMcpEntries(await readFile(patchPath, 'utf8')).find(row => row.id === id)
+  assert.equal(retried.config.command, 'external-node')
+  assert.ok(retried.config.env.ADDED.__js.includes('EXTERNAL'))
+  assert.equal(retried.config.env.EXTRA, 'retry-private-value')
+  assert.deepEqual(retried.config.args, ['server.js', '--draft'])
+  for (let attempt = 0; attempt < 30 && !(await screen()).includes('MCP 重试结果'); attempt++) await sleep(50)
+  assert.ok((await screen()).includes('MCP 重试结果'))
+  await press('\x1b')
+  await runtime.dumpNow()
+  assert.ok(!(await readFile(join(root, 'dump.json'), 'utf8')).includes('retry-private-value'))
+  assert.ok(!(await readFile(join(root, 'render.txt'), 'utf8')).includes('retry-private-value'))
+
   // A previous failure remains visible until HMR replaces the stable loader entry.
+  holdReload = true
   entries.find((row) => row.options.id === id).fiber.state = 3
   await runtime.refreshMcp()
   const recoverySession = await runtime.openMcpForm(id)
   const recovery = runtime.saveMcpForm(recoverySession, { ...recoverySession.config, args: ['server.js', '--recovered'] })
   await sleep(450)
   assert.equal(runtime.snapshot().mcp.lastAction?.outcome, 'saved', 'old failed fiber must not end a new edit')
+  holdReload = false
+  recompose(await readFile(patchPath, 'utf8'))
   await recovery
   assert.ok(applied('edit'), 'failed entry recovers after actual reload')
 
@@ -182,7 +237,7 @@ try {
   assert.equal(await readFile(patchPath, 'utf8'), beforeDelete)
   await press('d'); await press('y')
   await waitFor(() => applied('delete'), 'delete through UI')
-  assert.equal(await readFile(patchPath, 'utf8'), original)
+  assert.equal(await readFile(patchPath, 'utf8'), original + '# external conflict fixture\n# changed again during confirmation\n')
   assert.ok(runtime.snapshot().mcp.latestDeletion)
   await press('u')
   await waitFor(() => applied('restore'), 'restore through UI')
@@ -261,7 +316,23 @@ try {
     assert.equal(cold.snapshot().mcp.lastAction.outcome, 'applied')
     assert.equal(await readFile(patchPath, 'utf8'), beforeHttpDelete)
   } finally { cold.dispose() }
-  console.log(`mcp-crud-smoke OK (${columns} cols): stdio+HTTP forms / masked refs / unknown fields / reload / delete+undo / cold recovery / existing-row boundary / migration confirm+cancel`)
+  instance = mount()
+  await sleep(200)
+  await runtime.refreshMcp()
+  const closingSession = await runtime.openMcpForm(id)
+  const beforeClose = (await readFile(patchPath, 'utf8')) + '# scene close fixture\n'
+  await writeFile(patchPath, beforeClose)
+  await runtime.saveMcpForm(closingSession, { ...closingSession.config, args: ['close-test.js'] })
+  await sleep(150)
+  const closingConflict = runtime.snapshot().mcp.conflict
+  assert.ok(closingConflict)
+  const closingPreview = await runtime.previewMcpConflict(closingConflict.token)
+  instance.unmount()
+  await sleep(50)
+  assert.equal(runtime.snapshot().mcp.conflict, undefined, 'closing a scene discards its pending draft')
+  await runtime.commitMcpConflict(closingConflict.token, closingPreview.confirmation)
+  assert.equal(await readFile(patchPath, 'utf8'), beforeClose, 'closed-scene confirmation cannot write')
+  console.log(`mcp-crud-smoke OK (${columns} cols): stdio+HTTP forms / masked refs / unknown fields / reload / conflict cancel+reload+backup+stale+close / delete+undo / cold recovery / existing-row boundary / migration confirm+cancel`)
 } catch (error) {
   console.error((await screen()).slice(-4000))
   throw error

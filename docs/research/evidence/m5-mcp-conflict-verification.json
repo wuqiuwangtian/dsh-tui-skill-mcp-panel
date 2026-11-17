@@ -1,0 +1,535 @@
+{
+  "date": "2026-11-17",
+  "productBase": "36e1b9f plus this delivery",
+  "version": "0.1.0-dev.0",
+  "environment": {
+    "root": "/tmp/skill-mcp-real-tui-AZPpLL",
+    "launcher": "/tmp/skill-mcp-real-tui-AZPpLL/run.sh",
+    "profile": "/tmp/skill-mcp-real-tui-AZPpLL/dsh/profiles/panel-verification",
+    "project": "/tmp/skill-mcp-real-tui-AZPpLL/project",
+    "hostDir": "/home/wqwt/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui",
+    "hostVersion": "0.20.1",
+    "kernelVersion": "0.2.2-rc.3",
+    "nodeVersion": "26.3.0",
+    "mode": "fullscreen",
+    "modeObservation": "/tmp/skill-mcp-real-tui-AZPpLL/terminal-mode.json"
+  },
+  "terminal": {
+    "columns": 80,
+    "rows": 24,
+    "sceneColumns": 76,
+    "sceneRows": 22
+  },
+  "scope": "source-linked compiled panel, actual installed TUI/kernel and loopback HTTP; no model, private service, real user config or third-party install mutation",
+  "flows": {
+    "reload": {
+      "latestBytesPreserved": true,
+      "draftDiscarded": true
+    },
+    "confirmationCancel": {
+      "latestBytesPreserved": true
+    },
+    "secondExternalChange": {
+      "staleConfirmationRefused": true,
+      "latestBytesPreserved": true
+    },
+    "saveRetry": {
+      "action": {
+        "outcome": "applied",
+        "action": "edit",
+        "id": "conflict-http",
+        "serverName": "conflict-http",
+        "savedAt": 1794877004664,
+        "backupPath": "/tmp/skill-mcp-real-tui-AZPpLL/panel/backups/1794877004626-35df6804-804b-4971-a7c9-bf8dec796f0f/cordis.patch.yml",
+        "appliedAt": 1794877007318
+      },
+      "latestBackupExact": true,
+      "externalFieldRetained": true,
+      "draftUrlApplied": true,
+      "authenticatedToolList": true,
+      "requests": [
+        {
+          "sequence": 1,
+          "method": "POST",
+          "path": "/mcp",
+          "rpcMethod": "server/discover",
+          "headerMatched": true,
+          "status": 200
+        },
+        {
+          "sequence": 2,
+          "method": "POST",
+          "path": "/mcp",
+          "rpcMethod": "initialize",
+          "headerMatched": true,
+          "status": 200
+        },
+        {
+          "sequence": 3,
+          "method": "POST",
+          "path": "/mcp",
+          "rpcMethod": "notifications/initialized",
+          "headerMatched": true,
+          "status": 202
+        },
+        {
+          "sequence": 4,
+          "method": "GET",
+          "path": "/mcp",
+          "headerMatched": true,
+          "status": 405
+        },
+        {
+          "sequence": 5,
+          "method": "POST",
+          "path": "/mcp",
+          "rpcMethod": "tools/list",
+          "headerMatched": true,
+          "status": 200
+        },
+        {
+          "sequence": 6,
+          "method": "POST",
+          "path": "/mcp",
+          "rpcMethod": "server/discover",
+          "headerMatched": true,
+          "status": 200
+        },
+        {
+          "sequence": 7,
+          "method": "POST",
+          "path": "/mcp",
+          "rpcMethod": "initialize",
+          "headerMatched": true,
+          "status": 200
+        },
+        {
+          "sequence": 8,
+          "method": "POST",
+          "path": "/mcp",
+          "rpcMethod": "notifications/initialized",
+          "headerMatched": true,
+          "status": 202
+        },
+        {
+          "sequence": 9,
+          "method": "GET",
+          "path": "/mcp",
+          "headerMatched": true,
+          "status": 405
+        },
+        {
+          "sequence": 10,
+          "method": "POST",
+          "path": "/mcp",
+          "rpcMethod": "tools/list",
+          "headerMatched": true,
+          "status": 200
+        },
+        {
+          "sequence": 11,
+          "method": "POST",
+          "path": "/mcp?draft=2",
+          "rpcMethod": "server/discover",
+          "headerMatched": true,
+          "status": 200
+        },
+        {
+          "sequence": 12,
+          "method": "POST",
+          "path": "/mcp?draft=2",
+          "rpcMethod": "initialize",
+          "headerMatched": true,
+          "status": 200
+        },
+        {
+          "sequence": 13,
+          "method": "POST",
+          "path": "/mcp?draft=2",
+          "rpcMethod": "notifications/initialized",
+          "headerMatched": true,
+          "status": 202
+        },
+        {
+          "sequence": 14,
+          "method": "GET",
+          "path": "/mcp?draft=2",
+          "headerMatched": true,
+          "status": 405
+        },
+        {
+          "sequence": 15,
+          "method": "POST",
+          "path": "/mcp?draft=2",
+          "rpcMethod": "tools/list",
+          "headerMatched": true,
+          "status": 200
+        }
+      ],
+      "profileSha256": "cb30b147c46af8dd7f19e93998476bc834efc068830e52947da641813f1b008e"
+    },
+    "toggleRetry": {
+      "latestBackupExact": true,
+      "backupPath": "/tmp/skill-mcp-real-tui-AZPpLL/panel/backups/1794877106417-ef32c22e-6d2d-4f23-a405-92bec25f6d56/cordis.patch.yml",
+      "render": " 59 @ 2026-11-17T00:58:27.255Z tab=mcp scope=all focus=body ===\ntab=mcp scope=all skillStatus=all query=\"\" search=false help=false focus=body modal=- groupFilter=- marked=0\nscreen=76x22 listWidth=36 detailWidth=37\nlayout=dual nav=scope:all navRange=1-6/6 scopeExpanded=true groupsExpanded=true\nsummary total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\nlist(1):\n● probe-skill [project/.dsh 生效]\nselected=probe-skill status=enabled path=/tmp/skill-mcp-real-tui-AZPpLL/project/.dsh/skills/probe-skill/SKILL.md\ngroups(0): \nmcp(4): conflict-http:on:profile mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=已保存，热加载中…（conflict-http → 停用）\ndetail=ready\nfullText=- offset=0 rows=0\n无工作区级配置 · 当前 profile 可写 · home 全局层只读\nid conflict-http · entryId conflict-http · 层 profile\nserverName conflict-http · transport streamable-http · 启用 · active\n本面板受管行：Enter 编辑 · d 删除 · u 撤销\n\n配置（敏感值已脱敏）\n  transport streamable-http\n  serverName conflict-http\n  url http://127.0.0.1:41043/mcp?draft=2\n  headers keys X-Panel-Test-Token（值已隐藏）\n  toolCallTimeoutMs 7777\n  failOnStartupError true\n",
+      "runtimeDisposedObserved": true,
+      "settledRender": " 62 @ 2026-11-17T00:58:28.692Z tab=mcp scope=all focus=body modal=info ===\ntab=mcp scope=all skillStatus=all query=\"\" search=false help=false focus=body modal=info groupFilter=- marked=0\nscreen=76x22 listWidth=36 detailWidth=37\nlayout=dual nav=scope:all navRange=1-6/6 scopeExpanded=true groupsExpanded=true\nsummary total=1 enabled=1 disabled=0 invalid=0 shadowed=0 workspace=1 global=0\nlist(1):\n● probe-skill [project/.dsh 生效]\nselected=probe-skill status=enabled path=/tmp/skill-mcp-real-tui-AZPpLL/project/.dsh/skills/probe-skill/SKILL.md\ngroups(0): \nmcp(4): conflict-http:off:profile mcp-expr:off:profile:ro mcp-home:off:home:ro mcp-probe:off:profile\nmcpView query=\"\" status=all group=- groupKind=skills\nmcpGroups(0): \ntrash=- status=已生效：conflict-http 已停用\ndetail=ready\nfullText=- offset=0 rows=0\n无工作区级配置 · 当前 profile 可写 · home 全局层只读\nid conflict-http · entryId conflict-http · 层 profile\nserverName conflict-http · transport streamable-http · 停用 · disposed\n本面板受管行：Enter 编辑 · d 删除 · u 撤销\n\n配置（敏感值已脱敏）\n  transport streamable-http\n  serverName conflict-http\n  url http://127.0.0.1:41043/mcp?draft=2\n  headers keys X-Panel-Test-Token（值已隐藏）\n  toolCallTimeoutMs 7777\n  failOnStartupError true\n\n"
+    },
+    "deleteRetry": {
+      "action": {
+        "outcome": "applied",
+        "action": "delete",
+        "id": "conflict-http",
+        "serverName": "conflict-http",
+        "savedAt": 1794877183914,
+        "backupPath": "/tmp/skill-mcp-real-tui-AZPpLL/panel/backups/1794877183898-cc83be16-f88d-49bb-ad01-0729d6ea042f/cordis.patch.yml",
+        "appliedAt": 1794877186136
+      },
+      "latestBackupExact": true,
+      "deleted": true
+    },
+    "undoLatestDeletion": {
+      "restoredLatestExact": true,
+      "sha256": "9c2a840b6c1277c6cfb789ef661038a1daab29dd0501dff296f6ab29b90755b1"
+    },
+    "finalPreview": {
+      "entryIdVisible": true,
+      "requestedEnableVisible": true,
+      "cancelPreservedBytes": true
+    }
+  },
+  "unrelatedBytes": {
+    "originalAndAppendedCommentsRetained": true,
+    "bytes": 1041,
+    "sha256": "6ec400e97d53d2cb66b1d49c7b72175f264efbdc684612b00b5635b41d6f74e1"
+  },
+  "maskChecks": {
+    "renderDumpNoResolvedTestHeader": true,
+    "pendingDraftOnlyInRuntimePrivateMemory": true
+  },
+  "ttyObservations": [
+    {
+      "label": "start",
+      "truncated": false
+    },
+    {
+      "label": "command",
+      "truncated": false
+    },
+    {
+      "label": "open",
+      "truncated": false
+    },
+    {
+      "label": "mcp-tab",
+      "truncated": false
+    },
+    {
+      "label": "edit",
+      "truncated": false
+    },
+    {
+      "label": "url-down1",
+      "truncated": false
+    },
+    {
+      "label": "url-down2",
+      "truncated": false
+    },
+    {
+      "label": "url-field",
+      "truncated": false
+    },
+    {
+      "label": "clear-url",
+      "truncated": false
+    },
+    {
+      "label": "draft-url",
+      "truncated": false
+    },
+    {
+      "label": "accept-url",
+      "truncated": false
+    },
+    {
+      "label": "save-end",
+      "truncated": false
+    },
+    {
+      "label": "save-preview",
+      "truncated": false
+    },
+    {
+      "label": "save-conflicts",
+      "truncated": false,
+      "excerpt": " skill-mcp-panel · 76x22  Skills 技能  MCP  Groups 分组  Diagnostics 诊断 MCP servers  4 行 · 启用 1 · 停用 3无工作区级配置 · 当前 profile 可写 · home 全局层只读筛选: 全部 · 分组:全部 · 4/4 行❯ conflict-http             streamable-http  启用 · profile · active …  mcp-expr                  stdio  停用 · profile · 只读  mcp-home                  stdio  停用 · home · 只读│   mcp-probe                 stdio  停用 · profile · 仅启停             ││────────────────────────────────────────────────────────────────────││分组：(未分组)·g修改││idconflict-http·entryIdconflict-http·层profile│││││││││╰────────────────────────────────────────────────────────────────────────╯[␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除] [i详情] [r刷新] [?] 已写入 /tmp/skill-mcp-real-tui-AZPpLL/dump.json         skill-mcp-panel                                                  文件已变化 · conflict-http     ❯ 重新加载（放弃本次操作/草稿）                                         覆盖前备份，重试本次操作…  只处理目标；确认期间再变化仍拒写  取消（保留磁盘现状）                                                ↑↓ ↵确认 ·1/3[Esc 取消]                               ╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                                                                                                                                                                                    MCP 修改失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "reload-choice",
+      "truncated": false
+    },
+    {
+      "label": "edit2",
+      "truncated": false
+    },
+    {
+      "label": "d1",
+      "truncated": false
+    },
+    {
+      "label": "d2",
+      "truncated": false
+    },
+    {
+      "label": "url2",
+      "truncated": false
+    },
+    {
+      "label": "clear2",
+      "truncated": false
+    },
+    {
+      "label": "draft2",
+      "truncated": false
+    },
+    {
+      "label": "accept2",
+      "truncated": false
+    },
+    {
+      "label": "end2",
+      "truncated": false
+    },
+    {
+      "label": "preview2",
+      "truncated": false
+    },
+    {
+      "label": "second-conflict",
+      "truncated": false
+    },
+    {
+      "label": "backup-choice-down",
+      "truncated": false
+    },
+    {
+      "label": "backup-choice-open",
+      "truncated": false,
+      "excerpt": " skill-mcp-panel · 76x22  Skills 技能  MCP  Groups 分组  Diagnostics 诊断 servers  4 行 · 启用 1 · 停用 3无工作区级配置 · 当前 profile 可写 · home 全局层只读筛选: 全部 · 分组:全部 · 4/4 行                                       ❯ conflict-http             streamable-http  启用 · profile · active …  mcp-expr                stdio  停用 · profile · 只读│   mcp-home                  stdio  停用 · home · 只读                  ││mcp-probe                 stdio  停用 · profile · 仅启停││────────────────────────────────────────────────────────────────────││分组：(未分组)·g修改││idconflict-http·entryIdconflict-http·层profile│││││││││╰────────────────────────────────────────────────────────────────────────╯[␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除] [i详情] [r刷新] [?] MCP 修改失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动         skill-mcp-panel                                                  ╭────────────────────────────────────────────────────────────────────────╮│确认 MCP 覆盖前备份                ││目标：conflict-http · 保存                          ││profile：/tmp/skill-mcp-real-tui-AZPpLL/dsh/profiles/panel-verificatio││n/cordis.patch.yml                                                    ││hoe（只读）：/tmp/skill-mcp-real-tui-AZPpLL/dsh/cordis.patch.yml││本次变更：url                                        ││外部变化字段：文件或启停状态变化                          ││保留其他行及未编辑字段；env/headers 按本次改动的键合并，值不显示。  ││最新原文备份目录：/tmp/skill-mcp-real-tui-AZPpLL/panel/backups││确认后先备份并校验；失败不写入。成功后显示具体备份路径。││确认期间 profile/home 再次变化则停止；不会恢复整份旧文件。││[首] [上页] [下页] [末] 1-10/10││[y 确认][n/Esc取消]│╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                      MCP 修改失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "confirm-bottom",
+      "truncated": false
+    },
+    {
+      "label": "stale-confirmation-rejected",
+      "truncated": false,
+      "excerpt": " skill-mcp-panel · 76x22  Skills 技能  MCP  Groups 分组  Diagnostics 诊断 ╭────────────────────────────────────────────────────────────────────────╮│MCP servers  4 行 · 启用 1 · 停用 3││无工作区级配置 · 当前 profile 可写 · home 全局层只读││筛选: 全部 · 分组:全部 · 4/4 行                                       ││❯ conflict-http             streamable-http  启用 · profile · active …││  cp-expr                  stdio  停用 · profile · 只读         ││  mcp-home                  stdio  停用 · home · 只读││  mcp-probe                 stdio  停用 · profile · 仅启停││────────────────────────────────────────────────────────────────────││分组：(未分组) · g 修改                                       ││id conflict-http · entryId conflict-http · 层 profile   ││                                                          ││                               ││                   ││                                                                        │╰────────────────────────────────────────────────────────────────────────╯[␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除] [i详情] [r刷新] [?] MCP 修改失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动         skill-mcp-panel                                                  文件已变化 · conflict-http     ❯ 重新加载（放弃本次操作/草稿）                                         覆盖前备份，重试本次操作…  只处理目标；确认期间再变化仍拒写  取消（保留磁盘现状）                                                ↑↓ ↵确认 ·1/3[Esc 取消]                               ╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                                                                                                                                                                                    MCP 修改失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "new-preview-down",
+      "truncated": false
+    },
+    {
+      "label": "new-preview-open",
+      "truncated": false
+    },
+    {
+      "label": "cancel-confirm",
+      "truncated": false,
+      "excerpt": "╭────────────────────────────────────────────────────────────────────────╮│MCP 文件已变化 · conflict-http││❯ 重新加载（放弃本次操作/草稿）                                       ││  覆盖前备份，重试本次操作…  只处理目标；确认期间再变化仍拒写         ││  取消（保留磁盘现状）││↑↓ ↵确认 · 1/3 [Esc 取消]                                        │╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                                                                                                                                                                                                                            "
+    },
+    {
+      "label": "retry-preview-down",
+      "truncated": false
+    },
+    {
+      "label": "retry-preview-open",
+      "truncated": false
+    },
+    {
+      "label": "confirm-retry",
+      "truncated": false,
+      "excerpt": " skill-mcp-panel · 76x22  Skills 技能  MCP  Groups 分组  Diagnostics 诊断 ╭────────────────────────────────────────────────────────────────────────╮│MCP servers  4 行 · 启用 1 · 停用 3││无工作区级配置 · 当前 profile 可写 · home 全局层只读││筛选: 全部 · 分组:全部 · 4/4 行                                       ││❯ conflict-http             streamable-http  启用 · profile · active …││  cp-expr                  stdio  停用 · profile · 只读         ││  mcp-home                  stdio  停用 · home · 只读││  mcp-probe                 stdio  停用 · profile · 仅启停││────────────────────────────────────────────────────────────────────││分组：(未分组) · g 修改                                       ││id conflict-http · entryId conflict-http · 层 profile   ││                                                          ││                               ││                   ││                                                                        │╰────────────────────────────────────────────────────────────────────────╯[␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除] [i详情] [r刷新] [?] 已写入 /tmp/skill-mcp-real-tui-AZPpLL/dump.json · 热加载中…保存，热加载中…（修改 conflct-http）        "
+    },
+    {
+      "label": "close-retry-result",
+      "truncated": false
+    },
+    {
+      "label": "toggle-stale",
+      "truncated": false
+    },
+    {
+      "label": "toggle-backup-down",
+      "truncated": false
+    },
+    {
+      "label": "toggle-backup-preview",
+      "truncated": false
+    },
+    {
+      "label": "toggle-backup-confirm",
+      "truncated": false
+    },
+    {
+      "label": "toggle-settled",
+      "truncated": false,
+      "excerpt": "         skill-mcp-panel                                                  重试结果                                   已生效：conflict-http 已停用                        覆盖前备份：/tmp/skill-mcp-real-tui-AZPpLL/panel/backups/1794877106417-ef32c22e-6d2d-4f23-a405-92bec25f6d56/cordis.patch.yml                profile：/tmp/skill-mcp-real-tui-AZPpLL/dsh/profiles/panel-verification/cordis.patch.yml                                   [首] [上页] [下页] [末] 1-5/5                             [Enter/Esc 关闭]                                                    ╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                              已生效：conflict-http 已停用                                         "
+    },
+    {
+      "label": "close-toggle-info",
+      "truncated": false
+    },
+    {
+      "label": "ask-delete",
+      "truncated": false
+    },
+    {
+      "label": "delete-conflict",
+      "truncated": false
+    },
+    {
+      "label": "delete-backup-down",
+      "truncated": false
+    },
+    {
+      "label": "delete-backup-preview",
+      "truncated": false,
+      "excerpt": " skill-mcp-panel · 76x22  Skills 技能  MCP  Groups 分组  Diagnostics 诊断 servers  4 行 · 启用 0 · 停用 4无工作区级配置 · 当前 profile 可写 · home 全局层只读筛选: 全部 · 分组:全部 · 4/4 行                                       ❯ conflict-http             streamable-http  停用 · profile · dispose…  mcp-expr                stdio  停用 · profile · 只读│   mcp-home                  stdio  停用 · home · 只读                  ││mcp-probe                 stdio  停用 · profile · 仅启停││────────────────────────────────────────────────────────────────────││分组：(未分组)·g修改││idconflict-http·entryIdconflict-http·层profile│││││││││╰────────────────────────────────────────────────────────────────────────╯[␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除] [i详情] [r刷新] [?] MCP 删除失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动         skill-mcp-panel                                                  ╭────────────────────────────────────────────────────────────────────────╮│确认 MCP 覆盖前备份                ││目标：conflict-http · 删除                          ││profile：/tmp/skill-mcp-real-tui-AZPpLL/dsh/profiles/panel-verificatio││n/cordis.patch.yml                                                    ││hoe（只读）：/tmp/skill-mcp-real-tui-AZPpLL/dsh/cordis.patch.yml││本次变更：删除目标行                                 ││外部变化字段：文件或启停状态变化                          ││保留其他行及未编辑字段；env/headers 按本次改动的键合并，值不显示。  ││将删除当前目标的最新内容，断开连接/注销工具；可按 u 撤销。││最新原文备份目录：/tmp/skill-mcp-real-tui-AZPpLL/panel/backups││确认后先备份并校验；失败不写入。成功后显示具体备份路径。││确认期间 profile/home 再次变化则停止；不会恢复整份旧文件。││[首] [上页] [下页] [末] 1-11/11││[y 确认][n/Esc取消]│╰────────────────────────────────────────────────────────────────────────╯                                                                                            MCP 删除失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "delete-backup-confirm",
+      "truncated": false
+    },
+    {
+      "label": "close-delete-result",
+      "truncated": false
+    },
+    {
+      "label": "undo-latest-delete",
+      "truncated": false
+    },
+    {
+      "label": "close-panel",
+      "truncated": false
+    },
+    {
+      "label": "exit-1",
+      "truncated": false
+    },
+    {
+      "label": "exit-2",
+      "exitCode": 0,
+      "truncated": false,
+      "excerpt": "\n"
+    },
+    {
+      "label": "start-final",
+      "truncated": false
+    },
+    {
+      "label": "command-final",
+      "truncated": false
+    },
+    {
+      "label": "open-final",
+      "truncated": false
+    },
+    {
+      "label": "toggle-final",
+      "truncated": false
+    },
+    {
+      "label": "backup-down-final",
+      "truncated": false
+    },
+    {
+      "label": "preview-final",
+      "truncated": false,
+      "excerpt": " skill-mcp-panel · 76x22  Skills 技能  MCP  Groups 分组  Diagnostics 诊断 ╭────────────────────────────────────────────────────────────────────────╮│MCP servers  4 行 · 启用 0 · 停用 4││无工作区级配置 · 当前 profile 可写 · home 全局层只读││筛选: 全部 · 分组:全部 · 4/4 行                                       ││❯ conflict-http             streamable-http  停用 · profile · 受管    ││  mcp-expr                stdio  停用 · profile · 只读││   mcp-home                  stdio  停用 · home · 只读                  ││mcp-probe                 stdio  停用 · profile · 仅启停││────────────────────────────────────────────────────────────────────││分组：(未分组)·g修改││idconflict-http·entryIdconflict-http·层profile│││││││││╰────────────────────────────────────────────────────────────────────────╯[␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除] [i详情] [r刷新] [?] MCP 启停失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动         skill-mcp-panel                                                  ╭────────────────────────────────────────────────────────────────────────╮│确认 MCP 覆盖前备份                ││目标：conflict-http · entryId conflict-http         ││操作：启用                     ││profile：/tmp/skill-mcp-real-tui-AZPpLL/dsh/profiles/panel-verificatio││n/cordis.patch.yml                                      ││hoe（只读）：/tmp/skill-mcp-real-tui-AZPpLL/dsh/cordis.patch.yml││本次变更：disabled                                        ││外部变化字段：文件或启停状态变化                                    ││保留其他行及未编辑字段；env/headers 按本次改动的键合并，值不显示。││最新原文备份目录：/tmp/skill-mcp-real-tui-AZPpLL/panel/backups││确认后先备份并校验；失败不写入。成功后显示具体备份路径。││确认期间 profile/home 再次变化则停止；不会恢复整份旧文件。││[首] [上页] [下页] [末] 1-11/11││[y 确认][n/Esc取消]│╰────────────────────────────────────────────────────────────────────────╯                                                                                            MCP 启停失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "bottom-final",
+      "truncated": false
+    },
+    {
+      "label": "cancel-final-confirm",
+      "truncated": false
+    },
+    {
+      "label": "cancel-final-choice",
+      "truncated": false
+    },
+    {
+      "label": "close-final-panel",
+      "truncated": false
+    },
+    {
+      "label": "exit-final-1",
+      "truncated": false
+    },
+    {
+      "label": "exit-final-2",
+      "exitCode": 0,
+      "truncated": false,
+      "excerpt": "\n"
+    }
+  ],
+  "ttyExitCodes": [
+    0,
+    0
+  ],
+  "ownedHttpServerStopped": true,
+  "sourceHashes": {
+    "src/domain/mcp/conflict.ts": "1a183bb2560fdeb34043aaadb28a105d443d0ea9d3c4079e73dcb9f3c384f20f",
+    "src/host/manager-runtime.ts": "039b049694ed369b9311041bc34199708b093ce1569850e806f843db1f9cae49",
+    "src/ui/ManagerScene.tsx": "b002d8d8dc59dbf0103c25b0add655d1c79b9e8ba68ce27dba1a4090dd2f227e"
+  },
+  "limits": [
+    "TTY excerpts are incremental terminal output, not complete screenshots.",
+    "Final scene-close guard and 120/58-column choices covered by component regression; actual save/toggle/delete/undo were exercised in the real TTY.",
+    "No broad overwrite for recovery or legacy migration; identity/home/expression/managed boundaries retained.",
+    "Non-cooperating writers still have a narrow compare-to-rename race.",
+    "No claim that all FR-17, model synchronization, cross-platform terminal behavior, AC-15 or publication is complete."
+  ],
+  "validation": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "domainReleaseTests": 227,
+    "newConflictDomainRuntimeTests": 12,
+    "layoutAssertions": 793,
+    "mouseAssertions": 239,
+    "navigationAssertions": 107,
+    "skillFilterAssertions": 52,
+    "mcpCrudColumns": [
+      120,
+      58
+    ],
+    "mcpGroupsColumns": [
+      120,
+      58
+    ],
+    "fullLogSha256": "88723d575854b7ed3e415a0e5303458e93b2c918d8b98e80723d54e79c46a01a",
+    "finalArtifact": {
+      "check": "tarball",
+      "ok": true,
+      "name": "dsh-tui-skill-mcp-panel",
+      "version": "0.1.0-dev.0",
+      "fileCount": 95,
+      "bytes": 124301,
+      "sha256": "f1d9a5496dae838ff385de911909d466519b94de7855139889a1cb992525889a",
+      "npmIntegrity": "sha512-1AKhacw7uXWkvRv7fQsprsPF93rvt1LGAnxt6Wk16wds1XReWM/wMtvonH3/0r19wiM1ageIJ1L0Arj8BfoLAw==",
+      "dryRunFileCount": 95,
+      "manifestId": "com.dsh-tui.skill-mcp-panel",
+      "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+      "diagnosticVersionSmoke": "plugin metadata from extracted package; Node actual; absent host/kernel unavailable",
+      "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+    },
+    "notes": [
+      "Preliminary check was stopped to add the final scene-close guard; only the final complete check is reported as passed.",
+      "Unused test import cleanup has no behavior effect; runtime sources match the checked hashes."
+    ]
+  }
+}

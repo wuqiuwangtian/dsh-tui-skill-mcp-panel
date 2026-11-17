@@ -6,6 +6,7 @@
  * No React here; the scene subscribes to `snapshot()`.
  */
 import { appendFile, lstat, mkdir, stat, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
@@ -57,7 +58,8 @@ import {
   type PatchRow,
   type ToggleRow,
 } from '../domain/mcp/patch.js'
-import { PatchConflictError, readPatchSnapshot, saveMcpMigration, saveMcpToggle } from '../domain/mcp/write.js'
+import { PatchConflictError, readPatchSnapshot, saveMcpMigration, saveMcpToggle, type TogglePatchInput } from '../domain/mcp/write.js'
+import { copyMcpIntent, prepareMcpConflict, type McpWriteIntent, type McpConflictPlan } from '../domain/mcp/conflict.js'
 import { managedMcpEntries } from '../domain/mcp/managed.js'
 import { deleteMcpEntry, listMcpDeletions, openMcpEditor, restoreMcpEntry, saveMcpEditor,
   type McpDeletionSummary, type McpEditSession } from '../domain/mcp/crud.js'
@@ -145,6 +147,25 @@ export interface McpPanelState {
   togglingId?: string
   lastAction?: McpToggleOutcome
   latestDeletion?: McpDeletionSummary
+  conflict?: McpConflictView
+}
+
+export interface McpConflictView {
+  token: string
+  action: McpWriteIntent['kind']
+  serverName: string
+  patchPath: string
+  homePatchPath: string
+  id?: string
+}
+
+export interface McpConflictPreview extends McpConflictView {
+  confirmation: string
+  fields: string[]
+  externalFields: string[]
+  backupRoot: string
+  operation: string
+  nextServerName?: string
 }
 
 export interface ManagerStatusMessage {
@@ -228,6 +249,7 @@ export class ManagerRuntime {
   private selectedCwd = this.currentCwd
   private refreshGeneration = 0
   private versionRequest = 0
+  private pendingMcpConflict?: { view: McpConflictView; intent: McpWriteIntent; plan?: McpConflictPlan; confirmation?: string }
 
   constructor(ctx: Context) {
     this.ctx = ctx
@@ -385,6 +407,7 @@ export class ManagerRuntime {
   async refresh(reason: string): Promise<void> {
     if (reason !== 'activation') await this.startupPromise
     if (this.disposed) return
+    this.cancelMcpConflict()
     const generation = ++this.refreshGeneration
     const cwd = this.selectedCwd
     this.scanStartedAt = Date.now()
@@ -710,6 +733,7 @@ export class ManagerRuntime {
 
   /** Re-read both patch layers + loader runtime rows into `state.mcp`. */
   async refreshMcp(): Promise<void> {
+    this.cancelMcpConflict()
     try {
       const document = await loadPanelDocument(this.panelHomePath)
       if (!this.disposed) this.patchState({ config: document.config, configWarning: document.warning })
@@ -783,6 +807,7 @@ export class ManagerRuntime {
         warnings,
         legacyToggles,
         latestDeletion,
+        conflict: this.state.mcp.conflict,
         ...(this.state.mcp.togglingId === undefined ? {} : { togglingId: this.state.mcp.togglingId }),
         ...(this.state.mcp.lastAction === undefined ? {} : { lastAction: this.state.mcp.lastAction }),
       },
@@ -814,6 +839,8 @@ export class ManagerRuntime {
   }
 
   async saveMcpForm(session: McpEditSession, config: McpConfig): Promise<void> {
+    this.cancelMcpConflict()
+    const intent = copyMcpIntent<McpWriteIntent>({ kind: 'save', session, config })
     const runtimeRows = this.state.mcp.rows.filter((row) => row.id !== session.id)
     await this.runMcpMutation(session.id === undefined ? 'create' : 'edit', session.id, async () => {
       const result = await saveMcpEditor({ session, config, backupRoot: backupsRoot(this.panelHomePath),
@@ -834,16 +861,30 @@ export class ManagerRuntime {
         }
       }
       return result
-    })
+    }, intent)
   }
 
   async deleteMcp(id: string): Promise<void> {
-    const session = await this.openMcpForm(id)
-    if (session === undefined) return
-    await this.runMcpMutation('delete', id, () => deleteMcpEntry({ session, backupRoot: backupsRoot(this.panelHomePath), trashDir: this.mcpTrashDir() }))
+    this.cancelMcpConflict()
+    await this.startupPromise
+    const row = this.state.mcp.rows.find(entry => entry.id === id)
+    if (!row?.managed) { this.setStatus(row?.editReadOnlyReason ?? '仅能删除本面板受管行', 'warning'); return }
+    try {
+      const session = { ...this.mcpFiles(), id, serverName: row.serverName, config: row.config ?? {} }
+      await this.applyMcpDelete(session)
+    } catch (error) { this.setStatus(error instanceof Error ? error.message : '无法准备删除', 'error') }
+  }
+
+  private async applyMcpDelete(session: McpEditSession): Promise<void> {
+    await this.runMcpMutation('delete', session.id, async () => {
+      // Recheck the same read-only boundaries as opening an editor.
+      await openMcpEditor(session, { id: session.id!, serverName: session.serverName! })
+      return deleteMcpEntry({ session, backupRoot: backupsRoot(this.panelHomePath), trashDir: this.mcpTrashDir() })
+    }, copyMcpIntent({ kind: 'delete', session }))
   }
 
   async undoMcpDelete(): Promise<void> {
+    this.cancelMcpConflict()
     const latest = this.state.mcp.latestDeletion
     if (latest === undefined) { this.setStatus('没有可撤销的 MCP 删除', 'info'); return }
     await this.runMcpMutation('restore', latest.id, () => restoreMcpEntry({ files: this.mcpFiles(), backupRoot: backupsRoot(this.panelHomePath),
@@ -868,6 +909,7 @@ export class ManagerRuntime {
   private async runMcpMutation(
     action: 'create' | 'edit' | 'delete' | 'restore', id: string | undefined,
     operation: () => Promise<{ changed: boolean; backupPath?: string; warning?: string; value: { id: string; serverName: string } }>,
+    intent?: McpWriteIntent,
   ): Promise<void> {
     await this.withBusy(async () => {
       const before = this.loaderRevision(id)
@@ -915,12 +957,14 @@ export class ManagerRuntime {
           ...(saved ?? { id: id ?? '(new)', savedAt: Date.now(), action }), outcome: error instanceof PatchConflictError ? 'conflict' : 'error', detail,
         } } })
         this.setStatus(`MCP ${labels[action]}失败：${detail}`, 'error')
+        if (error instanceof PatchConflictError && saved === undefined && intent !== undefined) this.offerMcpConflict(intent)
       }
     })
   }
 
   /** Explicitly migrate old overrides without changing their saved enabled states. */
   async migrateMcpToggles(expected: Pick<McpPanelState, 'profilePatchPath' | 'homePatchPath' | 'profileFingerprint' | 'homeFingerprint'>): Promise<void> {
+    this.cancelMcpConflict()
     await this.withBusy(async () => {
       try {
         const files = this.mcpFiles()
@@ -936,6 +980,7 @@ export class ManagerRuntime {
 
   /** Toggle the definition's boolean field and remove only its own legacy override. */
   async toggleMcp(id: string): Promise<void> {
+    this.cancelMcpConflict()
     const row = this.state.mcp.rows.find((entry) => entry.id === id)
     if (row === undefined) {
       this.setStatus('MCP 行不存在，请按 r 刷新', 'error')
@@ -955,19 +1000,18 @@ export class ManagerRuntime {
       this.setStatus('配置快照不可用，请按 r 重新读取后重试', 'error')
       return
     }
+    await this.applyMcpToggle({ patchPath: profilePatchPath, homePatchPath, expectedProfile: profileFingerprint,
+      expectedHome: homeFingerprint, id: row.id, serverName: row.serverName, disabled: row.enabled,
+      backupRoot: backupsRoot(this.panelHomePath) })
+  }
+
+  private async applyMcpToggle(input: TogglePatchInput): Promise<void> {
+    const id = input.id
+    const row = { serverName: input.serverName }
     await this.withBusy(async () => {
-      const desiredEnabled = !row.enabled
+      const desiredEnabled = !input.disabled
       try {
-        const { backupPath } = await saveMcpToggle({
-          patchPath: profilePatchPath,
-          homePatchPath,
-          expectedProfile: profileFingerprint,
-          expectedHome: homeFingerprint,
-          id: row.id,
-          serverName: row.serverName,
-          disabled: !desiredEnabled,
-          backupRoot: backupsRoot(this.panelHomePath),
-        })
+        const { backupPath } = await saveMcpToggle(input)
         const savedAt = Date.now()
         this.patchState({
           mcp: {
@@ -1018,8 +1062,66 @@ export class ManagerRuntime {
           },
         })
         this.setStatus(`MCP 启停失败：${error instanceof Error ? error.message : String(error)}`, 'error')
+        if (error instanceof PatchConflictError) this.offerMcpConflict({ kind: 'toggle', input })
       }
     })
+  }
+
+  private offerMcpConflict(intent: McpWriteIntent): void {
+    const files = intent.kind === 'toggle' ? intent.input : intent.session
+    const serverName = intent.kind === 'toggle' ? intent.input.serverName : intent.session.serverName ?? String(intent.kind === 'save' ? intent.config.serverName : '')
+    const view: McpConflictView = { token: randomUUID(), action: intent.kind, serverName,
+      id: intent.kind === 'toggle' ? intent.input.id : intent.session.id,
+      patchPath: files.patchPath, homePatchPath: files.homePatchPath }
+    this.pendingMcpConflict = { view, intent: copyMcpIntent(intent) }
+    this.patchState({ mcp: { ...this.state.mcp, conflict: view } })
+  }
+
+  cancelMcpConflict(token?: string): void {
+    if (token !== undefined && this.pendingMcpConflict?.view.token !== token) return
+    this.pendingMcpConflict = undefined
+    if (this.state.mcp.conflict !== undefined) this.patchState({ mcp: { ...this.state.mcp, conflict: undefined } })
+  }
+
+  async previewMcpConflict(token: string): Promise<McpConflictPreview | undefined> {
+    return this.withBusy(async () => {
+      const pending = this.pendingMcpConflict
+      try {
+        if (pending?.view.token !== token || pending.view.patchPath !== this.mcpProfilePatchPath() ||
+            pending.view.homePatchPath !== join(this.dshHomePath(), 'cordis.patch.yml')) throw new Error('冲突操作已失效，请重新加载')
+        pending.plan = undefined
+        pending.confirmation = undefined
+        const plan = await prepareMcpConflict(pending.intent)
+        if (this.disposed || this.pendingMcpConflict !== pending) return undefined
+        const confirmation = randomUUID()
+        pending.plan = plan
+        pending.confirmation = confirmation
+        const request = plan.intent
+        return { ...pending.view, confirmation, fields: plan.fields, externalFields: plan.externalFields,
+          operation: request.kind === 'toggle' ? request.input.disabled ? '停用' : '启用' : request.kind === 'delete' ? '删除' : request.session.id === undefined ? '新增' : '修改',
+          ...(request.kind === 'save' && request.config.serverName !== pending.view.serverName ? { nextServerName: String(request.config.serverName) } : {}),
+          backupRoot: backupsRoot(this.panelHomePath) }
+      } catch (error) {
+        this.setStatus(error instanceof Error ? error.message : '无法准备冲突操作，请重新加载', 'error')
+        return undefined
+      }
+    })
+  }
+
+  async commitMcpConflict(token: string, confirmation: string): Promise<McpToggleOutcome | undefined> {
+    if (this.state.busy || this.disposed) return
+    const pending = this.pendingMcpConflict
+    if (pending?.view.token !== token || pending.confirmation !== confirmation || pending.plan === undefined ||
+        pending.view.patchPath !== this.mcpProfilePatchPath() || pending.view.homePatchPath !== join(this.dshHomePath(), 'cordis.patch.yml')) {
+      this.setStatus('冲突确认已失效，请重新加载', 'warning'); return
+    }
+    const intent = pending.plan.intent
+    const before = this.state.mcp.lastAction
+    this.cancelMcpConflict(token)
+    if (intent.kind === 'save') await this.saveMcpForm(intent.session, intent.config)
+    else if (intent.kind === 'delete') await this.applyMcpDelete(intent.session)
+    else await this.applyMcpToggle(intent.input)
+    return this.state.mcp.lastAction === before ? undefined : this.state.mcp.lastAction
   }
 
   // ── MCP groups: private display metadata, isolated by profile ─────────────
@@ -1299,6 +1401,7 @@ export class ManagerRuntime {
     if (this.disposed) return
     this.closeSkillText()
     this.disposed = true
+    this.pendingMcpConflict = undefined
     if (this.capabilityTimer !== undefined) clearTimeout(this.capabilityTimer)
     if (this.statusTimer !== undefined) clearTimeout(this.statusTimer)
     this.listeners.clear()
