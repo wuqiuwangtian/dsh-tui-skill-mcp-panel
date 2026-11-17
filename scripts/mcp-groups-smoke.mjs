@@ -120,6 +120,11 @@ const waitFor = async (condition, label) => {
 const down = () => press('\x1b[B')
 const enter = () => press('\r')
 const clear = () => press('\x15')
+const waitScreen = async needle => {
+  const deadline = Date.now() + 7000
+  while (!(await screen()).includes(needle) && Date.now() < deadline) await sleep(50)
+  assert.ok((await screen()).includes(needle), `expected screen: ${needle}`)
+}
 
 const frame = async () => { const text = await readFile(join(root, 'render.txt'), 'utf8'); return text.slice(text.lastIndexOf('=== frame ')) }
 const view = async (needle) => assert.ok((await frame()).includes(needle), `expected frame: ${needle}`)
@@ -209,6 +214,7 @@ try {
   } finally { cold.dispose() }
 
   // Runtime rename synchronizes membership; delete/undo keep the reference intact.
+  await press('2')
   const text = addManagedMcp(original, 'managed', { serverName: 'managed', transport: 'stdio', command: 'node' })
   await writeFile(patchPath, text)
   await waitFor(() => entries.some((entry) => entry.options.id === 'managed'), 'managed row composed')
@@ -222,9 +228,35 @@ try {
   await runtime.deleteMcp('managed')
   assert.equal(runtime.snapshot().mcp.lastAction.outcome, 'applied')
   assert.deepEqual(groups()[lifecycleId].members, ['["managed-new","managed"]'])
-  await runtime.undoMcpDelete()
+  let latest = (await readFile(patchPath, 'utf8')) + '# external after managed deletion\n'
+  await writeFile(patchPath, latest)
+  await press('u')
+  await waitScreen('MCP 撤销遇到文件变化')
+  await enter()
+  assert.equal(runtime.snapshot().mcp.restoreConflict, undefined, 'default choice cancels merge')
+  assert.equal(await readFile(patchPath, 'utf8'), latest)
+  await press('u'); await down(); await enter()
+  await waitScreen('确认 MCP 合并恢复')
+  await press('n')
+  assert.equal(await readFile(patchPath, 'utf8'), latest, 'preview cancellation never writes')
+  await down(); await enter()
+  latest += '# changed again during restore preview\n'
+  await writeFile(patchPath, latest)
+  const beforeAttempt = runtime.snapshot().mcp.lastAction
+  await press('y')
+  await waitFor(() => !runtime.snapshot().busy && runtime.snapshot().mcp.lastAction !== beforeAttempt, 'stale merge finishes')
+  await waitScreen('MCP 合并恢复结果')
+  assert.equal(runtime.snapshot().mcp.lastAction.outcome, 'conflict')
+  assert.equal(await readFile(patchPath, 'utf8'), latest)
+  await press('\x1b')
+  await press('u'); await down(); await enter(); await press('y')
+  await waitFor(() => !runtime.snapshot().busy && runtime.snapshot().mcp.lastAction.outcome === 'applied', 'confirmed merge applies')
+  await waitScreen('MCP 合并恢复结果')
   assert.equal(runtime.snapshot().mcp.lastAction.outcome, 'applied')
+  assert.equal(await readFile(runtime.snapshot().mcp.lastAction.backupPath, 'utf8'), latest)
+  assert.ok((await readFile(patchPath, 'utf8')).endsWith(latest))
   assert.deepEqual(groups()[lifecycleId].members, ['["managed-new","managed"]'])
+  await press('\x1b')
   await press('2')
   for (const label of ['g分组', 'f筛选', '/搜索', 'x清除']) {
     if (columns < 110) assert.ok((await screen()).includes(label), `narrow footer exposes ${label}`)
@@ -240,7 +272,7 @@ try {
   await view('mcp(0):')
   await press('x')
   assert.ok(!(await frame()).includes('hidden-value'))
-  console.log(`mcp-groups-smoke OK (${columns} cols): membership / search+filters / groups CRUD / profile isolation / stale conflict / cold reload / rename+delete+undo / no YAML or shared-schema metadata writes`)
+  console.log(`mcp-groups-smoke OK (${columns} cols): membership / search+filters / groups CRUD / profile isolation / stale conflict / cold reload / rename+delete+merge-undo / merge cancel+stale+backup / no YAML or shared-schema metadata writes`)
 } catch (error) {
   console.error((await screen()).slice(-4000))
   console.error((await frame()).slice(0, 1500))

@@ -5,7 +5,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { ManagerRuntime } from '../../lib/types/host/manager-runtime.js'
-import { addManagedMcp, managedMcpEntries } from '../../lib/types/domain/mcp/managed.js'
+import { addManagedMcp, editManagedMcp, managedMcpEntries } from '../../lib/types/domain/mcp/managed.js'
+import { mcpGroupIds } from '../../lib/types/domain/mcp/groups.js'
 import { parsePatchText, MCP_MODULE } from '../../lib/types/domain/mcp/patch.js'
 
 async function fixture(t) {
@@ -116,4 +117,80 @@ test('runtime retries immutable draft, existing-row toggle and latest managed de
   await r.undoMcpDelete()
   assert.equal(r.snapshot().mcp.lastAction.outcome, 'applied')
   assert.equal(await readFile(fx.patchPath, 'utf8'), beforeDelete)
+})
+
+test('MCP rename reports a metadata failure when private config becomes damaged after opening the form', async t => {
+  const fx = await fixture(t), r = fx.runtime
+  await r.createMcpGroup('Retained group', [{ serverName: 'local', entryId: 'managed' }])
+  const session = await r.openMcpForm('managed'), broken = '{"version":1,"mcpGroups":'
+  const configPath = join(fx.root, 'panel', 'config.json')
+  await writeFile(configPath, broken)
+  await r.saveMcpForm(session, { ...session.config, serverName: 'renamed' })
+  assert.equal(r.snapshot().mcp.lastAction.outcome, 'applied')
+  assert.match(r.snapshot().mcp.lastAction.detail ?? '', /分组更名同步失败/u)
+  assert.match(r.snapshot().configWarning ?? '', /分组/u)
+  assert.equal(await readFile(configPath, 'utf8'), broken, 'damaged private config is preserved')
+  assert.equal(managedMcpEntries(await readFile(fx.patchPath, 'utf8'))[0].serverName, 'renamed')
+})
+
+test('restore merge confirmations expire on re-preview, external changes, refresh, profile switch and dispose', async t => {
+  const fx = await fixture(t), r = fx.runtime
+  await r.deleteMcp('managed')
+  await fx.change()
+  await r.undoMcpDelete()
+  const first = r.snapshot().mcp.restoreConflict
+  assert.ok(first)
+  const p1 = await r.previewMcpRestore(first.token), p2 = await r.previewMcpRestore(first.token)
+  const latest = await readFile(fx.patchPath, 'utf8')
+  await r.commitMcpRestore(first.token, p1.confirmation)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), latest)
+  const changed = await fx.change()
+  await r.commitMcpRestore(first.token, p2.confirmation)
+  assert.equal(r.snapshot().mcp.lastAction.outcome, 'conflict')
+  assert.equal(await readFile(fx.patchPath, 'utf8'), changed)
+  await r.undoMcpDelete()
+  const second = r.snapshot().mcp.restoreConflict, next = await r.previewMcpRestore(second.token)
+  r.cancelMcpRestore(first.token)
+  assert.equal(r.snapshot().mcp.restoreConflict.token, second.token)
+  fx.switchPath(join(fx.root, 'another-profile.yml'))
+  await r.commitMcpRestore(second.token, next.confirmation)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), changed)
+  fx.switchPath(fx.patchPath)
+  await r.refreshMcp()
+  await r.commitMcpRestore(second.token, next.confirmation)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), changed)
+  await r.undoMcpDelete()
+  const third = r.snapshot().mcp.restoreConflict, final = await r.previewMcpRestore(third.token)
+  r.dispose()
+  await r.commitMcpRestore(third.token, final.confirmation)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), changed)
+})
+
+test('restore merge keeps private group references; external rename never guesses membership by entryId alone', async t => {
+  const fx = await fixture(t), r = fx.runtime
+  await r.createMcpGroup('Keep group', [{ serverName: 'local', entryId: 'managed' }])
+  const configPath = join(fx.root, 'panel', 'config.json'), metadata = await readFile(configPath, 'utf8')
+  await r.deleteMcp('managed')
+  const latest = await fx.change()
+  await r.undoMcpDelete()
+  let offer = r.snapshot().mcp.restoreConflict
+  r.cancelMcpRestore(offer.token)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), latest)
+  await r.undoMcpDelete()
+  offer = r.snapshot().mcp.restoreConflict
+  const preview = await r.previewMcpRestore(offer.token)
+  assert.ok(!JSON.stringify(preview).includes('private-fixture-secret'))
+  await r.commitMcpRestore(offer.token, preview.confirmation)
+  assert.equal(r.snapshot().mcp.lastAction.outcome, 'applied')
+  assert.equal(await readFile(r.snapshot().mcp.lastAction.backupPath, 'utf8'), latest)
+  assert.equal(await readFile(configPath, 'utf8'), metadata)
+  const groups = r.mcpGroupsForCurrentProfile()
+  assert.equal(mcpGroupIds(groups, fx.patchPath, { serverName: 'local', entryId: 'managed' }).length, 1)
+  const restored = await readFile(fx.patchPath, 'utf8'), row = managedMcpEntries(restored)[0]
+  await writeFile(fx.patchPath, editManagedMcp(restored, row.id, row.serverName, { ...row.config, serverName: 'external-name' }))
+  await r.refreshMcp()
+  assert.equal(mcpGroupIds(r.mcpGroupsForCurrentProfile(), fx.patchPath, { serverName: 'external-name', entryId: 'managed' }).length, 0)
+  assert.equal(await readFile(configPath, 'utf8'), metadata, 'external rename does not rewrite or delete old references')
+  await r.dumpNow()
+  assert.ok(!(await readFile(join(fx.root, 'dump.json'), 'utf8')).includes('private-fixture-secret'))
 })

@@ -1,0 +1,377 @@
+{
+  "date": "2026-11-17",
+  "productBase": "cd5d483 plus this delivery",
+  "version": "0.1.0-dev.0",
+  "environment": {
+    "root": "/tmp/skill-mcp-real-tui-YGrrkM",
+    "launcher": "/tmp/skill-mcp-real-tui-YGrrkM/run.sh",
+    "profile": "/tmp/skill-mcp-real-tui-YGrrkM/dsh/profiles/panel-verification",
+    "project": "/tmp/skill-mcp-real-tui-YGrrkM/project",
+    "hostDir": "/home/wqwt/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui",
+    "hostVersion": "0.20.1",
+    "kernelVersion": "0.2.2-rc.3",
+    "nodeVersion": "26.3.0",
+    "mode": "fullscreen",
+    "modeObservation": "/tmp/skill-mcp-real-tui-YGrrkM/terminal-mode.json"
+  },
+  "terminal": {
+    "columns": 80,
+    "rows": 24,
+    "sceneColumns": 76,
+    "sceneRows": 22
+  },
+  "scope": "isolated profile and source-linked compiled panel, actual CLI/host/kernel and loopback HTTP; no model, real user configuration or third-party install changes",
+  "coldFlow": [
+    "Create real Kept MCP group via panel g; member restore-live + restore-live",
+    "Delete managed HTTP row via panel d/y; normal runtime removal applied",
+    "Exit TUI with code 0",
+    "Add after-delete disabled HTTP row and comments to isolated profile",
+    "Restart same launcher and load persistent deletion record/group metadata",
+    "u refuses whole-file stale undo and offers cancel/merge",
+    "Default cancel and preview cancellation keep exact current bytes",
+    "External change during preview makes confirmation refuse writing",
+    "Fresh preview confirmed; only original raw target restored, new row/comments retained",
+    "Group picker shows Kept MCP / already in group; native /mcp shows restore-live / ping"
+  ],
+  "mergeResult": {
+    "action": {
+      "outcome": "applied",
+      "action": "restore",
+      "id": "restore-live",
+      "serverName": "restore-live",
+      "savedAt": 1794884409292,
+      "backupPath": "/tmp/skill-mcp-real-tui-YGrrkM/panel/backups/1794884409264-7c68ec77-771c-4ba6-b685-0843cf3b8f23/cordis.patch.yml",
+      "appliedAt": 1794884411972
+    },
+    "originalRowExact": true,
+    "otherCurrentBytesExact": true,
+    "latestBackupExact": true,
+    "metadataBytesExact": true,
+    "newDisabledServerRetained": true,
+    "expressionAndUnknownFieldsExact": true,
+    "renderDumpMasked": true,
+    "requests": [
+      {
+        "sequence": 1,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "server/discover",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 2,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "initialize",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 3,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "notifications/initialized",
+        "headerMatched": true,
+        "status": 202
+      },
+      {
+        "sequence": 4,
+        "method": "GET",
+        "path": "/mcp",
+        "headerMatched": true,
+        "status": 405
+      },
+      {
+        "sequence": 5,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "tools/list",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 6,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "server/discover",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 7,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "initialize",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 8,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "notifications/initialized",
+        "headerMatched": true,
+        "status": 202
+      },
+      {
+        "sequence": 9,
+        "method": "GET",
+        "path": "/mcp",
+        "headerMatched": true,
+        "status": 405
+      },
+      {
+        "sequence": 10,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "tools/list",
+        "headerMatched": true,
+        "status": 200
+      }
+    ],
+    "backupMode": 384
+  },
+  "ttyObservations": [
+    {
+      "label": "start",
+      "truncated": false
+    },
+    {
+      "label": "command",
+      "truncated": false
+    },
+    {
+      "label": "open",
+      "truncated": false
+    },
+    {
+      "label": "mcp",
+      "truncated": false
+    },
+    {
+      "label": "select-restore",
+      "truncated": false
+    },
+    {
+      "label": "group-picker",
+      "truncated": false,
+      "excerpt": "         skill-mcp-panel                                                  分组 · restore-live (restore-live)❯ ＋ 新建 MCP 分组…                                                     管理 MCP 分组…               ↑↓ ↵确认 ·1/2[Esc 取消]                               ╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         "
+    },
+    {
+      "label": "new-group",
+      "truncated": false
+    },
+    {
+      "label": "group-name",
+      "truncated": false
+    },
+    {
+      "label": "save-group",
+      "truncated": false
+    },
+    {
+      "label": "delete",
+      "truncated": false
+    },
+    {
+      "label": "confirm-delete",
+      "truncated": false
+    },
+    {
+      "label": "close-before-restart",
+      "truncated": false
+    },
+    {
+      "label": "exit-first-1",
+      "truncated": false
+    },
+    {
+      "label": "exit-first-2",
+      "exitCode": 0,
+      "truncated": false,
+      "excerpt": "\n"
+    },
+    {
+      "label": "cold-start",
+      "truncated": false
+    },
+    {
+      "label": "command-cold",
+      "truncated": false
+    },
+    {
+      "label": "open-cold",
+      "truncated": false
+    },
+    {
+      "label": "undo-cold",
+      "truncated": false,
+      "excerpt": "MCP 恢复失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动         skill-mcp-panel                                                  ╭────────────────────────────────────────────────────────────────────────╮│MCP 撤销遇到文件变化 · restore-live││❯ 取消（保留当前文件和撤销记录）                                      ││  合并恢复被删行…  保留当前其他内容，不还原整份旧文件││↑↓ ↵确认 · 1/2 [Esc 取消]                                             │╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                                                                                                                                                                                                                                       MCP 恢复失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "default-cancel",
+      "truncated": false
+    },
+    {
+      "label": "undo-again",
+      "truncated": false
+    },
+    {
+      "label": "choose-merge",
+      "truncated": false
+    },
+    {
+      "label": "open-merge-preview",
+      "truncated": false,
+      "excerpt": " skill-mcp-panel · 76x22  Skills 技能  MCP  Groups 分组  Diagnostics 诊断 ╭────────────────────────────────────────────────────────────────────────╮│MCP servers  4 行 · 启用 0 · 停用 4││无工作区级配置 · 当前 profile 可写 · home 全局层只读││筛选: 全部 · 分组:全部 · 4/4 行                                       ││❯ after-delete              streamable-http  停用 · profile · 受管    ││   mcp-expr                  stdio  停用 · profile · 只读               ││mcp-home                  stdio  停用 · home · 只读││mcp-probe                 stdio  停用 · profile · 仅启停││────────────────────────────────────────────────────────────────────││分组：(未分组)·g修改││idafter-delete·entryIdafter-delete·层profile│││││││││╰────────────────────────────────────────────────────────────────────────╯[␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除] [i详情] [r刷新] [?] MCP 恢复失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动         skill-mcp-panel                                                  ╭────────────────────────────────────────────────────────────────────────╮│确认 MCP 合并恢复                  ││目标：restore-live · entryId restore-live           ││transport：streamable-http · 恢复后启用（会重新连接并注册工具）││当前 profile：/tmp/skill-mcp-real-tui-YGrrkM/dsh/profiles/panel-verifi││cation/codis.patch.yml                                 ││hoe（只读）：/tmp/skill-mcp-real-tui-YGrrkM/dsh/cordis.patch.yml││原配置来源：/tmp/skill-mcp-real-tui-YGrrkM/pane/backups/1794884320595││-c443e85e-8004-4704-a949-0b99abb1427e/cordis.patch.yml              ││只恢复被删行原文，作为受管块中的独立行；合并后位置可能不同。││保留当前其他行与字段，不还原整份旧 patch；分组引用不改动。││合并前最新文件备份目录：/tmp/skill-mcp-real-tui-YGrrkM/panel/backups││同 id/同名、home 覆盖、旧启停覆盖或 YAML 别名等有歧义时拒绝。││确认期间两层文件、撤销清单或源备份再次变化则停止。││[首] [上页] [下页] [末] 1-12/12││ [y 确认] [n / Esc 取消]                                                │╰────────────────────────────────────────────────────────────────────────╯                    MCP 恢复失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "preview-bottom",
+      "truncated": false
+    },
+    {
+      "label": "cancel-merge-preview",
+      "truncated": false
+    },
+    {
+      "label": "merge-again-down",
+      "truncated": false
+    },
+    {
+      "label": "merge-again-preview",
+      "truncated": false
+    },
+    {
+      "label": "stale-merge-confirmation",
+      "truncated": false,
+      "excerpt": " skill-mcp-panel · 76x22  Skills 技能  MCP  Groups 分组  Diagnostics 诊断 ╭────────────────────────────────────────────────────────────────────────╮│MCP servers  4 行 · 启用 0 · 停用 4││无工作区级配置 · 当前 profile 可写 · home 全局层只读││筛选: 全部 · 分组:全部 · 4/4 行                                ││❯ after-delete              streamable-http  停用 · profile · 受管    ││  mcp-exp                  stdio  停用 · profile · 只读││  cp-home                  stdio  停用 · home · 只读            ││  mcp-probe                 stdio  停用 · profie · 仅启停            ││────────────────────────────────────────────────────────────────────││分组：(未分组) · g 修改                                     ││id after-delete · entryId after-delete · 层 profile       ││                                                                    ││                                                             ││                                                  ││                               │╰────────────────────────────────────────────────────────────────────────╯[␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除]   [i详情] [r刷新] [?] 已写入 /tmp/skill-mcp-real-tui-YGrrkM/dump.json         skill-mcp-panel                                                  ╭────────────────────────────────────────────────────────────────────────╮│MCP 合并恢复结果                   ││MCP 恢复失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动││原配置来源：/tmp/skill-mcp-real-tui-YGrrkM/panel/backups/1794884320595││-c443e85e-8004-4704-a949-0b99abb1427e/cordis.patch.yml                ││profile：/tmp/skill-mcp-real-tui-YGrrkM/dsh/profiles/panel-verificatio││n/cordis.patch.yml                                   ││[首] [上页] [下页] [末] 1-5/5                             ││[Enter/Esc 关闭]                                                    │╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                            MCP 恢复失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "close-stale-result",
+      "truncated": false
+    },
+    {
+      "label": "undo-fresh",
+      "truncated": false
+    },
+    {
+      "label": "fresh-merge-down",
+      "truncated": false
+    },
+    {
+      "label": "fresh-preview",
+      "truncated": false,
+      "excerpt": " skill-mcp-panel · 76x22  Skills 技能  MCP  Groups 分组  Diagnostics 诊断 ╭────────────────────────────────────────────────────────────────────────╮│MCP servers  4 行 · 启用 0 · 停用 4││无工作区级配置 · 当前 profile 可写 · home 全局层只读││筛选: 全部 · 分组:全部 · 4/4 行                                       ││❯ after-delete              streamable-http  停用 · profile · 受管    ││   mcp-expr                  stdio  停用 · profile · 只读               ││mcp-home                  stdio  停用 · home · 只读││mcp-probe                 stdio  停用 · profile · 仅启停││────────────────────────────────────────────────────────────────────││分组：(未分组)·g修改││idafter-delete·entryIdafter-delete·层profile│││││││││╰────────────────────────────────────────────────────────────────────────╯[␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除] [i详情] [r刷新] [?] MCP 恢复失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动         skill-mcp-panel                                                  ╭────────────────────────────────────────────────────────────────────────╮│确认 MCP 合并恢复                  ││目标：restore-live · entryId restore-live           ││transport：streamable-http · 恢复后启用（会重新连接并注册工具）││当前 profile：/tmp/skill-mcp-real-tui-YGrrkM/dsh/profiles/panel-verifi││cation/codis.patch.yml                                 ││hoe（只读）：/tmp/skill-mcp-real-tui-YGrrkM/dsh/cordis.patch.yml││原配置来源：/tmp/skill-mcp-real-tui-YGrrkM/pane/backups/1794884320595││-c443e85e-8004-4704-a949-0b99abb1427e/cordis.patch.yml              ││只恢复被删行原文，作为受管块中的独立行；合并后位置可能不同。││保留当前其他行与字段，不还原整份旧 patch；分组引用不改动。││合并前最新文件备份目录：/tmp/skill-mcp-real-tui-YGrrkM/panel/backups││同 id/同名、home 覆盖、旧启停覆盖或 YAML 别名等有歧义时拒绝。││确认期间两层文件、撤销清单或源备份再次变化则停止。││[首] [上页] [下页] [末] 1-12/12││ [y 确认] [n / Esc 取消]                                                │╰────────────────────────────────────────────────────────────────────────╯                    MCP 恢复失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "confirm-merge",
+      "truncated": false
+    },
+    {
+      "label": "close-merge-result",
+      "truncated": false
+    },
+    {
+      "label": "select-restored",
+      "truncated": false
+    },
+    {
+      "label": "check-membership",
+      "truncated": false,
+      "excerpt": "         skill-mcp-panel                                                  ╭────────────────────────────────────────────────────────────────────────╮│MCP 分组 · restore-live (restore-live)││❯ Kept MCP  已在组内 · 选择移出                                       ││  ＋ 新建 MCP 分组…            ││管理 MCP 分组…                                                  ││↑↓ ↵确认 ·1/3[Esc 取消]                               │╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      "
+    },
+    {
+      "label": "close-membership",
+      "truncated": false
+    },
+    {
+      "label": "close-panel",
+      "truncated": false
+    },
+    {
+      "label": "native-mcp",
+      "truncated": false
+    },
+    {
+      "label": "native-submit",
+      "truncated": false,
+      "excerpt": "! /mcp                                                                       restore-live（1 个工具）: ping                                                                                 ▓▓▓▓▓▓▓▓█████▓█▓██▓█████▓▓█▓█▓▓▓▓▓▓探索▓▓▓▓▓▓▓▓█████▓███████▓█▓█▓▓▓▓▓探索未▓▓▓▓▓▓▓▓██████▓████████▓██▓█▓█▓▓▓▓▓探索未▓▓▓▓▓▓▓▓██████▓███▓████▓██▓█▓█▓▓▓▓▓▓探索未至▓▓▓▓▓▓▓▓█████████▓███▓████▓█▓▓▓▓▓探索未至▓▓▓▓▓▓▓▓█████████▓██▓█████▓█▓▓▓▓▓▓探索未至之▓▓▓▓▓▓▓█████████▓██▓██████▓█▓▓▓▓▓▓▓▓探索未至之▓▓▓▓▓▓▓████████▓█▓▓█████▓▓█▓▓▓▓▓▓▓▓索未至之境▓▓▓▓▓▓▓▓███████▓█▓█████▓█▓▓▓▓▓▓▓索未至之境"
+    },
+    {
+      "label": "exit-cold-1",
+      "truncated": false
+    },
+    {
+      "label": "exit-cold-2",
+      "exitCode": 0,
+      "truncated": false,
+      "excerpt": "▓▓▓▓▓▓████████▓█▓▓██▓██▓█▓█▓▓▓▓▓▓\n"
+    }
+  ],
+  "ttyExitCodes": [
+    0,
+    0
+  ],
+  "ownedHttpServerStopped": true,
+  "metadataAudit": {
+    "externalRename": "Different serverName with same entryId is not automatically regrouped; old pair retained. Runtime regression checks this.",
+    "damagedPrivateConfigDefect": {
+      "observedBeforeFix": "MCP rename saved but metadata migration silently skipped when loadPanelDocument returned an unwritable fallback with empty groups. Regression failed: expected metadata warning, got empty detail.",
+      "fix": "Check writable before deciding there are no memberships; show warning and retain damaged config bytes.",
+      "remaining": "Valid old references after a transient sync failure/process interruption are retained; no durable automatic reassignment/cleanup or pending migration journal is claimed."
+    }
+  },
+  "sourceHashes": {
+    "src/domain/mcp/crud.ts": "67b620c6f00a18459d30e3b3960bd4cf175185665b06a24c4d1147b1821c7970",
+    "src/domain/mcp/managed.ts": "76d1a3f0ef43c60ed3d3cab7ccc74f8215a011743f1826657616ce3f0f2e0f9d",
+    "src/host/manager-runtime.ts": "a51c9e5c5a82742e4cceaa969241ef98eca380cc1e3c88cda263367b53862ec0",
+    "src/ui/ManagerScene.tsx": "c1fcba76ef1a6478c8a823b592281c4665458de4ecb03eb12b713d3c5e18c54c"
+  },
+  "limits": [
+    "Original-file undo still requires exact deletion snapshot; explicit merge only restores one unambiguous panel-owned row.",
+    "Merged row location can differ; confirmation states this.",
+    "Legacy target overrides, YAML aliases/anchors, duplicate identity/name, invalid format and home/runtime collisions refuse merge.",
+    "Last-check-to-rename race with non-cooperating writers remains.",
+    "No claim about process-kill/OS crash atomicity across profile, deletion record and group config.",
+    "No arbitrary remote credentials/TLS/OAuth/model request or complete AC-15/publication proof."
+  ],
+  "validation": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "domainReleaseTests": 241,
+    "newDomainRuntimeTests": 14,
+    "skipped": 0,
+    "layoutAssertions": 793,
+    "mouseAssertions": 239,
+    "navigationAssertions": 107,
+    "skillFilterAssertions": 52,
+    "mcpCrudColumns": [
+      120,
+      58
+    ],
+    "mcpGroupsColumns": [
+      120,
+      58
+    ],
+    "fullLogSha256": "9d5b68794e918e0e54b8f4c9d43cc7b7567f58c8d855e1c1ce3b1068d3c540b8",
+    "finalTarballCommand": "node scripts/check-tarball.mjs",
+    "finalTarballExitCode": 0,
+    "artifact": {
+      "check": "tarball",
+      "ok": true,
+      "name": "dsh-tui-skill-mcp-panel",
+      "version": "0.1.0-dev.0",
+      "fileCount": 95,
+      "bytes": 127914,
+      "sha256": "6c8376931b3d23aeaf44e7d996c4463ccb8f6c991bd5d90d90f5f823547714fc",
+      "npmIntegrity": "sha512-RbNasSUl8DCliCbOCnmuuupqBAzyNN/ZaI0T+tzUIHYBvt/Iq1BctDl1EsGSh1hnvqYQRXyAsnj5XmRYvaUsTA==",
+      "dryRunFileCount": 95,
+      "manifestId": "com.dsh-tui.skill-mcp-panel",
+      "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+      "diagnosticVersionSmoke": "plugin metadata from extracted package; Node actual; absent host/kernel unavailable",
+      "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+    },
+    "note": "Fresh tarball check includes the final README after flow/metadata wording updates; no publication."
+  }
+}

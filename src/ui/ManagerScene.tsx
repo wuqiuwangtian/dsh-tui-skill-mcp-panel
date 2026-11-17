@@ -19,7 +19,7 @@ import { filterMcpRows, groupsForMcpProfile, mcpGroupIds, mcpMemberKey, type Mcp
 import { splitFrontmatter } from '../domain/skills/frontmatter.js'
 import type { SkillInstance, SkillScanResult, SkillSource, SkillStatus } from '../domain/skills/types.js'
 import { filterSkills, SKILL_STATUS_FILTERS, type SkillStatusFilter } from '../domain/skills/filter.js'
-import type { ManagerRuntime, ManagerState, McpConflictView } from '../host/manager-runtime.js'
+import type { ManagerRuntime, ManagerState, McpConflictView, McpRestoreConflictView } from '../host/manager-runtime.js'
 import { cellWidth, firstLines, inputTail, oneLine, padToWidth, truncateToWidth, wrapTextLines } from '../shared/format.js'
 
 const SKILL_ACTIONS = [
@@ -293,7 +293,7 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   if (state.groupsBackupPath !== undefined) push(`  上次写前备份：${state.groupsBackupPath}`)
   push('  web 2.3.7 不使用分组锁；外部变化时按 R 刷新，不强制覆盖')
   push('MCP 文件变化：可重新加载，或覆盖前备份后重试当前目标；再次变化仍拒写。')
-  push('  撤销/旧覆盖迁移不强制覆盖；home、表达式和受管边界不变。')
+  push('  撤销可确认后单行合并恢复；旧迁移不强制覆盖，home/表达式和受管边界不变。')
   push('')
   push('MCP（当前 profile patch + home 层 + loader）')
   push(`  profile patch: ${state.mcp.profilePatchPath ?? '(unknown)'}`)
@@ -880,6 +880,59 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       showMcpConflict(conflict)
       return () => runtime.cancelMcpConflict(conflict.token)
     }, [state.mcp.conflict?.token])
+
+    const showMcpRestoreConflict = (conflict: McpRestoreConflictView): void => {
+      const cancel = (): void => runtime.cancelMcpRestore(conflict.token)
+      setModal({ kind: 'select', title: `MCP 撤销遇到文件变化 · ${conflict.serverName}`, index: 0,
+        options: [{ id: 'cancel', label: '取消（保留当前文件和撤销记录）' },
+          { id: 'merge', label: '合并恢复被删行…', hint: '保留当前其他内容，不还原整份旧文件' }],
+        onCancel: cancel,
+        onSubmit: choice => {
+          if (choice !== 'merge') { cancel(); return }
+          void runtime.previewMcpRestore(conflict.token).then(preview => {
+            if (runtime.snapshot().mcp.restoreConflict?.token !== conflict.token) return
+            if (preview === undefined) {
+              setModal({ kind: 'info', title: '无法安全合并恢复', lines: [
+                `目标：${conflict.serverName} · entryId ${conflict.id}`, `profile：${conflict.patchPath}`,
+                runtime.snapshot().statusMessage?.text ?? '请检查当前文件与原备份',
+                '保留当前配置、撤销记录与原备份；关闭后可重新按 u。',
+              ] })
+              cancel()
+              return
+            }
+            setModal({ kind: 'confirm', title: '确认 MCP 合并恢复', danger: true,
+              message: [`目标：${preview.serverName} · entryId ${preview.id}`,
+                `transport：${preview.transport} · 恢复后${preview.enabled ? '启用（会重新连接并注册工具）' : '停用'}`,
+                `当前 profile：${preview.patchPath}`, `home（只读）：${preview.homePatchPath}`,
+                `原配置来源：${preview.sourceBackupPath}`,
+                '只恢复被删行原文，作为受管块中的独立行；合并后位置可能不同。',
+                '保留当前其他行与字段，不还原整份旧 patch；分组引用不改动。',
+                `合并前最新文件备份目录：${preview.backupRoot}`,
+                '同 id/同名、home 覆盖、旧启停覆盖或 YAML 别名等有歧义时拒绝。',
+                '确认期间两层文件、撤销清单或源备份再次变化则停止。'],
+              onCancel: () => showMcpRestoreConflict(conflict),
+              onConfirm: () => {
+                void runtime.commitMcpRestore(preview.token, preview.confirmation).then(outcome => {
+                  setModal({ kind: 'info', title: 'MCP 合并恢复结果', lines: [
+                    runtime.snapshot().statusMessage?.text ?? '请检查诊断中的恢复状态',
+                    `原配置来源：${preview.sourceBackupPath}`,
+                    ...(outcome?.backupPath === undefined ? [] : [`合并前备份：${outcome.backupPath}`]),
+                    `profile：${preview.patchPath}`,
+                  ] })
+                })
+              },
+            })
+          })
+        },
+      })
+    }
+
+    React.useEffect(() => {
+      const conflict = state.mcp.restoreConflict
+      if (conflict === undefined) return
+      showMcpRestoreConflict(conflict)
+      return () => runtime.cancelMcpRestore(conflict.token)
+    }, [state.mcp.restoreConflict?.token])
 
     const askMigrateMcp = (): void => {
       const expected = state.mcp

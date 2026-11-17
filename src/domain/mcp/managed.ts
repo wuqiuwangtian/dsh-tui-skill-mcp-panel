@@ -1,5 +1,5 @@
 /** Edit only this panel's inserted MCP rows, retaining every unrelated byte. */
-import { isMap, isSeq, parseDocument, stringify } from 'yaml'
+import { isAlias, isMap, isScalar, isSeq, parseDocument, stringify, visit } from 'yaml'
 import { JS_TAG, MCP_MODULE, parsePatchText } from './patch.js'
 import { isRecord, validateMcpConfig, type McpConfig } from './model.js'
 
@@ -121,4 +121,31 @@ export function deleteManagedMcp(text: string, id: string, serverName: string): 
     next = `${next.slice(0, block.start)}${after.startsWith(eol) ? after.slice(eol.length) : after}`
   }
   return { text: validateCandidate(next), removed: text.slice(start, end), offset: start }
+}
+
+/** Explicit merge recovery: append the original raw row, retaining all current rows. */
+export function mergeManagedMcpRestore(current: string, before: string, id: string, serverName: string): string {
+  const entry = findManagedMcp(before, id, serverName)
+  const raw = before.slice(entry.start, entry.end)
+  visit(parseDocument(`- insert:\n${raw}`, { customTags: [JS_TAG] }), (_key, node) => {
+    if (isAlias(node) || ((isMap(node) || isSeq(node) || isScalar(node)) && node.anchor)) {
+      throw new Error('原行含 YAML 锚点或别名，无法安全单行恢复；请手工合并备份')
+    }
+  })
+  if (parsePatchText(before).rows.filter(row => row.id === id).length !== 1) {
+    throw new Error('原目标另有启停/配置覆盖，无法只恢复单行；请手工合并备份')
+  }
+  const parsed = parsePatchText(current)
+  if (!parsed.ok) throw new Error('当前 patch YAML 非法，请修复后重试')
+  if (parsed.rows.some(row => row.id === id || row.config?.serverName === serverName)) {
+    throw new Error('当前 profile 已有同 id 或 serverName，不能合并恢复；未覆盖现有行')
+  }
+  // Validate the marker/format boundaries even if no current MCP row is present.
+  managedMcpEntries(current)
+  const added = addManagedMcp(current, id, entry.config)
+  const placeholder = findManagedMcp(added, id, serverName)
+  const next = validateCandidate(added.slice(0, placeholder.start) + raw + added.slice(placeholder.end))
+  const restored = findManagedMcp(next, id, serverName)
+  if (next.slice(restored.start, restored.end) !== raw) throw new Error('原行文本无法完整恢复，未修改文件')
+  return next
 }

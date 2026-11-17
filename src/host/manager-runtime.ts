@@ -61,8 +61,8 @@ import {
 import { PatchConflictError, readPatchSnapshot, saveMcpMigration, saveMcpToggle, type TogglePatchInput } from '../domain/mcp/write.js'
 import { copyMcpIntent, prepareMcpConflict, type McpWriteIntent, type McpConflictPlan } from '../domain/mcp/conflict.js'
 import { managedMcpEntries } from '../domain/mcp/managed.js'
-import { deleteMcpEntry, listMcpDeletions, openMcpEditor, restoreMcpEntry, saveMcpEditor,
-  type McpDeletionSummary, type McpEditSession } from '../domain/mcp/crud.js'
+import { deleteMcpEntry, listMcpDeletions, openMcpEditor, restoreMcpEntry, saveMcpEditor, prepareMcpRestore, mergeRestoreMcpEntry,
+  type McpDeletionSummary, type McpEditSession, type McpRestorePlan } from '../domain/mcp/crud.js'
 import type { McpConfig } from '../domain/mcp/model.js'
 import { deleteMcpGroup, groupsForMcpProfile, mcpGroupIds, mcpMemberKey, mcpProfileKey, renameMcpMember, setMcpMembership, upsertMcpGroup,
   type McpGroups, type McpIdentity } from '../domain/mcp/groups.js'
@@ -148,6 +148,24 @@ export interface McpPanelState {
   lastAction?: McpToggleOutcome
   latestDeletion?: McpDeletionSummary
   conflict?: McpConflictView
+  restoreConflict?: McpRestoreConflictView
+}
+
+export interface McpRestoreConflictView {
+  token: string
+  batchId: string
+  id: string
+  serverName: string
+  patchPath: string
+  homePatchPath: string
+}
+
+export interface McpRestorePreview extends McpRestoreConflictView {
+  confirmation: string
+  sourceBackupPath: string
+  backupRoot: string
+  transport: string
+  enabled: boolean
 }
 
 export interface McpConflictView {
@@ -250,6 +268,7 @@ export class ManagerRuntime {
   private refreshGeneration = 0
   private versionRequest = 0
   private pendingMcpConflict?: { view: McpConflictView; intent: McpWriteIntent; plan?: McpConflictPlan; confirmation?: string }
+  private pendingMcpRestore?: { view: McpRestoreConflictView; plan?: McpRestorePlan; confirmation?: string }
 
   constructor(ctx: Context) {
     this.ctx = ctx
@@ -808,6 +827,7 @@ export class ManagerRuntime {
         legacyToggles,
         latestDeletion,
         conflict: this.state.mcp.conflict,
+        restoreConflict: this.state.mcp.restoreConflict,
         ...(this.state.mcp.togglingId === undefined ? {} : { togglingId: this.state.mcp.togglingId }),
         ...(this.state.mcp.lastAction === undefined ? {} : { lastAction: this.state.mcp.lastAction }),
       },
@@ -848,11 +868,16 @@ export class ManagerRuntime {
       if (result.changed && session.id !== undefined && session.serverName !== undefined && session.serverName !== result.value.serverName) {
         try {
           const current = await loadPanelDocument(this.panelHomePath)
+          if (!current.writable) throw new Error('MCP 分组配置不可写')
           const before = { serverName: session.serverName, entryId: session.id }
           if (mcpGroupIds(current.config.mcpGroups, session.patchPath, before).length > 0) {
             const document = await updateMcpGroups(this.panelHomePath, session.patchPath,
               (groups) => renameMcpMember(groups, session.patchPath, before, { serverName: result.value.serverName, entryId: session.id! }))
             this.patchState({ config: document.config, configWarning: document.warning })
+          }
+          if (current.warning !== undefined) {
+            this.patchState({ configWarning: current.warning })
+            return { ...result, warning: `服务器配置已保存；${current.warning}` }
           }
         } catch {
           const warning = '服务器配置已保存，但分组更名同步失败；请刷新并检查成员归属'
@@ -887,8 +912,70 @@ export class ManagerRuntime {
     this.cancelMcpConflict()
     const latest = this.state.mcp.latestDeletion
     if (latest === undefined) { this.setStatus('没有可撤销的 MCP 删除', 'info'); return }
+    const before = this.state.mcp.lastAction
     await this.runMcpMutation('restore', latest.id, () => restoreMcpEntry({ files: this.mcpFiles(), backupRoot: backupsRoot(this.panelHomePath),
-      trashDir: this.mcpTrashDir(), batchId: latest.batchId }))
+      trashDir: this.mcpTrashDir(), batchId: latest.batchId, expectedIdentity: latest }))
+    if (!this.disposed && this.state.mcp.lastAction !== before && this.state.mcp.lastAction?.outcome === 'conflict') {
+      const files = this.mcpFiles()
+      const view: McpRestoreConflictView = { token: randomUUID(), batchId: latest.batchId, id: latest.id,
+        serverName: latest.serverName, patchPath: files.patchPath, homePatchPath: files.homePatchPath }
+      this.pendingMcpRestore = { view }
+      this.patchState({ mcp: { ...this.state.mcp, restoreConflict: view } })
+    }
+  }
+
+  cancelMcpRestore(token?: string): void {
+    if (token !== undefined && this.pendingMcpRestore?.view.token !== token) return
+    this.pendingMcpRestore = undefined
+    if (this.state.mcp.restoreConflict !== undefined) this.patchState({ mcp: { ...this.state.mcp, restoreConflict: undefined } })
+  }
+
+  private assertRestoreRuntimeFree(plan: McpRestorePlan): void {
+    if (this.readLoaderMcpRows([]).some(row => row.id === plan.id || row.config?.serverName === plan.serverName)) {
+      throw new Error('运行时已有同 id 或 serverName，请刷新/等待旧连接移除后重试；未恢复')
+    }
+  }
+
+  async previewMcpRestore(token: string): Promise<McpRestorePreview | undefined> {
+    return this.withBusy(async () => {
+      const pending = this.pendingMcpRestore
+      try {
+        if (pending?.view.token !== token || pending.view.patchPath !== this.mcpProfilePatchPath() ||
+            pending.view.homePatchPath !== join(this.dshHomePath(), 'cordis.patch.yml')) throw new Error('撤销合并请求已失效，请重新按 u')
+        pending.plan = undefined
+        pending.confirmation = undefined
+        const plan = await prepareMcpRestore({ files: this.mcpFiles(), backupRoot: backupsRoot(this.panelHomePath),
+          trashDir: this.mcpTrashDir(), batchId: pending.view.batchId, expectedIdentity: pending.view })
+        if (plan.id !== pending.view.id || plan.serverName !== pending.view.serverName) throw new Error('撤销目标已变化，请重新按 u')
+        this.assertRestoreRuntimeFree(plan)
+        if (this.disposed || this.pendingMcpRestore !== pending) return undefined
+        const confirmation = randomUUID()
+        pending.plan = plan
+        pending.confirmation = confirmation
+        return { ...pending.view, confirmation, sourceBackupPath: plan.sourceBackupPath, backupRoot: backupsRoot(this.panelHomePath),
+          transport: plan.transport, enabled: plan.enabled }
+      } catch (error) {
+        this.setStatus(error instanceof Error ? error.message : '无法准备撤销合并', 'error')
+        return undefined
+      }
+    })
+  }
+
+  async commitMcpRestore(token: string, confirmation: string): Promise<McpToggleOutcome | undefined> {
+    if (this.state.busy || this.disposed) return
+    const pending = this.pendingMcpRestore
+    if (pending?.view.token !== token || pending.confirmation !== confirmation || pending.plan === undefined ||
+        pending.view.patchPath !== this.mcpProfilePatchPath() || pending.view.homePatchPath !== join(this.dshHomePath(), 'cordis.patch.yml')) {
+      this.setStatus('撤销合并确认已失效，请重新按 u', 'warning'); return
+    }
+    const plan = pending.plan
+    this.cancelMcpRestore(token)
+    const before = this.state.mcp.lastAction
+    await this.runMcpMutation('restore', plan.id, async () => {
+      this.assertRestoreRuntimeFree(plan)
+      return mergeRestoreMcpEntry({ plan, backupRoot: backupsRoot(this.panelHomePath), trashDir: this.mcpTrashDir() })
+    })
+    return this.state.mcp.lastAction === before ? undefined : this.state.mcp.lastAction
   }
 
   private loaderRevision(id: string | undefined): { fiber?: unknown; options?: unknown; signature?: string } {
@@ -1078,6 +1165,7 @@ export class ManagerRuntime {
   }
 
   cancelMcpConflict(token?: string): void {
+    if (token === undefined) this.cancelMcpRestore()
     if (token !== undefined && this.pendingMcpConflict?.view.token !== token) return
     this.pendingMcpConflict = undefined
     if (this.state.mcp.conflict !== undefined) this.patchState({ mcp: { ...this.state.mcp, conflict: undefined } })
@@ -1402,6 +1490,7 @@ export class ManagerRuntime {
     this.closeSkillText()
     this.disposed = true
     this.pendingMcpConflict = undefined
+    this.pendingMcpRestore = undefined
     if (this.capabilityTimer !== undefined) clearTimeout(this.capabilityTimer)
     if (this.statusTimer !== undefined) clearTimeout(this.statusTimer)
     this.listeners.clear()
