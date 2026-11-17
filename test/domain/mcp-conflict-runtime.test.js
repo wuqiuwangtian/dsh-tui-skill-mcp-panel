@@ -194,3 +194,64 @@ test('restore merge keeps private group references; external rename never guesse
   await r.dumpNow()
   assert.ok(!(await readFile(join(fx.root, 'dump.json'), 'utf8')).includes('private-fixture-secret'))
 })
+
+test('group repair confirmation is explicit, one-shot, profile-bound and invalidated by refresh, mutation and disposal', async t => {
+  const fx = await fixture(t), r = fx.runtime
+  const old = { serverName: 'old-name', entryId: 'managed' }, current = { serverName: 'local', entryId: 'managed' }
+  await r.createMcpGroup('Repair tools', [old])
+  const configPath = join(fx.root, 'panel', 'config.json'), original = await readFile(configPath, 'utf8')
+  const preview = async () => { await r.previewMcpGroupRepair(old, current); assert.ok(r.snapshot().mcp.groupRepair); return structuredClone(r.snapshot().mcp.groupRepair) }
+  const cancelledPreview = r.previewMcpGroupRepair(old, current)
+  r.cancelMcpGroupRepair()
+  await cancelledPreview
+  assert.equal(r.snapshot().mcp.groupRepair, undefined, 'closing the scene while preview starts cannot create a late pending plan')
+  let view = await preview()
+  r.cancelMcpGroupRepair(view.token)
+  await r.commitMcpGroupRepair(view.token, view.confirmation)
+  assert.equal(await readFile(configPath, 'utf8'), original)
+  const first = await preview(); view = await preview()
+  r.cancelMcpGroupRepair(first.token)
+  assert.equal(r.snapshot().mcp.groupRepair.token, view.token)
+  await r.commitMcpGroupRepair(first.token, first.confirmation)
+  assert.equal(await readFile(configPath, 'utf8'), original)
+  fx.switchPath(join(fx.root, 'other-profile.yml'))
+  await r.commitMcpGroupRepair(view.token, view.confirmation)
+  assert.equal(await readFile(configPath, 'utf8'), original)
+  fx.switchPath(fx.patchPath)
+  await r.refreshMcp()
+  await r.commitMcpGroupRepair(view.token, view.confirmation)
+  assert.equal(await readFile(configPath, 'utf8'), original)
+  view = await preview()
+  await r.renameMcpGroup(Object.keys(r.mcpGroupsForCurrentProfile())[0], 'Changed')
+  const changed = await readFile(configPath, 'utf8')
+  await r.commitMcpGroupRepair(view.token, view.confirmation)
+  assert.equal(await readFile(configPath, 'utf8'), changed)
+  view = await preview()
+  await r.commitMcpGroupRepair(view.token, 'wrong-confirmation')
+  assert.equal(await readFile(configPath, 'utf8'), changed)
+  r.dispose()
+  await r.commitMcpGroupRepair(view.token, view.confirmation)
+  assert.equal(await readFile(configPath, 'utf8'), changed)
+})
+
+test('group repair keeps secret-bearing row data private, backs up current config and never modifies MCP files', async t => {
+  const fx = await fixture(t), r = fx.runtime
+  const old = { serverName: 'old-name', entryId: 'managed' }, current = r.snapshot().mcp.rows.find(row => row.entryId === 'managed')
+  await r.createMcpGroup('Repair tools', [old])
+  const configPath = join(fx.root, 'panel', 'config.json'), config = await readFile(configPath, 'utf8'), patch = await readFile(fx.patchPath, 'utf8')
+  await r.previewMcpGroupRepair(old, current)
+  const view = structuredClone(r.snapshot().mcp.groupRepair)
+  assert.ok(!JSON.stringify(view).includes('private-fixture-secret'))
+  // Mutating exposed UI metadata cannot alter the private plan or confirmation.
+  r.snapshot().mcp.groupRepair.after.serverName = 'tampered'
+  r.snapshot().mcp.groupRepair.confirmation = 'tampered'
+  const backup = await r.commitMcpGroupRepair(view.token, view.confirmation)
+  assert.equal(await readFile(backup, 'utf8'), config)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), patch)
+  assert.equal(mcpGroupIds(r.mcpGroupsForCurrentProfile(), fx.patchPath, current).length, 1)
+  const repaired = await readFile(configPath, 'utf8')
+  await r.commitMcpGroupRepair(view.token, view.confirmation)
+  assert.equal(await readFile(configPath, 'utf8'), repaired)
+  await r.dumpNow()
+  assert.ok(!(await readFile(join(fx.root, 'dump.json'), 'utf8')).includes('private-fixture-secret'))
+})

@@ -11,7 +11,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { ManagerRuntime } from '../lib/types/host/manager-runtime.js'
 import { createManagerScene } from '../lib/types/ui/ManagerScene.js'
 import { MCP_MODULE, parsePatchText } from '../lib/types/domain/mcp/patch.js'
-import { addManagedMcp } from '../lib/types/domain/mcp/managed.js'
+import { addManagedMcp, editManagedMcp } from '../lib/types/domain/mcp/managed.js'
 import { upsertMcpGroup } from '../lib/types/domain/mcp/groups.js'
 import { updateMcpGroups } from '../lib/types/domain/store.js'
 
@@ -258,6 +258,61 @@ try {
   assert.deepEqual(groups()[lifecycleId].members, ['["managed-new","managed"]'])
   await press('\x1b')
   await press('2')
+  // Reproduce rename interruption: current server renamed, durable groups still
+  // point to the previous pair. Refresh/cold start never infer identity.
+  const beforeRepair = await readFile(patchPath, 'utf8')
+  const renamed = editManagedMcp(beforeRepair, 'managed', 'managed-new', { serverName: 'managed-repaired', transport: 'stdio', command: 'node' })
+  await writeFile(patchPath, renamed)
+  await waitFor(() => entries.some(entry => entry.options.config.serverName === 'managed-repaired'), 'external rename composed')
+  await runtime.refreshMcp()
+  const restarted = new ManagerRuntime(ctx)
+  try {
+    await restarted.refresh('interrupted-rename-cold')
+    assert.deepEqual(restarted.mcpGroupsForCurrentProfile()[lifecycleId].members, ['["managed-new","managed"]'])
+  } finally { restarted.dispose() }
+  await press('3'); await press('\x1b[F'); await press('i')
+  await waitScreen('MCP 分组成员（只读）')
+  assert.ok((await screen()).includes('未匹配（已保留）'))
+  assert.ok((await screen()).includes('managed-new'))
+  await press('\x1b'); await press('2'); await press('\x1b[F')
+  const chooseRepair = async () => { await press('g'); await press('\x1b[F'); await enter(); await waitScreen('选择旧引用'); }
+  await chooseRepair()
+  const configPath = join(panel, 'config.json'), cancelledBytes = await readFile(configPath, 'utf8')
+  await enter()
+  assert.equal(runtime.snapshot().mcp.groupRepair, undefined, 'old-reference picker defaults to cancel')
+  assert.equal(await readFile(configPath, 'utf8'), cancelledBytes)
+  await chooseRepair(); await down(); await enter(); await waitScreen('确认 MCP 分组引用修复')
+  await press('n')
+  assert.equal(runtime.snapshot().mcp.groupRepair, undefined)
+  assert.equal(await readFile(configPath, 'utf8'), cancelledBytes, 'second confirmation cancellation is read-only')
+  await chooseRepair(); await down(); await enter(); await waitScreen('确认 MCP 分组引用修复')
+  const staleBytes = (await readFile(configPath, 'utf8')) + ' '
+  await writeFile(configPath, staleBytes)
+  await press('y'); await idle(); await waitScreen('MCP 分组修复结果')
+  assert.ok(runtime.snapshot().statusMessage.text.includes('变化'))
+  assert.equal(await readFile(configPath, 'utf8'), staleBytes)
+  await press('\x1b')
+  await chooseRepair(); await down(); await enter(); await waitScreen('确认 MCP 分组引用修复')
+  await press('y'); await idle(); await waitScreen('MCP 分组修复结果')
+  const repairBackup = runtime.snapshot().mcp.groupRepairBackup
+  assert.equal(await readFile(repairBackup, 'utf8'), staleBytes)
+  assert.equal(await readFile(patchPath, 'utf8'), renamed)
+  assert.equal(await readFile(join(home, 'cordis.patch.yml'), 'utf8'), homeText)
+  assert.equal(await readFile(shared, 'utf8'), sharedText)
+  assert.deepEqual(groups()[lifecycleId].members, ['["managed-repaired","managed"]'])
+  await press('\x1b')
+  await press('g')
+  assert.ok((await screen()).includes('已在组内'))
+  assert.ok(!(await screen()).includes('修复旧引用'))
+  await press('\x1b')
+  // Member inspection remains accessible even if no current MCP row is loaded.
+  entries = []
+  await runtime.refreshMcp()
+  await press('3'); await press('\x1b[F'); await press('i')
+  await waitScreen('MCP 分组成员（只读）')
+  assert.ok((await screen()).includes('managed-repaired'))
+  assert.ok((await screen()).includes('未匹配（已保留）'))
+  await press('\x1b'); recompose(renamed); await runtime.refreshMcp(); await press('2')
   for (const label of ['g分组', 'f筛选', '/搜索', 'x清除']) {
     if (columns < 110) assert.ok((await screen()).includes(label), `narrow footer exposes ${label}`)
   }
@@ -272,7 +327,16 @@ try {
   await view('mcp(0):')
   await press('x')
   assert.ok(!(await frame()).includes('hidden-value'))
-  console.log(`mcp-groups-smoke OK (${columns} cols): membership / search+filters / groups CRUD / profile isolation / stale conflict / cold reload / rename+delete+merge-undo / merge cancel+stale+backup / no YAML or shared-schema metadata writes`)
+  await runtime.setMcpGroupMembership(lifecycleId, { serverName: 'managed-new', entryId: 'managed' }, true)
+  await runtime.previewMcpGroupRepair({ serverName: 'managed-new', entryId: 'managed' }, { serverName: 'managed-repaired', entryId: 'managed' })
+  const closingRepair = structuredClone(runtime.snapshot().mcp.groupRepair)
+  assert.ok(closingRepair)
+  const beforeClose = await readFile(configPath, 'utf8')
+  instance.unmount()
+  await sleep(100)
+  await runtime.commitMcpGroupRepair(closingRepair.token, closingRepair.confirmation)
+  assert.equal(await readFile(configPath, 'utf8'), beforeClose, 'closing the actual scene invalidates pending group repair')
+  console.log(`mcp-groups-smoke OK (${columns} cols): membership / search+filters / groups CRUD / profile isolation / stale conflict / cold reload / rename+delete+merge-undo / merge cancel+stale+backup / unmatched member inspection with zero rows / explicit repair cancel+stale+backup / no YAML or shared-schema metadata writes`)
 } catch (error) {
   console.error((await screen()).slice(-4000))
   console.error((await frame()).slice(0, 1500))

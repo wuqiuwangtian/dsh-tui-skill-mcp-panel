@@ -1,5 +1,5 @@
 /** Plugin-private storage paths and config (JSON) handling. */
-import { chmod, lstat, mkdir, rename, rm, writeFile } from 'node:fs/promises'
+import { chmod, copyFile, lstat, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -52,7 +52,7 @@ export const DEFAULT_CONFIG: PanelConfig = {
   mcpGroups: {},
 }
 
-interface PanelDocument { config: PanelConfig; raw: Record<string, unknown>; fingerprint: string; warning?: string; writable: boolean }
+interface PanelDocument { config: PanelConfig; raw: Record<string, unknown>; fingerprint: string; warning?: string; writable: boolean; backupPath?: string }
 
 export async function loadPanelDocument(home: string): Promise<PanelDocument> {
   const snapshot = await readPatchSnapshot(configFile(home))
@@ -90,7 +90,7 @@ export async function updateLastTab(home: string, tab: PanelTab): Promise<void> 
 /** Compatibility wrapper; detailed callers also expose warnings. */
 export async function loadPanelConfig(home: string): Promise<PanelConfig> { return (await loadPanelDocument(home)).config }
 
-async function writePanelDocument(home: string, raw: Record<string, unknown>, fingerprint: string): Promise<void> {
+async function writePanelDocument(home: string, raw: Record<string, unknown>, fingerprint: string, validate?: () => Promise<void>): Promise<void> {
   const target = configFile(home)
   const info = await lstat(target).catch((error: NodeJS.ErrnoException) => { if (error.code !== 'ENOENT') throw error; return undefined })
   if (info !== undefined && !info.isFile()) throw new Error('config.json 必须是普通文件；符号链接请手工编辑')
@@ -98,6 +98,7 @@ async function writePanelDocument(home: string, raw: Record<string, unknown>, fi
   try {
     await writeFile(tmp, `${JSON.stringify(raw, undefined, 2)}\n`, { encoding: 'utf8', mode: info === undefined ? 0o600 : info.mode & 0o777, flag: 'wx' })
     if (info !== undefined) await chmod(tmp, info.mode & 0o777)
+    await validate?.()
     if ((await readPatchSnapshot(target)).fingerprint !== fingerprint) throw new Error('插件配置已被外部修改，请刷新后重试；未覆盖文件')
     await rename(tmp, target)
   } finally { await rm(tmp, { force: true }) }
@@ -109,12 +110,15 @@ function sameProfile(left: McpGroups, right: McpGroups, profile: string): boolea
 }
 
 /** Re-read/merge under one private-config lock; foreign profiles and unknown fields survive. */
-export async function updateMcpGroups(home: string, profile: string, mutate: (groups: McpGroups) => McpGroups, expected?: McpGroups): Promise<PanelDocument> {
+export async function updateMcpGroups(home: string, profile: string, mutate: (groups: McpGroups) => McpGroups, expected?: McpGroups,
+  options: { expectedDocument?: string; backupRoot?: string; validate?: () => Promise<void> } = {}): Promise<PanelDocument> {
   profile = mcpProfileKey(profile)
   await mkdir(home, { recursive: true, mode: 0o700 })
   return withPatchLock(configFile(home), async () => {
     const current = await loadPanelDocument(home)
     if (!current.writable) throw new Error(current.warning ?? '插件配置不可写，请手工修复')
+    if (options.expectedDocument !== undefined && current.fingerprint !== options.expectedDocument) throw new Error('分组配置已变化，请重新预览修复；未覆盖外部改动')
+    await options.validate?.()
     if (expected !== undefined && !sameProfile(current.config.mcpGroups, expected, profile)) throw new Error('当前 profile 的 MCP 分组已被修改，请刷新后重试；未覆盖外部改动')
     const groups = mutate(structuredClone(current.config.mcpGroups))
     // A mutation of one profile must not alter another profile's namespace.
@@ -132,7 +136,23 @@ export async function updateMcpGroups(home: string, profile: string, mutate: (gr
       }
     }
     const raw = { ...current.raw, version: CONFIG_VERSION, mcpGroups: rawGroups }
-    await writePanelDocument(home, raw, current.fingerprint)
-    return { config: { ...current.config, mcpGroups: groups }, raw, fingerprint: patchFingerprint(`${JSON.stringify(raw, undefined, 2)}\n`), warning: current.warning, writable: true }
+    let backupPath: string | undefined
+    if (options.backupRoot !== undefined) {
+      try {
+        const info = await lstat(configFile(home))
+        if (!info.isFile()) throw new Error('not a regular file')
+        const directory = join(options.backupRoot, `${Date.now()}-${randomUUID()}`)
+        await mkdir(directory, { recursive: true, mode: 0o700 })
+        backupPath = join(directory, 'config.json')
+        await copyFile(configFile(home), backupPath)
+        await chmod(backupPath, 0o600)
+        const backup = await readFile(backupPath)
+        if (!backup.equals(await readFile(configFile(home))) || patchFingerprint(backup.toString('utf8')) !== current.fingerprint) {
+          throw new Error('configuration changed during backup')
+        }
+      } catch { throw new Error('MCP 分组修复备份失败或源文件已变化，已停止写入；请检查权限/空间并重新预览') }
+    }
+    await writePanelDocument(home, raw, current.fingerprint, options.validate)
+    return { config: { ...current.config, mcpGroups: groups }, raw, fingerprint: patchFingerprint(`${JSON.stringify(raw, undefined, 2)}\n`), warning: current.warning, writable: true, ...(backupPath === undefined ? {} : { backupPath }) }
   }, { resourceName: 'config.json' })
 }

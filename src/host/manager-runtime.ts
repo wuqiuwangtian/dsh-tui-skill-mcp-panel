@@ -64,6 +64,7 @@ import { managedMcpEntries } from '../domain/mcp/managed.js'
 import { deleteMcpEntry, listMcpDeletions, openMcpEditor, restoreMcpEntry, saveMcpEditor, prepareMcpRestore, mergeRestoreMcpEntry,
   type McpDeletionSummary, type McpEditSession, type McpRestorePlan } from '../domain/mcp/crud.js'
 import type { McpConfig } from '../domain/mcp/model.js'
+import { prepareMcpGroupRepair, commitMcpGroupRepair, type McpGroupRepairPlan } from '../domain/mcp/group-repair.js'
 import { deleteMcpGroup, groupsForMcpProfile, mcpGroupIds, mcpMemberKey, mcpProfileKey, renameMcpMember, setMcpMembership, upsertMcpGroup,
   type McpGroups, type McpIdentity } from '../domain/mcp/groups.js'
 import {
@@ -149,6 +150,20 @@ export interface McpPanelState {
   latestDeletion?: McpDeletionSummary
   conflict?: McpConflictView
   restoreConflict?: McpRestoreConflictView
+  groupRepair?: McpGroupRepairView
+  groupRepairBackup?: string
+}
+
+export interface McpGroupRepairView {
+  token: string
+  confirmation: string
+  before: McpIdentity
+  after: McpIdentity
+  groups: { id: string; name: string }[]
+  patchPath: string
+  homePatchPath: string
+  configPath: string
+  backupRoot: string
 }
 
 export interface McpRestoreConflictView {
@@ -269,6 +284,7 @@ export class ManagerRuntime {
   private versionRequest = 0
   private pendingMcpConflict?: { view: McpConflictView; intent: McpWriteIntent; plan?: McpConflictPlan; confirmation?: string }
   private pendingMcpRestore?: { view: McpRestoreConflictView; plan?: McpRestorePlan; confirmation?: string }
+  private pendingMcpGroupRepair?: { view?: McpGroupRepairView; plan?: McpGroupRepairPlan }
 
   constructor(ctx: Context) {
     this.ctx = ctx
@@ -828,6 +844,7 @@ export class ManagerRuntime {
         latestDeletion,
         conflict: this.state.mcp.conflict,
         restoreConflict: this.state.mcp.restoreConflict,
+        ...(this.state.mcp.profilePatchPath !== profilePatchPath ? {} : { groupRepairBackup: this.state.mcp.groupRepairBackup }),
         ...(this.state.mcp.togglingId === undefined ? {} : { togglingId: this.state.mcp.togglingId }),
         ...(this.state.mcp.lastAction === undefined ? {} : { lastAction: this.state.mcp.lastAction }),
       },
@@ -880,7 +897,7 @@ export class ManagerRuntime {
             return { ...result, warning: `服务器配置已保存；${current.warning}` }
           }
         } catch {
-          const warning = '服务器配置已保存，但分组更名同步失败；请刷新并检查成员归属'
+          const warning = '服务器配置已保存，但分组更名同步失败；请刷新检查成员归属，可在 g 中显式修复旧引用'
           this.patchState({ configWarning: warning })
           return { ...result, warning }
         }
@@ -1165,7 +1182,7 @@ export class ManagerRuntime {
   }
 
   cancelMcpConflict(token?: string): void {
-    if (token === undefined) this.cancelMcpRestore()
+    if (token === undefined) { this.cancelMcpRestore(); this.cancelMcpGroupRepair() }
     if (token !== undefined && this.pendingMcpConflict?.view.token !== token) return
     this.pendingMcpConflict = undefined
     if (this.state.mcp.conflict !== undefined) this.patchState({ mcp: { ...this.state.mcp, conflict: undefined } })
@@ -1213,12 +1230,71 @@ export class ManagerRuntime {
   }
 
   // ── MCP groups: private display metadata, isolated by profile ─────────────
+  cancelMcpGroupRepair(token?: string): void {
+    if (token !== undefined && this.pendingMcpGroupRepair?.view?.token !== token) return
+    this.pendingMcpGroupRepair = undefined
+    if (this.state.mcp.groupRepair !== undefined) this.patchState({ mcp: { ...this.state.mcp, groupRepair: undefined } })
+  }
+
+  async previewMcpGroupRepair(before: McpIdentity, after: McpIdentity): Promise<void> {
+    this.cancelMcpConflict()
+    const pending: NonNullable<ManagerRuntime['pendingMcpGroupRepair']> = {}
+    this.pendingMcpGroupRepair = pending
+    before = { serverName: before.serverName, entryId: before.entryId }
+    after = { serverName: after.serverName, entryId: after.entryId }
+    await this.withBusy(async () => {
+      if (this.pendingMcpGroupRepair !== pending) return
+      try {
+        const patchPath = this.mcpProfilePatchPath()
+        if (patchPath === undefined) throw new Error('无法确定当前 profile，请刷新后重试')
+        const homePatchPath = join(this.dshHomePath(), 'cordis.patch.yml')
+        const plan = await prepareMcpGroupRepair(this.panelHomePath, { patchPath, homePatchPath }, before, after)
+        if (this.disposed || this.pendingMcpGroupRepair !== pending || patchPath !== this.mcpProfilePatchPath() ||
+            homePatchPath !== join(this.dshHomePath(), 'cordis.patch.yml')) return
+        const view: McpGroupRepairView = { token: randomUUID(), confirmation: randomUUID(), before: plan.before,
+          after: plan.after, groups: plan.groups, patchPath, homePatchPath, configPath: configFile(this.panelHomePath),
+          backupRoot: join(backupsRoot(this.panelHomePath), 'mcp-group-repair') }
+        pending.plan = plan
+        pending.view = view
+        this.patchState({ mcp: { ...this.state.mcp, groupRepair: structuredClone(view) } })
+      } catch (error) {
+        if (this.pendingMcpGroupRepair === pending) this.cancelMcpGroupRepair()
+        this.setStatus(`无法预览分组修复：${error instanceof Error ? error.message : '请刷新后重试'}`, 'error')
+      }
+    })
+    if (this.pendingMcpGroupRepair === pending && pending.view === undefined) this.cancelMcpGroupRepair()
+  }
+
+  async commitMcpGroupRepair(token: string, confirmation: string): Promise<string | undefined> {
+    if (this.state.busy || this.disposed) return
+    const pending = this.pendingMcpGroupRepair
+    const view = pending?.view
+    if (view?.token !== token || view.confirmation !== confirmation || pending?.plan === undefined ||
+        view.patchPath !== this.mcpProfilePatchPath() || view.homePatchPath !== join(this.dshHomePath(), 'cordis.patch.yml')) {
+      this.setStatus('分组修复确认已失效，请重新预览', 'warning'); return
+    }
+    const plan = pending.plan
+    this.cancelMcpGroupRepair(token)
+    return this.withBusy(async () => {
+      try {
+        if (view.patchPath !== this.mcpProfilePatchPath() || view.homePatchPath !== join(this.dshHomePath(), 'cordis.patch.yml')) throw new Error('profile 已变化，请重新预览')
+        const result = await commitMcpGroupRepair(this.panelHomePath, plan, backupsRoot(this.panelHomePath))
+        this.patchState({ config: result.config, configWarning: result.warning,
+          mcp: { ...this.state.mcp, groupRepairBackup: result.backupPath } })
+        this.setStatus('已修复当前 profile 的分组引用；服务器配置与连接未改变', 'success')
+        await this.writeDump('mcp:group-repair')
+        return result.backupPath
+      } catch (error) { this.setStatus(`分组修复停止：${error instanceof Error ? error.message : '请重新预览'}`, 'error'); return undefined }
+    })
+  }
+
   mcpGroupsForCurrentProfile(): McpGroups {
     const path = this.state.mcp.profilePatchPath
     return path === undefined ? {} : groupsForMcpProfile(this.state.config.mcpGroups, path)
   }
 
   private async mutateMcpGroups(mutate: (groups: McpGroups, path: string) => McpGroups, message: string): Promise<void> {
+    this.cancelMcpGroupRepair()
     await this.withBusy(async () => {
       try {
         const path = this.state.mcp.profilePatchPath
@@ -1491,6 +1567,7 @@ export class ManagerRuntime {
     this.disposed = true
     this.pendingMcpConflict = undefined
     this.pendingMcpRestore = undefined
+    this.pendingMcpGroupRepair = undefined
     if (this.capabilityTimer !== undefined) clearTimeout(this.capabilityTimer)
     if (this.statusTimer !== undefined) clearTimeout(this.statusTimer)
     this.listeners.clear()

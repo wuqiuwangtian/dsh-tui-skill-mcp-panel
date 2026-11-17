@@ -15,7 +15,7 @@ import { groupMemberCount } from '../domain/groups.js'
 import { describeMcpConfig, type McpRowView } from '../domain/mcp/patch.js'
 import { configChanges, fieldDisplay, fieldInput, patchMcpField, validateMcpConfig, type McpConfig, type McpField } from '../domain/mcp/model.js'
 import type { McpEditSession } from '../domain/mcp/crud.js'
-import { filterMcpRows, groupsForMcpProfile, mcpGroupIds, mcpMemberKey, type McpStatusFilter } from '../domain/mcp/groups.js'
+import { filterMcpRows, groupsForMcpProfile, mcpGroupIds, mcpMemberKey, unmatchedMcpMembers, type McpStatusFilter } from '../domain/mcp/groups.js'
 import { splitFrontmatter } from '../domain/skills/frontmatter.js'
 import type { SkillInstance, SkillScanResult, SkillSource, SkillStatus } from '../domain/skills/types.js'
 import { filterSkills, SKILL_STATUS_FILTERS, type SkillStatusFilter } from '../domain/skills/filter.js'
@@ -150,6 +150,7 @@ const HELP_LINES = [
   '                     g 加入/移出分组 · f 状态/分组筛选 · / 搜索元数据 · x 清除 MCP 过滤',
   '                     i 完整详情（只读、敏感值隐藏）；详情内 ↑/↓、PgUp/PgDn、Home/End',
   '  分组页             t 切换技能/MCP · a 新建 · r 重命名 · d 删除组 · Enter 过滤',
+  '  MCP 分组           分组页 i 查看未匹配成员；MCP 页 g → 修复旧引用（需确认身份）',
   '  MCP 表单           逐字段 Enter 编辑；args 使用 JSON 数组；Ctrl+U 清空当前输入',
   '                     env/headers 每行 KEY=VALUE；Shift+Enter 换行；留空保留、-KEY 删除、! 清空',
   '  /                  搜索（Enter/Esc 退出搜索）',
@@ -301,6 +302,8 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   push(`  rows: ${state.mcp.rows.length} · 读取于 ${state.mcp.loadedAt ?? '(pending)'}`)
   if (state.configWarning !== undefined) push(`  显示配置警告：${state.configWarning}`)
   push(`  当前 profile 的 MCP 分组：${state.mcp.profilePatchPath === undefined ? 0 : Object.keys(groupsForMcpProfile(state.config.mcpGroups, state.mcp.profilePatchPath)).length}`)
+  push(`  未匹配成员引用：${state.mcp.profilePatchPath === undefined ? 0 : unmatchedMcpMembers(state.config.mcpGroups, state.mcp.profilePatchPath, state.mcp.rows).length}（分组页切换 MCP 后按 i 查看；保留供撤销/显式修复）`)
+  if (state.mcp.groupRepairBackup !== undefined) push(`  分组修复前备份：${state.mcp.groupRepairBackup}`)
   if (state.mcp.latestDeletion !== undefined) push(`  可撤销 MCP 删除：${state.mcp.latestDeletion.serverName} · ${state.mcp.latestDeletion.createdAt}（MCP 页 u）`)
   for (const error of state.mcp.errors) push(`  错误：${error}`)
   for (const warning of state.mcp.warnings) push(`  警告：${warning}`)
@@ -503,6 +506,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const profilePath = state.mcp.profilePatchPath
     const profileGroups = profilePath === undefined ? {} : groupsForMcpProfile(state.config.mcpGroups, profilePath)
     const mcpGroupEntries = Object.entries(profileGroups).sort((left, right) => left[1].name.localeCompare(right[1].name))
+    const unmatchedMembers = profilePath === undefined ? [] : unmatchedMcpMembers(state.config.mcpGroups, profilePath, state.mcp.rows)
     const groupListEntries = groupKind === 'skills'
       ? groupEntries.map(([id, group]) => ({ id, name: group.name, count: groupMemberCount(group), visible: (group.scopes[scan?.projectRoot ?? 'workspace'] ?? []).length + (group.scopes.global ?? []).length }))
       : mcpGroupEntries.map(([id, group]) => ({ id, name: group.name, count: group.members.length,
@@ -557,7 +561,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       ? [...SKILL_ACTIONS, ['back', 'Esc 返回', '←返回'] as const] : SKILL_ACTIONS
     const mcpActions = (state.mcp.legacyToggles?.length ?? 0) > 0
       ? [...MCP_ACTIONS, ['migrate', 'm 迁移旧启停', 'm迁移'] as const] : MCP_ACTIONS
-    const actionDefinitions = tab === 'skills' ? skillActions : tab === 'mcp' ? mcpActions : tab === 'groups' ? GROUP_ACTIONS : DIAG_ACTIONS
+    const groupActions = groupKind === 'mcp' ? [...GROUP_ACTIONS, ['members', 'i 成员', 'i成员'] as const] : GROUP_ACTIONS
+    const actionDefinitions = tab === 'skills' ? skillActions : tab === 'mcp' ? mcpActions : tab === 'groups' ? groupActions : DIAG_ACTIONS
     const actionLabel = (id: string, full: string, short: string): string => tab === 'skills' && id === 'filter' && skillStatus !== 'all'
       ? `f${fullActions ? ' ' : ''}${SKILL_STATUS_LABELS[skillStatus]}` : fullActions ? full : short
     const actionLabels = actionDefinitions.map(([id, full, short]) => ({ label: actionLabel(id, full, short) }))
@@ -934,6 +939,46 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       return () => runtime.cancelMcpRestore(conflict.token)
     }, [state.mcp.restoreConflict?.token])
 
+    React.useEffect(() => () => runtime.cancelMcpGroupRepair(), [])
+    React.useEffect(() => {
+      const repair = state.mcp.groupRepair
+      if (repair === undefined) return
+      setModal({ kind: 'confirm', title: '确认 MCP 分组引用修复', danger: true,
+        message: [`旧名称：${repair.before.serverName}`, `当前名称：${repair.after.serverName} · entryId ${repair.after.entryId}`,
+          `迁移分组：${repair.groups.map(group => group.name).join('、')}`,
+          '同 entryId 只提供候选，不能证明身份延续；请确认这是同一台改名的服务器。',
+          '将这些分组中的旧双键引用替换为当前双键，已有当前引用会去重。',
+          '若日后撤销删除并恢复旧身份，这些已迁移的引用不会自动归回旧身份。',
+          `只修改：${repair.configPath}`, `profile（只读）：${repair.patchPath}`, `home（只读）：${repair.homePatchPath}`,
+          `原配置完整备份目录：${repair.backupRoot}`, '不修改 MCP 配置、不重连；确认期间任一文件变化则停止。'],
+        onCancel: () => runtime.cancelMcpGroupRepair(repair.token),
+        onConfirm: () => {
+          void runtime.commitMcpGroupRepair(repair.token, repair.confirmation).then(backup => {
+            setModal({ kind: 'info', title: 'MCP 分组修复结果', lines: [
+              runtime.snapshot().statusMessage?.text ?? '请检查诊断中的操作状态',
+              ...(backup === undefined ? [] : [`修复前完整备份：${backup}`]), `分组配置：${repair.configPath}`,
+            ] })
+          })
+        },
+      })
+      return () => runtime.cancelMcpGroupRepair(repair.token)
+    }, [state.mcp.groupRepair?.token])
+
+    const showMcpGroupMembers = (): void => {
+      if (groupKind !== 'mcp') return
+      const group = selectedGroupId === undefined ? undefined : profileGroups[selectedGroupId]
+      if (group === undefined) { runtime.setStatus('先选择 MCP 分组', 'warning'); return }
+      const present = new Set(state.mcp.rows.map(mcpMemberKey))
+      setModal({ kind: 'info', title: `MCP 分组成员（只读）· ${group.name}`, lines: [
+        `当前 profile：${profilePath}`, `成员 ${group.members.length} · 未匹配 ${group.members.filter(key => !present.has(key)).length}`,
+        '未匹配引用保留供撤销恢复；改名后的显式修复入口：MCP 页选择当前服务器 → g → 修复旧引用。',
+        ...(group.members.length === 0 ? ['（空分组）'] : group.members.flatMap(key => {
+          const [name, entryId] = JSON.parse(key) as [string, string]
+          return [`${present.has(key) ? '已匹配' : '未匹配（已保留）'}：${name}`, `entryId：${entryId}`]
+        })),
+      ] })
+    }
+
     const askMigrateMcp = (): void => {
       const expected = state.mcp
       const toggles = state.mcp.legacyToggles ?? []
@@ -960,11 +1005,24 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         if (selectedMcp === undefined) { runtime.setStatus('先选择 MCP 行', 'warning'); return }
         const row = selectedMcp
         const memberships = mcpGroupIds(state.config.mcpGroups, profilePath ?? '', row)
+        const candidates = unmatchedMembers.filter(member => member.entryId === row.entryId && member.serverName !== row.serverName)
         setModal({ kind: 'select', title: `MCP 分组 · ${row.serverName} (${row.entryId})`, index: 0,
           options: [...mcpGroupEntries.map(([id, group]) => ({ id, label: group.name,
             hint: memberships.includes(id) ? '已在组内 · 选择移出' : '选择加入' })),
-            { id: '__new__', label: '＋ 新建 MCP 分组…' }, { id: '__manage__', label: '管理 MCP 分组…' }],
+            { id: '__new__', label: '＋ 新建 MCP 分组…' }, { id: '__manage__', label: '管理 MCP 分组…' },
+            ...(candidates.length === 0 ? [] : [{ id: '__repair__', label: '修复旧引用…', hint: `${candidates.length} 个同 entryId 候选，需确认身份` }])],
           onSubmit: (id) => {
+            if (id === '__repair__') {
+              setModal({ kind: 'select', title: `选择旧引用 → ${row.serverName}`, index: 0,
+                options: [{ id: '__cancel__', label: '取消（保留所有旧引用）' },
+                  ...candidates.map(member => ({ id: member.key, label: member.serverName,
+                    hint: `entryId ${member.entryId} · ${member.groupIds.map(id => profileGroups[id]?.name ?? id).join('、')}` }))],
+                onSubmit: key => {
+                  const before = candidates.find(member => member.key === key)
+                  if (before !== undefined) void runtime.previewMcpGroupRepair(before, row)
+                } })
+              return
+            }
             if (id === '__manage__') { setGroupKind('mcp'); goTab('groups'); return }
             if (id === '__new__') {
               setModal({ kind: 'input', title: '新建 MCP 分组', label: '分组名称', value: '',
@@ -1405,6 +1463,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         if (char === 'a') return openCreateGroup()
         if (char === 'r') return openRenameGroup()
         if (char === 'd') return askDeleteGroup()
+        if (char === 'i') return showMcpGroupMembers()
         if (focus === 'tabs') {
           if (key.leftArrow || char === 'h') switchTab(-1)
           else if (key.rightArrow || char === 'l') switchTab(1)
@@ -2125,7 +2184,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           <Text dimColor wrap="truncate">{columns < 72 ? 't 切换 · 可见/总数' : groupKind === 'mcp' ? `t 切换 · profile: ${profilePath === undefined ? '(未知)' : basename(dirname(profilePath))}` : 't 切换 · 技能分组共享 web 配置'}</Text>
         </Box>,
         ...groupRows,
-        ...(groupKind === 'mcp' ? [<Text key="group-note" dimColor wrap="truncate">成员引用按 profile 保存；删除服务器保留归属供撤销恢复。</Text>] : []),
+        ...(groupKind === 'mcp' ? [<Text key="group-note" dimColor wrap="truncate">{`未匹配引用 ${unmatchedMembers.length} · i 查看成员；删除后保留归属供撤销恢复。`}</Text>] : []),
       ],
     })
 
@@ -2188,6 +2247,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         else if (id === 'delete') askDeleteGroup()
         else if (id === 'filter') toggleGroupFilter()
         else if (id === 'kind') setGroupKind(groupKind === 'skills' ? 'mcp' : 'skills')
+        else if (id === 'members') showMcpGroupMembers()
       } else if (tab === 'mcp') {
         if (id === 'migrate') askMigrateMcp()
         if (id === 'toggle') { if (selectedMcp !== undefined) void runtime.toggleMcp(selectedMcp.id) }

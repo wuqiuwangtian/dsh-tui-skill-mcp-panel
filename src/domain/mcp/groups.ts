@@ -6,6 +6,7 @@ import type { McpRowView } from './patch.js'
 export interface McpGroup { name: string; profilePath: string; members: string[] }
 export type McpGroups = Record<string, McpGroup>
 export type McpIdentity = Pick<McpRowView, 'serverName' | 'entryId'>
+export interface UnmatchedMcpMember extends McpIdentity { key: string; groupIds: string[] }
 export type McpStatusFilter = 'all' | 'enabled' | 'disabled' | 'failed'
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -84,6 +85,34 @@ export function setMcpMembership(groups: McpGroups, path: string, id: string, ro
 export function mcpGroupIds(groups: McpGroups, path: string, row: McpIdentity): string[] {
   const member = mcpMemberKey(row)
   return Object.entries(groupsForMcpProfile(groups, path)).filter(([, group]) => group.members.includes(member)).map(([id]) => id)
+}
+
+/** Missing references are retained: absence does not prove that they can be deleted. */
+export function unmatchedMcpMembers(groups: McpGroups, path: string, rows: McpIdentity[]): UnmatchedMcpMember[] {
+  const present = new Set(rows.map(mcpMemberKey))
+  const missing = new Map<string, UnmatchedMcpMember>()
+  for (const [id, group] of Object.entries(groupsForMcpProfile(groups, path))) {
+    for (const key of group.members) {
+      if (present.has(key)) continue
+      const [serverName, entryId] = JSON.parse(key) as [string, string]
+      const member = missing.get(key) ?? { key, serverName, entryId, groupIds: [] }
+      if (!member.groupIds.includes(id)) member.groupIds.push(id)
+      missing.set(key, member)
+    }
+  }
+  return [...missing.values()].sort((a, b) => a.serverName.localeCompare(b.serverName) || a.entryId.localeCompare(b.entryId))
+}
+
+/** Explicit same-entryId mapping; identity continuity must be confirmed by the user. */
+export function repairMcpMember(groups: McpGroups, path: string, before: McpIdentity, after: McpIdentity, rows: McpIdentity[]): McpGroups {
+  if (before.entryId !== after.entryId || before.serverName === after.serverName) throw new Error('仅支持同 entryId、不同名称的显式分组修复')
+  if (rows.filter(row => row.entryId === after.entryId).length !== 1 || !rows.some(row => mcpMemberKey(row) === mcpMemberKey(after))) {
+    throw new Error('当前目标不存在或 entryId 有歧义，请刷新后重试')
+  }
+  if (!unmatchedMcpMembers(groups, path, rows).some(row => row.key === mcpMemberKey(before))) {
+    throw new Error('旧引用仍有匹配服务器或已不在分组中，未迁移')
+  }
+  return renameMcpMember(groups, path, before, after)
 }
 
 /** Rename changes only identities in this profile; deleted references remain for undo. */
