@@ -4,12 +4,13 @@ import { openMcpEditor, type McpEditSession } from './crud.js'
 import { isRecord, validateMcpConfig, type McpConfig } from './model.js'
 import { isJsValue, jsValue, parsePatchText } from './patch.js'
 import { editMcpDisabled } from './toggle.js'
-import { readPatchSnapshot, type TogglePatchInput } from './write.js'
+import { buildMcpMigration, readPatchSnapshot, type McpMigrationInput, type TogglePatchInput } from './write.js'
 
 export type McpWriteIntent =
   | { kind: 'save'; session: McpEditSession; config: McpConfig }
   | { kind: 'delete'; session: McpEditSession }
   | { kind: 'toggle'; input: TogglePatchInput }
+  | { kind: 'migrate'; input: McpMigrationInput }
 
 export interface McpConflictPlan {
   intent: McpWriteIntent
@@ -67,7 +68,7 @@ function mergeDraft(base: McpConfig, draft: McpConfig, latest: McpConfig): McpCo
 
 /** Read-only preview; ordinary guarded writers must still check these hashes. */
 export async function prepareMcpConflict(intent: McpWriteIntent): Promise<McpConflictPlan> {
-  const files = intent.kind === 'toggle' ? intent.input : intent.session
+  const files = intent.kind === 'toggle' || intent.kind === 'migrate' ? intent.input : intent.session
   const info = await lstat(files.patchPath).catch((error: NodeJS.ErrnoException) => {
     if (error.code !== 'ENOENT') throw error
     return undefined
@@ -77,6 +78,11 @@ export async function prepareMcpConflict(intent: McpWriteIntent): Promise<McpCon
   if (!parsePatchText(profile.text).ok || !parsePatchText(home.text).ok) throw new Error('profile/home patch YAML 非法，请修复后重试')
   const fresh = { patchPath: files.patchPath, homePatchPath: files.homePatchPath,
     expectedProfile: profile.fingerprint, expectedHome: home.fingerprint }
+  if (intent.kind === 'migrate') {
+    buildMcpMigration(profile.text, home.text, intent.input.targets)
+    return { intent: { kind: 'migrate', input: { ...intent.input, ...fresh, targets: copyMcpIntent(intent.input.targets) } },
+      fields: ['仅迁移原批次的 disabled 与本插件旧覆盖'], externalFields: ['文件变化；原迁移目标/身份/保存状态不变'] }
+  }
   if (intent.kind === 'toggle') {
     if (parsePatchText(home.text).rows.some(row => row.id === intent.input.id)) throw new Error('home 层控制目标，该行只读；请重新加载')
     editMcpDisabled(profile.text, intent.input, intent.input.disabled)

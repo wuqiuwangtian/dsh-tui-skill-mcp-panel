@@ -101,6 +101,26 @@ export interface TogglePatchInput {
 
 /** Refuse stale snapshots, damaged YAML/blocks, changed identity and missing backups. */
 type PatchMutationInput = Omit<TogglePatchInput, 'id' | 'serverName' | 'disabled'>
+export interface McpMigrationTarget { id: string; serverName: string; disabled: boolean }
+export interface McpMigrationInput extends PatchMutationInput { targets: McpMigrationTarget[] }
+
+/** A retry must preserve the reviewed batch, identities and saved states. */
+export function buildMcpMigration(profile: string, home: string, expected?: McpMigrationTarget[]) {
+  const parsed = parsePatchText(profile), global = parsePatchText(home)
+  if (!parsed.ok || !global.ok) throw new Error('profile/home patch YAML 非法，请修复后重试')
+  const toggles = legacyMcpToggles(profile)
+  if (toggles.some(toggle => global.rows.some(row => row.id === toggle.id))) throw new Error('旧覆盖目标存在 home 层配置，迁移已停止；请手工合并')
+  const result = migrateLegacyMcpToggles(profile)
+  const targets = toggles.map(toggle => {
+    const definitions = parsed.rows.filter(row => row.id === toggle.id && row.name === MCP_MODULE)
+    const serverName = definitions[0]?.config?.serverName
+    if (definitions.length !== 1 || typeof serverName !== 'string' || serverName.length === 0) throw new Error('旧覆盖目标身份有歧义，请重新加载并检查定义')
+    return { id: toggle.id, serverName, disabled: toggle.disabled }
+  })
+  const canonical = (rows: McpMigrationTarget[]) => JSON.stringify(rows.map(row => [row.id, row.serverName, row.disabled]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))))
+  if (expected !== undefined && canonical(targets) !== canonical(expected)) throw new Error('迁移目标、名称或保存的启停状态已变化，请重新加载并重新确认整批内容；未迁移')
+  return { ...result, targets }
+}
 
 async function saveMcpMutation(
   input: PatchMutationInput,
@@ -149,12 +169,6 @@ export async function saveMcpToggle(input: TogglePatchInput): Promise<{ changed:
 }
 
 /** Explicit all-or-nothing migration. Opening/refreshing the panel never writes. */
-export async function saveMcpMigration(input: PatchMutationInput): Promise<{ changed: boolean; backupPath?: string }> {
-  return saveMcpMutation(input, (profile, home) => {
-    const homeRows = parsePatchText(home.text).rows
-    if (legacyMcpToggles(profile.text).some(toggle => homeRows.some(row => row.id === toggle.id))) {
-      throw new Error('旧覆盖目标存在 home 层配置，迁移已停止；请手工合并')
-    }
-    return migrateLegacyMcpToggles(profile.text)
-  })
+export async function saveMcpMigration(input: PatchMutationInput & { targets?: McpMigrationTarget[] }): Promise<{ changed: boolean; backupPath?: string }> {
+  return saveMcpMutation(input, (profile, home) => buildMcpMigration(profile.text, home.text, input.targets))
 }

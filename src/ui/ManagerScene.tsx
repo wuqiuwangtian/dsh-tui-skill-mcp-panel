@@ -294,7 +294,7 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   if (state.groupsBackupPath !== undefined) push(`  上次写前备份：${state.groupsBackupPath}`)
   push('  web 2.3.7 不使用分组锁；外部变化时按 R 刷新，不强制覆盖')
   push('MCP 文件变化：可重新加载，或覆盖前备份后重试当前目标；再次变化仍拒写。')
-  push('  撤销可确认后单行合并恢复；旧迁移不强制覆盖，home/表达式和受管边界不变。')
+  push('  撤销可确认后单行合并；旧迁移仅重试原批次/身份/状态，变化须重载确认。')
   push('')
   push('MCP（当前 profile patch + home 层 + loader）')
   push(`  profile patch: ${state.mcp.profilePatchPath ?? '(unknown)'}`)
@@ -304,6 +304,12 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   push(`  当前 profile 的 MCP 分组：${state.mcp.profilePatchPath === undefined ? 0 : Object.keys(groupsForMcpProfile(state.config.mcpGroups, state.mcp.profilePatchPath)).length}`)
   push(`  未匹配成员引用：${state.mcp.profilePatchPath === undefined ? 0 : unmatchedMcpMembers(state.config.mcpGroups, state.mcp.profilePatchPath, state.mcp.rows).length}（分组页切换 MCP 后按 i 查看；保留供撤销/显式修复）`)
   if (state.mcp.groupRepairBackup !== undefined) push(`  分组修复前备份：${state.mcp.groupRepairBackup}`)
+  if (state.mcp.lastMigration !== undefined) {
+    const migration = state.mcp.lastMigration
+    push(`  最近旧启停迁移：${migration.outcome} · ${migration.count} 项（保存不代表连接已就绪）`)
+    if (migration.detail !== undefined) push(`  迁移说明：${migration.detail}`)
+    if (migration.backupPath !== undefined) push(`  迁移前备份：${migration.backupPath}`)
+  }
   if (state.mcp.latestDeletion !== undefined) push(`  可撤销 MCP 删除：${state.mcp.latestDeletion.serverName} · ${state.mcp.latestDeletion.createdAt}（MCP 页 u）`)
   for (const error of state.mcp.errors) push(`  错误：${error}`)
   for (const warning of state.mcp.warnings) push(`  警告：${warning}`)
@@ -852,12 +858,17 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
               return
             }
             setModal({ kind: 'confirm', title: '确认 MCP 覆盖前备份', danger: true,
-              message: [`目标：${preview.serverName} · entryId ${preview.id ?? '(新增)'}`, `操作：${preview.operation}`,
+              message: [`目标：${preview.serverName} · entryId ${preview.id ?? (preview.action === 'migrate' ? '(整批，逐项如下)' : '(新增)')}`, `操作：${preview.operation}`,
                 ...(preview.nextServerName === undefined ? [] : [`重命名为：${preview.nextServerName}`]),
                 `profile：${preview.patchPath}`, `home（只读）：${preview.homePatchPath}`,
                 `本次变更：${preview.fields.join(', ') || '(无)'}`,
                 `外部变化字段：${preview.externalFields.join(', ') || '文件或启停状态变化'}`,
-                '保留其他行及未编辑字段；env/headers 按本次改动的键合并，值不显示。',
+                ...(preview.action === 'migrate' ? [
+                  ...(preview.migrationTargets ?? []).map(row => `${row.serverName} · entryId ${row.id} → ${row.disabled ? '停用' : '启用'}`),
+                  '只将原批次保存的状态写回定义并移除本插件旧覆盖；保留其他字节。',
+                  '目标增减、改名或保存状态变化时拒绝重试，须重新加载并重新确认整批。',
+                  '保存不代表运行时连接已就绪；配置热加载可能重建连接。',
+                ] : ['保留其他行及未编辑字段；env/headers 按本次改动的键合并，值不显示。']),
                 ...(preview.action === 'delete' ? ['将删除当前目标的最新内容，断开连接/注销工具；可按 u 撤销。'] : []),
                 `最新原文备份目录：${preview.backupRoot}`,
                 '确认后先备份并校验；失败不写入。成功后显示具体备份路径。',
@@ -980,14 +991,28 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     }
 
     const askMigrateMcp = (): void => {
-      const expected = state.mcp
       const toggles = state.mcp.legacyToggles ?? []
       if (toggles.length === 0) { runtime.setStatus('没有待迁移的旧启停配置', 'info'); return }
+      const targets = toggles.map(row => ({ id: row.id, disabled: row.disabled,
+        serverName: state.mcp.rows.find(entry => entry.entryId === row.id)?.serverName ?? row.id }))
+      const expected = { profilePatchPath: state.mcp.profilePatchPath, homePatchPath: state.mcp.homePatchPath,
+        profileFingerprint: state.mcp.profileFingerprint, homeFingerprint: state.mcp.homeFingerprint, targets }
       setModal({ kind: 'confirm', title: '迁移旧 MCP 启停配置',
         message: ['将保存的启停状态写回服务器定义，恢复 web/TUI 开关一致。',
-          ...toggles.map(row => `${row.id} → ${row.disabled ? '停用' : '启用'}`),
-          '写前备份；仅修改 disabled 并移除本插件旧覆盖；任一目标有歧义则整批停止。'],
-        onConfirm: () => { void runtime.migrateMcpToggles(expected) } })
+          ...targets.map(row => `${row.serverName} · entryId ${row.id} → ${row.disabled ? '停用' : '启用'}`),
+          `profile：${expected.profilePatchPath}`, `home（只读）：${expected.homePatchPath}`,
+          '写前备份；仅修改 disabled 并移除本插件旧覆盖；任一目标有歧义则整批停止。',
+          '保存不代表连接已就绪；热加载可能重建连接。文件变化时提供重新加载/取消/备份重试。'],
+        onConfirm: () => {
+          void runtime.migrateMcpToggles(expected).then(outcome => {
+            if (runtime.snapshot().mcp.conflict !== undefined) return
+            setModal({ kind: 'info', title: '旧 MCP 启停迁移结果', lines: [
+              runtime.snapshot().statusMessage?.text ?? '请检查诊断中的迁移状态',
+              ...(outcome?.backupPath === undefined ? [] : [`迁移前完整备份：${outcome.backupPath}`]),
+              `profile：${expected.profilePatchPath}`,
+            ] })
+          })
+        } })
     }
 
     const askDeleteMcp = (): void => {

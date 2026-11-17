@@ -58,7 +58,7 @@ import {
   type PatchRow,
   type ToggleRow,
 } from '../domain/mcp/patch.js'
-import { PatchConflictError, readPatchSnapshot, saveMcpMigration, saveMcpToggle, type TogglePatchInput } from '../domain/mcp/write.js'
+import { PatchConflictError, readPatchSnapshot, saveMcpMigration, saveMcpToggle, type McpMigrationInput, type McpMigrationTarget, type TogglePatchInput } from '../domain/mcp/write.js'
 import { copyMcpIntent, prepareMcpConflict, type McpWriteIntent, type McpConflictPlan } from '../domain/mcp/conflict.js'
 import { managedMcpEntries } from '../domain/mcp/managed.js'
 import { deleteMcpEntry, listMcpDeletions, openMcpEditor, restoreMcpEntry, saveMcpEditor, prepareMcpRestore, mergeRestoreMcpEntry,
@@ -152,6 +152,15 @@ export interface McpPanelState {
   restoreConflict?: McpRestoreConflictView
   groupRepair?: McpGroupRepairView
   groupRepairBackup?: string
+  lastMigration?: McpMigrationOutcome
+}
+
+export interface McpMigrationOutcome {
+  outcome: 'saved' | 'conflict' | 'error'
+  savedAt?: number
+  count: number
+  backupPath?: string
+  detail?: string
 }
 
 export interface McpGroupRepairView {
@@ -199,6 +208,7 @@ export interface McpConflictPreview extends McpConflictView {
   backupRoot: string
   operation: string
   nextServerName?: string
+  migrationTargets?: McpMigrationTarget[]
 }
 
 export interface ManagerStatusMessage {
@@ -844,6 +854,7 @@ export class ManagerRuntime {
         latestDeletion,
         conflict: this.state.mcp.conflict,
         restoreConflict: this.state.mcp.restoreConflict,
+        ...(this.state.mcp.profilePatchPath !== profilePatchPath ? {} : { lastMigration: this.state.mcp.lastMigration }),
         ...(this.state.mcp.profilePatchPath !== profilePatchPath ? {} : { groupRepairBackup: this.state.mcp.groupRepairBackup }),
         ...(this.state.mcp.togglingId === undefined ? {} : { togglingId: this.state.mcp.togglingId }),
         ...(this.state.mcp.lastAction === undefined ? {} : { lastAction: this.state.mcp.lastAction }),
@@ -1067,18 +1078,36 @@ export class ManagerRuntime {
   }
 
   /** Explicitly migrate old overrides without changing their saved enabled states. */
-  async migrateMcpToggles(expected: Pick<McpPanelState, 'profilePatchPath' | 'homePatchPath' | 'profileFingerprint' | 'homeFingerprint'>): Promise<void> {
+  async migrateMcpToggles(expected: Pick<McpPanelState, 'profilePatchPath' | 'homePatchPath' | 'profileFingerprint' | 'homeFingerprint'> & { targets: McpMigrationTarget[] }): Promise<McpMigrationOutcome | undefined> {
+    const { profilePatchPath, homePatchPath, profileFingerprint, homeFingerprint } = expected
+    if (profilePatchPath === undefined || homePatchPath === undefined || profileFingerprint === undefined || homeFingerprint === undefined) {
+      this.setStatus('迁移快照不可用，请重新加载后确认', 'error'); return
+    }
+    return this.applyMcpMigration({ patchPath: profilePatchPath, homePatchPath, expectedProfile: profileFingerprint,
+      expectedHome: homeFingerprint, backupRoot: backupsRoot(this.panelHomePath),
+      targets: expected.targets.map(row => ({ id: row.id, serverName: row.serverName, disabled: row.disabled })) })
+  }
+
+  private async applyMcpMigration(input: McpMigrationInput): Promise<McpMigrationOutcome | undefined> {
     this.cancelMcpConflict()
-    await this.withBusy(async () => {
+    return this.withBusy(async () => {
       try {
-        const files = this.mcpFiles()
-        if (expected.profilePatchPath !== files.patchPath || expected.homePatchPath !== files.homePatchPath ||
-          expected.profileFingerprint !== files.expectedProfile || expected.homeFingerprint !== files.expectedHome) throw new PatchConflictError()
-        const result = await saveMcpMigration({ ...files, backupRoot: backupsRoot(this.panelHomePath) })
+        if (input.patchPath !== this.mcpProfilePatchPath() || input.homePatchPath !== join(this.dshHomePath(), 'cordis.patch.yml')) throw new Error('当前 profile 已切换，请重新加载后确认迁移')
+        const result = await saveMcpMigration(input)
         await this.loadMcp()
-        this.setStatus(result.changed ? '旧启停配置已迁移并备份，保存的启停状态不变；请刷新 web 面板核对' : '没有待迁移的旧启停配置', 'success')
+        const outcome: McpMigrationOutcome = { outcome: 'saved', count: input.targets.length, savedAt: Date.now(), backupPath: result.backupPath }
+        this.patchState({ mcp: { ...this.state.mcp, lastMigration: outcome } })
+        this.setStatus(result.changed ? '旧启停配置已保存迁移并备份，保存的启停状态不变；运行时连接请刷新核对' : '没有待迁移的旧启停配置', 'success')
         await this.writeDump('mcp:migration')
-      } catch (error) { this.setStatus(`旧启停配置迁移失败：${error instanceof Error ? error.message : '请刷新后重试'}`, 'error') }
+        return outcome
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : '请刷新后重试'
+        const outcome: McpMigrationOutcome = { outcome: error instanceof PatchConflictError ? 'conflict' : 'error', count: input.targets.length, detail }
+        this.patchState({ mcp: { ...this.state.mcp, lastMigration: outcome } })
+        this.setStatus(`旧启停配置迁移失败：${detail}`, 'error')
+        if (error instanceof PatchConflictError) this.offerMcpConflict({ kind: 'migrate', input })
+        return outcome
+      }
     })
   }
 
@@ -1172,10 +1201,10 @@ export class ManagerRuntime {
   }
 
   private offerMcpConflict(intent: McpWriteIntent): void {
-    const files = intent.kind === 'toggle' ? intent.input : intent.session
-    const serverName = intent.kind === 'toggle' ? intent.input.serverName : intent.session.serverName ?? String(intent.kind === 'save' ? intent.config.serverName : '')
+    const files = intent.kind === 'toggle' || intent.kind === 'migrate' ? intent.input : intent.session
+    const serverName = intent.kind === 'migrate' ? `旧启停迁移（${intent.input.targets.length} 项）` : intent.kind === 'toggle' ? intent.input.serverName : intent.session.serverName ?? String(intent.kind === 'save' ? intent.config.serverName : '')
     const view: McpConflictView = { token: randomUUID(), action: intent.kind, serverName,
-      id: intent.kind === 'toggle' ? intent.input.id : intent.session.id,
+      id: intent.kind === 'migrate' ? undefined : intent.kind === 'toggle' ? intent.input.id : intent.session.id,
       patchPath: files.patchPath, homePatchPath: files.homePatchPath }
     this.pendingMcpConflict = { view, intent: copyMcpIntent(intent) }
     this.patchState({ mcp: { ...this.state.mcp, conflict: view } })
@@ -1203,7 +1232,8 @@ export class ManagerRuntime {
         pending.confirmation = confirmation
         const request = plan.intent
         return { ...pending.view, confirmation, fields: plan.fields, externalFields: plan.externalFields,
-          operation: request.kind === 'toggle' ? request.input.disabled ? '停用' : '启用' : request.kind === 'delete' ? '删除' : request.session.id === undefined ? '新增' : '修改',
+          operation: request.kind === 'migrate' ? '迁移原批次旧启停覆盖' : request.kind === 'toggle' ? request.input.disabled ? '停用' : '启用' : request.kind === 'delete' ? '删除' : request.session.id === undefined ? '新增' : '修改',
+          ...(request.kind === 'migrate' ? { migrationTargets: structuredClone(request.input.targets) } : {}),
           ...(request.kind === 'save' && request.config.serverName !== pending.view.serverName ? { nextServerName: String(request.config.serverName) } : {}),
           backupRoot: backupsRoot(this.panelHomePath) }
       } catch (error) {
@@ -1213,7 +1243,7 @@ export class ManagerRuntime {
     })
   }
 
-  async commitMcpConflict(token: string, confirmation: string): Promise<McpToggleOutcome | undefined> {
+  async commitMcpConflict(token: string, confirmation: string): Promise<McpToggleOutcome | McpMigrationOutcome | undefined> {
     if (this.state.busy || this.disposed) return
     const pending = this.pendingMcpConflict
     if (pending?.view.token !== token || pending.confirmation !== confirmation || pending.plan === undefined ||
@@ -1223,6 +1253,7 @@ export class ManagerRuntime {
     const intent = pending.plan.intent
     const before = this.state.mcp.lastAction
     this.cancelMcpConflict(token)
+    if (intent.kind === 'migrate') return this.applyMcpMigration(intent.input)
     if (intent.kind === 'save') await this.saveMcpForm(intent.session, intent.config)
     else if (intent.kind === 'delete') await this.applyMcpDelete(intent.session)
     else await this.applyMcpToggle(intent.input)

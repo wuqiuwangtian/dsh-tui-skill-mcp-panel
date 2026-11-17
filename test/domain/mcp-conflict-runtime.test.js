@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { ManagerRuntime } from '../../lib/types/host/manager-runtime.js'
 import { addManagedMcp, editManagedMcp, managedMcpEntries } from '../../lib/types/domain/mcp/managed.js'
 import { mcpGroupIds } from '../../lib/types/domain/mcp/groups.js'
-import { parsePatchText, MCP_MODULE } from '../../lib/types/domain/mcp/patch.js'
+import { parsePatchText, MCP_MODULE, upsertManagedToggle } from '../../lib/types/domain/mcp/patch.js'
 
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'mcp-conflict-runtime-')), previousCwd = process.cwd()
@@ -254,4 +254,79 @@ test('group repair keeps secret-bearing row data private, backs up current confi
   assert.equal(await readFile(configPath, 'utf8'), repaired)
   await r.dumpNow()
   assert.ok(!(await readFile(join(fx.root, 'dump.json'), 'utf8')).includes('private-fixture-secret'))
+})
+
+async function legacyFixture(fx) {
+  const text = upsertManagedToggle(await readFile(fx.patchPath, 'utf8'), 'existing', true).text + '\n'
+  await writeFile(fx.patchPath, text)
+  await fx.runtime.refreshMcp()
+  return { ...fx.runtime.snapshot().mcp, targets: [{ id: 'existing', serverName: 'existing', disabled: true }] }
+}
+
+test('migration conflicts retain immutable original targets and save latest bytes without claiming connection readiness', async t => {
+  const fx = await fixture(t), r = fx.runtime, expected = await legacyFixture(fx)
+  const latest = await fx.change()
+  await r.migrateMcpToggles(expected)
+  expected.targets[0].disabled = false
+  const offer = r.snapshot().mcp.conflict
+  assert.equal(offer.action, 'migrate')
+  const preview = await r.previewMcpConflict(offer.token)
+  assert.deepEqual(preview.migrationTargets, [{ id: 'existing', serverName: 'existing', disabled: true }])
+  assert.ok(!JSON.stringify(preview).includes('private-fixture-secret'))
+  preview.migrationTargets[0].disabled = false
+  const result = await r.commitMcpConflict(offer.token, preview.confirmation)
+  assert.equal(result.outcome, 'saved')
+  assert.equal(await readFile(result.backupPath, 'utf8'), latest)
+  const saved = await readFile(fx.patchPath, 'utf8')
+  assert.ok(saved.endsWith('# external\n'))
+  assert.equal(parsePatchText(saved).toggles.length, 0)
+  assert.equal(parsePatchText(saved).rows.find(row => row.id === 'existing').disabled, true)
+  assert.equal(r.snapshot().mcp.lastMigration.outcome, 'saved')
+  assert.ok(!r.snapshot().statusMessage.text.includes('已生效'))
+  await r.dumpNow()
+  assert.ok(!(await readFile(join(fx.root, 'dump.json'), 'utf8')).includes('private-fixture-secret'))
+})
+
+test('migration retry confirmations expire on replacement, cancel, refresh, profile switch and disposal', async t => {
+  const fx = await fixture(t), r = fx.runtime, expected = await legacyFixture(fx), latest = await fx.change()
+  await r.migrateMcpToggles(expected)
+  const offer = r.snapshot().mcp.conflict, first = await r.previewMcpConflict(offer.token), second = await r.previewMcpConflict(offer.token)
+  await r.commitMcpConflict(offer.token, first.confirmation)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), latest)
+  fx.switchPath(join(fx.root, 'other.yml'))
+  await r.commitMcpConflict(offer.token, second.confirmation)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), latest)
+  fx.switchPath(fx.patchPath)
+  r.cancelMcpConflict(offer.token)
+  await r.commitMcpConflict(offer.token, second.confirmation)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), latest)
+  await r.migrateMcpToggles(expected)
+  let next = r.snapshot().mcp.conflict, preview = await r.previewMcpConflict(next.token)
+  await r.refreshMcp()
+  await r.commitMcpConflict(next.token, preview.confirmation)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), latest)
+  await r.migrateMcpToggles(expected)
+  next = r.snapshot().mcp.conflict; preview = await r.previewMcpConflict(next.token)
+  r.dispose()
+  await r.commitMcpConflict(next.token, preview.confirmation)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), latest)
+})
+
+test('migration retry reoffers a fresh conflict on another edit and refuses changed batch semantics', async t => {
+  const fx = await fixture(t), r = fx.runtime, expected = await legacyFixture(fx)
+  await fx.change(); await r.migrateMcpToggles(expected)
+  const offer = r.snapshot().mcp.conflict, preview = await r.previewMcpConflict(offer.token)
+  const newest = await fx.change()
+  await r.commitMcpConflict(offer.token, preview.confirmation)
+  assert.equal(r.snapshot().mcp.lastMigration.outcome, 'conflict')
+  const replacement = r.snapshot().mcp.conflict
+  assert.notEqual(replacement.token, offer.token)
+  r.cancelMcpConflict(offer.token)
+  assert.equal(r.snapshot().mcp.conflict.token, replacement.token)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), newest)
+  const changed = upsertManagedToggle(newest, 'existing', false).text
+  await writeFile(fx.patchPath, changed)
+  assert.equal(await r.previewMcpConflict(replacement.token), undefined)
+  assert.match(r.snapshot().statusMessage.text, /重新确认整批/u)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), changed)
 })

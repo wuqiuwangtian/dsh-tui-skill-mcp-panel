@@ -134,9 +134,11 @@ for (const columns of [64,90,110]) {
     await press('\x1b[H');await press('v');await press('\x1b[B');await press('v');check(frame.includes('marked=2'),'two same-name sources marked')
     await press('b');await press('\x1b');check(frame.includes('marked=2'),'group picker cancel preserves marks')
     await chooseGroup(2);check(frame.includes('marked=0')&&frame.includes('groupFilter=g1')&&frame.includes('selected=nav-beta'),'new group clears hidden old marks')
-    await press('d');await press('y');await wait(async()=>!await exists(beta),'delete acts only on visible new group')
+    // Moving the file precedes cleanup/journaling/refresh. Do not send undo
+    // while the runtime still owns the preceding delete operation.
+    await press('d');await press('y');await wait(async()=>!runtime.snapshot().busy&&!await exists(beta),'delete acts only on visible new group')
     check(await exists(alpha)&&await exists(twin)&&await exists(outside),'old marked sources and outside group survive')
-    await press('u');await wait(()=>exists(beta),'undo restores grouped disabled skill')
+    await press('u');await wait(async()=>!runtime.snapshot().busy&&await exists(beta),'undo restores grouped disabled skill')
     const finalBytes = await Promise.all(files.map(f=>fs.readFile(f)));check(finalBytes.every((b,i)=>b.equals(originals[i])),'all skill bytes restored after explicit delete/undo')
     await chooseGroup(60);delete groups.g59
     expectedGroupBytes = Buffer.from(JSON.stringify({version:1,sentinel:'preserve',groups})+'\n');await fs.writeFile(groupPath,expectedGroupBytes);await runtime.refresh('external-group-deleted');await sleep(120)

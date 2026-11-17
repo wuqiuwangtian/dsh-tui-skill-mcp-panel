@@ -1,0 +1,313 @@
+{
+  "check": "m5-legacy-mcp-migration-conflict",
+  "date": "2026-11-17",
+  "scope": "Owned /tmp DSH home/profile, local HTTP MCP, actual TTY and manager component. No real user config edits, model/remote-provider requests, third-party patching, tag or publication.",
+  "problem": "Legacy override migration previously refused changed snapshots but only displayed an error. Refreshing the original request without binding the reviewed target batch could silently migrate added targets or altered saved states.",
+  "behavior": "Reuse the existing reload/default, backup retry, cancel selector. Migration retries preserve original entryId + serverName + saved disabled for the entire batch; changed target set/identity/state requires reloading and a new full review. Latest unrelated config/bytes remain intact.",
+  "audit": {
+    "fixtureRoot": "/tmp/skill-mcp-real-tui-MrvlcC",
+    "baseline": {
+      "host": "0.20.1",
+      "kernel": "0.2.2-rc.3",
+      "node": "26.3.0",
+      "terminal": "80x24, panel 76x22"
+    },
+    "initialRows": [
+      {
+        "entryId": "migration-active",
+        "serverName": "migration-active",
+        "enabled": true,
+        "phase": "active"
+      },
+      {
+        "entryId": "migration-off",
+        "serverName": "migration-off",
+        "enabled": false,
+        "phase": null
+      }
+    ],
+    "initialLegacyCount": 2,
+    "savedOutcome": {
+      "outcome": "saved",
+      "count": 2,
+      "savedAt": 1794900614559,
+      "backupPath": "/tmp/skill-mcp-real-tui-MrvlcC/panel/backups/1794900614542-2f3713db-d2b1-48dd-bcb3-316290f82d29/cordis.patch.yml"
+    },
+    "coldRows": [
+      {
+        "entryId": "migration-active",
+        "serverName": "migration-active",
+        "enabled": true,
+        "phase": "active"
+      },
+      {
+        "entryId": "migration-off",
+        "serverName": "migration-off",
+        "enabled": false,
+        "phase": null
+      }
+    ],
+    "coldLegacyCount": 0,
+    "backup": {
+      "path": "/tmp/skill-mcp-real-tui-MrvlcC/panel/backups/1794900614542-2f3713db-d2b1-48dd-bcb3-316290f82d29/cordis.patch.yml",
+      "sha256": "ae1706420ffbc864d43c74f7583c73d221b0300d6c021e082a0d337e8723a777",
+      "latestSourceSha256": "ae1706420ffbc864d43c74f7583c73d221b0300d6c021e082a0d337e8723a777",
+      "mode": "0o600"
+    },
+    "profileAfterSha256": "1dd0f726e61ce13af48c144275bc558f16d647c9c21bce2c26d2b729a49db456",
+    "coldProfileSha256": "1dd0f726e61ce13af48c144275bc558f16d647c9c21bce2c26d2b729a49db456",
+    "groupsUnchanged": true,
+    "homeUnchanged": true,
+    "httpRequests": [
+      {
+        "sequence": 1,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "server/discover",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 2,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "initialize",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 3,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "notifications/initialized",
+        "headerMatched": true,
+        "status": 202
+      },
+      {
+        "sequence": 4,
+        "method": "GET",
+        "path": "/mcp",
+        "headerMatched": true,
+        "status": 405
+      },
+      {
+        "sequence": 5,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "tools/list",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 6,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "server/discover",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 7,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "initialize",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 8,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "notifications/initialized",
+        "headerMatched": true,
+        "status": 202
+      },
+      {
+        "sequence": 9,
+        "method": "GET",
+        "path": "/mcp",
+        "headerMatched": true,
+        "status": 405
+      },
+      {
+        "sequence": 10,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "tools/list",
+        "headerMatched": true,
+        "status": 200
+      }
+    ],
+    "sourceHashes": {
+      "src/domain/mcp/write.ts": "72c19e58b1d2e012af19ad41602f9c41da7e9221ca2ffab04cfacef63946b38f",
+      "src/domain/mcp/conflict.ts": "6652130d94c6c605718d8d468023227e87a236b5155923964234b95e2f866fca",
+      "src/host/manager-runtime.ts": "2f565904cf348f9907221e520c49e84f7378b597d48ec987704810183946cbaa",
+      "src/ui/ManagerScene.tsx": "12c352d5171434eb6067e2ac07ecf58734599f0aa02715c61ee5347d379f9061",
+      "test/domain/mcp-migration-conflict.test.js": "834d8d253f463d45802964553909800aba4ae1e89e2bfaf11597791c5e4ab697",
+      "test/domain/mcp-conflict-runtime.test.js": "8fe69080779472ac0c86e3679292f9bfdc34a8c411effa4d4c0c0410add89f1f",
+      "scripts/mcp-crud-smoke.mjs": "3952af2ce944593ed127dcc54906d40ff0e4f0640b09ef4721e1db626964f44a",
+      "scripts/skill-navigation-smoke.mjs": "6ae2ebd691fd8f9d69711718931d98c5d1d81b7c058b09fb19eb8f1d32b7139f"
+    },
+    "noFixtureHeaderValueInUiDump": true
+  },
+  "ttyObservations": [
+    {
+      "label": "initial-panel",
+      "excerpt": " Skill / MCP manager skill-mcp-panel · 76x22   Skills 技能  MCP  Groups 分组  Diagnostics 诊断  ╭────────────────────────────────────────────────────────────────────────╮ │MCP servers  2 行 · 启用 1 · 停用 1          │ │无工作区级配置 · 当前 profile 可写 · home 全局层只读      │ │筛选: 全部 · 分组:全部 · 2/2 行          │ │旧启停配置 2 条，web 开关可能不一致；按 m 迁移             │ │❯ migration-active          streamable-http  启用 · profile · active …│ │migration-off             streamable-http  停用 · profile · 受管 · …│ │────────────────────────────────────────────────────────────────────│ │分组：MigrationTools ·g 修改                    │ │ id migration-active · entryId migration-active · 层 profile            │ │                                              │ │                                                                        │ │                                                                        │ │             │ │                                                                        │ ╰────────────────────────────────────────────────────────────────────────╯  [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除]     [i详情] [r刷新] [?] [m迁移]                              已写入 /tmp/skill-mcp-real-tui-MrvlcC/dump.json                                                         "
+    },
+    {
+      "label": "open-migration",
+      "excerpt": "          skill-mcp-panel                                                    ╭────────────────────────────────────────────────────────────────────────╮ │迁移旧 MCP 启停配置                │ │将保存的启停状态写回服务器定义，恢复 web/TUI 开关一致。│ │migration-active · entryId migration-active → 启用│ │migration-off · entryId migration-off → 停用  │ │profile：/tmp/skill-mcp-real-tui-MrvlcC/dsh/profiles/panel-verificatio│ │n/cordis.patch.yml                                                    │ │home（只读）：/tmp/skill-mcp-real-tui-MrvlcC/dsh/cordis.patch.yml   │ │写前备份；仅修改 disabled 并移除本插件旧覆盖；任一目标有歧义则整批停止│ │。                                                  │ │保存不代表连接已就绪；热加载可能重建连接。文件变化时提供重新加载/取消/│ │备份重试。│ │[首] [上页] [下页] [末] 1-10/10│ │[y 确认][n/Esc取消]│ ╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                                 "
+    },
+    {
+      "label": "initial-conflict",
+      "excerpt": "区级配置 · 当前 profile 可写 · home 全局层只读   │ │筛选: 全部 · 分组:全部 · 2/2 行                   │ │旧启停配置 2 条，web 开关可能不一致；按 m 迁移│ │❯ migration-active          streamable-http  启用 · profile · active …│ │  migration-off             streamable-http  停用 · profile · 受管 · …│ │────────────────────────────────────────────────────────────────────│ │分组：Migration Tools · g 修改                                        │ │idmigration-active·entryIdmigration-active·层profile│ │                                                                      │ │          │ │                               │ │                   │ │                                                                        │ ╰────────────────────────────────────────────────────────────────────────╯ [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除]  [i详情] [r刷新] [?] [m迁移]  已写入 /tmp/skill-mcp-real-tui-MrvlcC/dump.json          skill-mcp-panel                                                    ╭────────────────────────────────────────────────────────────────────────╮ │MCP 文件已变化 · 旧启停迁移（2 项）│ │❯ 重新加载（放弃本次操作/草稿）                                       │ │  覆盖前备份，重试本次操作…  只处理目标；确认期间再变化仍拒写│ │  取消（保留磁盘现状）                        │ │↑↓ ↵确认 · 1/3 [Esc 取消]                                             │ ╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                                                                                                                                                            旧启停配置迁移失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "cancel-conflict",
+      "excerpt": "  skill-mcp-panel · 76x22   Skills 技能  MCP  Groups 分组  Diagnostics 诊断  ╭────────────────────────────────────────────────────────────────────────╮ │MCP servers  2 行 · 启用 1 · 停用 1│ │无工作区级配置 · 当前 profile 可写 · home 全局层只读│ │筛选: 全部 · 分组:全部 · 2/2 行                              │ │旧启停配置 2 条，web 开关可能不一致；按 m 迁移                        │ │❯ migration-active          streamable-http  启用 · profile · active …│ │   migration-off             streamable-http  停用 · profile · 受管 · … │ │────────────────────────────────────────────────────────────────────│ │分组：MigrationTools·g修改│ │idmigration-active·entryIdmigration-active·层profile│ ││ ││ ││ ││ ││ ╰────────────────────────────────────────────────────────────────────────╯ [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除]  [i详情] [r刷新] [?] [m迁移]  已写入 /tmp/skill-mcp-real-tui-MrvlcC/dump.json"
+    },
+    {
+      "label": "default-reload",
+      "excerpt": "  skill-mcp-panel · 76x22   Skills 技能  MCP  Groups 分组  Diagnostics 诊断  ╭────────────────────────────────────────────────────────────────────────╮ │MCP servers  2 行 · 启用 1 · 停用 1│ │无工作区级配置 · 当前 profile 可写 · home 全局层只读                  │ │筛选: 全部 · 分组:全部 · 2/2 行                              │ │旧启停配置 2 条，web 开关可能不一致；按 m 迁移│ │❯ migration-active          streamable-http  启用 · profile · active …│ │   migration-off             streamable-http  停用 · profile · 受管 · … │ │────────────────────────────────────────────────────────────────────│ │分组：MigrationTools·g修改│ │idmigration-active·entryIdmigration-active·层profile│ ││ ││ ││ ││ ││ ╰────────────────────────────────────────────────────────────────────────╯ [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除]  [i详情] [r刷新] [?] [m迁移]  旧启停配置迁移失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "backup-preview",
+      "excerpt": "rs  2 行 · 启用 1 · 停用 1│ │无工作区级配置 · 当前 profile 可写 · home 全局层只读│ │筛选: 全部 · 分组:全部 · 2/2 行                                       │ │旧启停配置 2 条，web 开关可能不一致；按 m 迁移│ │❯ migration-active          streamable-http  启用 · profile · active …│ │   migration-off             streamable-http  停用 · profile · 受管 · … │ │────────────────────────────────────────────────────────────────────│ │分组：MigrationTools·g修改│ │idmigration-active·entryIdmigration-active·层profile│ ││ ││ ││ ││ ││ ╰────────────────────────────────────────────────────────────────────────╯ [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除]  [i详情] [r刷新] [?] [m迁移]  旧启停配置迁移失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动          skill-mcp-panel                                                    ╭────────────────────────────────────────────────────────────────────────╮ │确认 MCP 覆盖前备份                │ │目标：旧启停迁移（2 项） · entryId (整批，逐项如下) │ │操作：迁移原批次旧启停覆盖     │ │profile：/tmp/skill-mcp-real-tui-MrvlcC/dsh/profiles/panel-verificatio│ │n/cordis.patch.yml                                                    │ │hoe（只读）：/tmp/skill-mcp-real-tui-MrvlcC/dsh/cordis.patch.yml     │ │本次变更：仅迁移原批次的 disabled 与本插件旧覆盖                    │ │外部变化字段：文件变化；原迁移目标/身份/保存状态不变│ │migration-active · entryId migration-active → 启用        │ │migration-off · entryId migration-off → 停用│ │只将原批次保存的状态写回定义并移除本插件旧覆盖；保留其他字节。│ │目标增减、改名或保存状态变化时拒绝重试，须重新加载并重新确认整批。│ │保存不代表运行时连接已就绪；配置热加载可能重建连接。│ │最新原文备份目录：/tmp/skill-mcp-real-tui-MrvlcC/panel/backups│ │ [首] [上页] [下页] [末] 1-13/15                                        │ │ [y 确认] [n / Esc 取消]                                               │ ╰────────────────────────────────────────────────────────────────────────╯ 旧启停配置迁移失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "cancel-backup",
+      "excerpt": " ╭────────────────────────────────────────────────────────────────────────╮ │MCP 文件已变化 · 旧启停迁移（2 项）│ │❯ 重新加载（放弃本次操作/草稿）                                       │ │  覆盖前备份，重试本次操作…  只处理目标；确认期间再变化仍拒写│ │  取消（保留磁盘现状）                                                │ │↑↓ ↵确认 · 1/3 [Esc 取消]│ ╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               "
+    },
+    {
+      "label": "changed-batch-rejected",
+      "excerpt": "panel · 76x22   Skills 技能  MCP  Groups 分组  Diagnostics 诊断  ╭────────────────────────────────────────────────────────────────────────╮ │MCP servers  2 行 · 启用 1 · 停用 1│ │无工作区级配置 · 当前 profile 可写 · home 全局层只读│ │筛选: 全部 · 分组:全部 · 2/2 行                                       │ │旧启停配置 2 条，web 开关可能不一致；按 m 迁移│ │❯ migration-active          streamable-http  启用 · profile · active …│ │   migration-off             streamable-http  停用 · profile · 受管 · … │ │────────────────────────────────────────────────────────────────────│ │分组：MigrationTools·g修改│ │idmigration-active·entryIdmigration-active·层profile│ ││ ││ ││ ││ ││ ╰────────────────────────────────────────────────────────────────────────╯ [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除]  [i详情] [r刷新] [?] [m迁移]  已写入 /tmp/skill-mcp-real-tui-MrvlcC/dump.json          skill-mcp-panel                                                    ╭────────────────────────────────────────────────────────────────────────╮ │无法安全重试 MCP 操作              │ │profile：/tmp/skill-mcp-real-tui-MrvlcC/dsh/profiles/panel-verificatio│ │n/cordis.patch.yml             │ │home（只读）：/tmp/skill-mcp-real-tui-MrvlcC/dsh/cordis.patch.yml│ │迁移目标、名称或保存的启停状态已变化，请重新加载并重新确认整批内容；未│ │迁移                                                                  │ │关闭后按 r 重新加载；未覆盖外部修改。                               │ │[首] [上页] [下页] [末] 1-6/6 │ │[Enter/Esc 关闭]                                     │ ╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                              迁移目标、名称或保存的启停状态已变化，请重新加载并重新确认整批内容；未迁移"
+    },
+    {
+      "label": "stale-confirmation-rejected",
+      "excerpt": "gration-active          streamable-http  启用 · profile · active …│ │  igration-off             streamable-http  停用 · profile · 受管 · …│ │────────────────────────────────────────────────────────────────────│ │分组：Migration Tools · g 修改                      │ │id migration-active · entryId migration-active · 层profile│ │                                            │ │                                                              │ │                                                                  │ │                                                    │ │                                                              │ ╰────────────────────────────────────────────────────────────────────────╯ [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除]   [i详情] [r刷新] [?] [m迁移]                                                已写入 /tmp/skill-mcp-real-tui-MrvlcC/dump.json          skill-mcp-panel                                                    ╭────────────────────────────────────────────────────────────────────────╮ │MCP 文件已变化 · 旧启停迁移（2 项）│ │❯ 重新加载（放弃本次操作/草稿）                                       │ │  覆盖前备份，重试本次操作…  只处理目标；确认期间再变化仍拒写│ │  取消（保留磁盘现状）                        │ │↑↓ ↵确认 · 1/3 [Esc 取消]                                             │ ╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                                                                                                                                                                                            旧启停配置迁移失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动"
+    },
+    {
+      "label": "final-backup-commit",
+      "excerpt": "                                │ │                                                    │ │                                                              │ ╰────────────────────────────────────────────────────────────────────────╯ [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除]   [i详情] [r刷新] [?] [m迁移]                                                旧启停配置迁移失败：配置文件已变化，请按 r 重新加载后重试；未覆盖外部改动 ❯ migration-active          streamable-http  启用 · profile · active …   migration-off             streamable-http  停用 · profile · 受管 · … ────────────────────────────────────────────────────────────────────   分组：Migration Tools · g 修改                                       id migration-active ·entryId migration-active·层profile                                                               旧启停配置已保存迁移并备份，保存的启停状态不变；运行时连接请刷新核对               skill-mcp-panel                                                    ╭────────────────────────────────────────────────────────────────────────╮ │MCP 重试结果                       │ │旧启停配置已保存迁移并备份，保存的启停状态不变；运行时连接请刷新核对│ │覆盖前备份：/tmp/skill-mcp-real-tui-MrvlcC/panel/backups/1794900614542│ │-2f3713db-d2b1-48dd-bcb3-316290f82d29/cordis.patch.yml                │ │profile：/tmp/skill-mcp-real-tui-MrvlcC/dsh/profiles/panel-verificatio│ │n/cordis.patch.yml                                                  │ │[首] [上页] [下页] [末] 1-5/5 │ │[Enter/Esc 关闭]                                     │ ╰────────────────────────────────────────────────────────────────────────╯                                                                                                                                                                                         旧启停配置已保存迁移并备份，保存的启停状态不变；运行时连接请刷新核对"
+    },
+    {
+      "label": "native-result",
+      "excerpt": " ! /mcp                                                                        migration-active（1 个工具）: ping                                                                                    ▓▓▓▓▓▓▓ ██████ ██▓█▓ ▓█████▓ ▓█▓▓▓ ▓▓▓▓▓ 未至之境！ ▓▓▓▓▓▓▓▓ ██████ █▓█▓ █████▓ █▓▓▓ ▓▓▓▓ 未至之境！ ▓ 至之境！ ▓▓▓▓▓▓ ███████ █▓█▓█ █████▓█ █▓▓▓█ ▓▓▓▓▓ 至之境！ ▓▓▓▓▓ ███████ ▓█▓██ ████▓█▓ ▓▓▓█▓ ▓▓▓▓▓ 之境！ ▓▓▓▓ ██████ █▓███ ███▓█▓ ▓▓█▓ ▓▓▓▓ 之境！ ▓▓▓ █████ █▓███ ██▓█▓█ ▓▓█▓ ▓▓▓▓ 境！"
+    },
+    {
+      "label": "exit-first-2",
+      "exitCode": 0,
+      "excerpt": " "
+    },
+    {
+      "label": "cold-panel",
+      "excerpt": " Skill / MCP manager skill-mcp-panel · 76x22   Skills 技能  MCP  Groups 分组  Diagnostics 诊断  ╭────────────────────────────────────────────────────────────────────────╮ │MCP servers  2 行 · 启用 1 · 停用 1          │ │无工作区级配置 · 当前 profile 可写 · home 全局层只读      │ │筛选: 全部 · 分组:全部 · 2/2 行          │ │❯ migration-active          streamable-http  启用 · profile · active …│ │migration-off             streamable-http  停用 · profile · 受管 · …│ │────────────────────────────────────────────────────────────────────│ │分组：MigrationTools ·g 修改           │ │idmigration-active · entryId migration-active·层 profile   │ │                                                                        │ │                                              │ │                                                                        │ │                                                                        │ │             │ │                                                                        │ ╰────────────────────────────────────────────────────────────────────────╯  [␣启停] [a新增] [↵编辑] [d删除] [u撤销] [g分组] [f筛选] [/搜索] [x清除]     [i详情] [r刷新] [?]                              已写入 /tmp/skill-mcp-real-tui-MrvlcC/dump.json                                                         "
+    },
+    {
+      "label": "cold-no-migration",
+      "excerpt": " 没有待迁移的旧启停配置                         "
+    },
+    {
+      "label": "cold-native-result",
+      "excerpt": " ! /mcp                                                                        migration-active（1 个工具）: ping                                                                                    ▓▓▓▓▓ ███████ ▓█▓██ ████▓█▓ ▓▓▓█▓ ▓▓▓▓▓ 探索未至 ▓▓▓▓ ██████ █▓███ ███▓█▓ ▓▓█▓ ▓▓▓▓ 探索未至 ▓▓▓ █████ █▓███ ██▓█▓█ ▓▓█▓ ▓▓▓▓ 探索未至之 ▓▓▓ █████ █▓████ █▓█▓██ ▓█▓█ ▓▓▓▓▓ 探索未至之 ▓▓▓▓ █████ ▓████▓ ▓█▓██▓ █▓█▓ ▓▓▓▓▓ 索未至之境 ▓▓▓▓ ████ ████▓ █▓██▓ █▓█▓ ▓▓▓▓ 索未至之境 ▓▓▓▓ ████ ████▓ █▓██▓ █▓█▓ ▓▓▓▓ 未至之境！"
+    },
+    {
+      "label": "exit-cold-2",
+      "exitCode": 0,
+      "excerpt": " "
+    }
+  ],
+  "ttyExitCodes": [
+    0,
+    0
+  ],
+  "ownedHttpServerStopped": true,
+  "checks": {
+    "defaultReloadNoWrite": true,
+    "cancelNoWrite": true,
+    "backupPreviewCancelNoWrite": true,
+    "changedBatchRefusesOriginalRequest": true,
+    "staleConfirmationReoffersConflict": true,
+    "exactLatestBackup": true,
+    "homeAndGroupsUnchanged": true,
+    "coldEffectiveStatesPreserved": true,
+    "coldLegacyOverridesRemoved": true,
+    "nativeMcpOnlyEnabledServerPing": true,
+    "savedDoesNotClaimRuntimeReady": true,
+    "noFixtureHeaderInUiOrDump": true
+  },
+  "limits": [
+    "Only the original batch/identity/saved-state can be retried. No implicit new-target migration.",
+    "Home control, expressions/aliases, duplicate definitions, foreign overrides and invalid YAML remain read-only/refused as a complete batch.",
+    "Saving a migrated configuration can restart connections; it does not prove readiness.",
+    "Normal snapshot/lock/backup protections remain; final-check-to-rename race with non-cooperating writers and OS-crash/transaction limits remain.",
+    "No new 0.19 runtime proof, remote authentication/TLS/model-provider effects or full web coexistence proof; KI-01..03 and AC-15 stay open."
+  ],
+  "validation": {
+    "command": "pnpm check:release",
+    "exitCode": 0,
+    "domainReleaseTests": 258,
+    "newDomainRuntimeTests": 8,
+    "skipped": 0,
+    "layoutAssertions": 793,
+    "mouseAssertions": 239,
+    "navigationAssertions": 107,
+    "skillFilterAssertions": 52,
+    "mcpCrudColumns": [
+      120,
+      58
+    ],
+    "mcpGroupsColumns": [
+      120,
+      58
+    ],
+    "fullLogSha256": "70600588b2557ead8890956904f9042a38774bb2b6177618f4737d12e11cc1b3",
+    "artifact": {
+      "check": "tarball",
+      "ok": true,
+      "name": "dsh-tui-skill-mcp-panel",
+      "version": "0.1.0-dev.0",
+      "fileCount": 98,
+      "bytes": 134387,
+      "sha256": "c13a4158bde06a6ac28fd08e929697568efc32c0cc29bde4a68e6bc32041234c",
+      "npmIntegrity": "sha512-/UYby3xZmEdmQc0SOS6YUorCiYCAwNdHaQi85Sg4IaYnpdtROvuBwJxM0OSRWjJJTgL+iz2fUC6LbcMtBWuBlg==",
+      "dryRunFileCount": 98,
+      "manifestId": "com.dsh-tui.skill-mcp-panel",
+      "importSmoke": "Cordis name/Config/apply from extracted archive with checkout dependencies",
+      "diagnosticVersionSmoke": "plugin metadata from extracted package; Node actual; absent host/kernel unavailable",
+      "limits": "not published; no registry-install, provenance or Verified claim; needs npm + tar"
+    }
+  },
+  "validationHistory": [
+    {
+      "command": "pnpm check:release",
+      "exitCode": 7,
+      "failure": "64-column skill-navigation undo sent before the preceding delete/cleanup/refresh fully finished.",
+      "logSha256": "3fce033ff6303f86bfe0320e3a46a59e6b83bf01294416adcc71bb09473c55e3"
+    },
+    {
+      "command": "node scripts/skill-navigation-smoke.mjs",
+      "exitCode": 7,
+      "failure": "Independent pre-fix run reproduced the same undo assertion at 90 columns.",
+      "logSha256": "a4813aff89ef6562b342309f4b0f0ff3083832bc2db13c7a9408d471ac025a29"
+    },
+    {
+      "change": "Wait for both file result and runtime.busy=false before undo and subsequent navigation; keep the original content-restoration assertions. No skill product changes or arbitrary timeout increase.",
+      "command": "node scripts/skill-navigation-smoke.mjs",
+      "exitCode": 0,
+      "assertions": 107,
+      "logSha256": "60277fa50ee6f8e39866fc811d331f62a717b13e074bee48938d3e004eb09679"
+    },
+    {
+      "command": "node scripts/mcp-crud-smoke.mjs 58",
+      "exitCode": 7,
+      "failure": "A supplemental run concurrent with the full rendering suite timed out in the pre-existing fake HTTP-delete HMR 7s wait. Cause not independently established; no production data involved.",
+      "logSha256": "95374f917603ed93fcb88222dad4bcffa1c9069b7c8f61077852f05bade1af54",
+      "followup": "Final sequential check:release passed both 120/58-column CRUD smoke, including ordinary migration and all conflict flows, without relaxing the timeout."
+    },
+    {
+      "change": "The newly added ordinary-migration smoke initializes a fresh full runtime snapshot before remounting its component, so the first keypress cannot use a stale pre-refresh render."
+    }
+  ]
+}
