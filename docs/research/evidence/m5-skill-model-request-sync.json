@@ -1,0 +1,80 @@
+{
+  "host": "0.20.1",
+  "kernel": "0.2.2-rc.3",
+  "node": "26.3.0",
+  "transport": "loopback HTTP, Messages SSE, fixed text response",
+  "rawRequests": 6,
+  "agentTurns": [
+    {
+      "turn": "probe-turn-one",
+      "messages": 1,
+      "latestFixtureCatalog": {
+        "sync-bundled": "Read-only bundled fixture",
+        "sync-flat": "Flat skill",
+        "sync-global": "Global only",
+        "sync-local": "Workspace only",
+        "sync-model-only": "Model invocation only",
+        "sync-shared": "Workspace winner"
+      },
+      "skillTool": true,
+      "requestRecordSha256": "03c0901338504ce1bc24c287e48e7eac26a7b376f88f2f431f045d7e88c4ffd7"
+    },
+    {
+      "turn": "probe-turn-two",
+      "messages": 3,
+      "latestFixtureCatalog": {
+        "sync-bundled": "Read-only bundled fixture",
+        "sync-global": "Global only",
+        "sync-local": "Workspace only",
+        "sync-model-only": "Model invocation only",
+        "sync-shared": "Global fallback"
+      },
+      "skillTool": true,
+      "requestRecordSha256": "0dcea0ddf8fcaecad1b80032cac9a038664cabca3b2a790c00ecee2dc9a46702"
+    },
+    {
+      "turn": "probe-turn-three",
+      "messages": 5,
+      "latestFixtureCatalog": {
+        "sync-bundled": "Read-only bundled fixture",
+        "sync-flat": "Flat skill",
+        "sync-global": "Global only",
+        "sync-local": "Workspace only",
+        "sync-model-only": "Model invocation only",
+        "sync-shared": "Workspace winner"
+      },
+      "skillTool": true,
+      "requestRecordSha256": "a742cd52cfeccd45aa595f4186a7fef765268fe99f473102926f81c62d75fa9c"
+    },
+    {
+      "turn": "probe-turn-four",
+      "messages": 7,
+      "latestFixtureCatalog": {
+        "sync-added": "Added in session",
+        "sync-bundled": "Read-only bundled fixture",
+        "sync-flat": "Flat skill",
+        "sync-global": "Global only",
+        "sync-local": "Workspace only",
+        "sync-model-only": "Model invocation only",
+        "sync-shared": "Workspace winner"
+      },
+      "skillTool": true,
+      "requestRecordSha256": "04bd7837a279608411b2efd97c8b55c6bfaf7e22d1b6b2d529823ce53e304eeb"
+    },
+    {
+      "turn": "probe-turn-five",
+      "messages": 9,
+      "latestFixtureCatalog": {
+        "sync-bundled": "Read-only bundled fixture",
+        "sync-flat": "Flat skill",
+        "sync-global": "Global only",
+        "sync-local": "Workspace only",
+        "sync-model-only": "Model invocation only",
+        "sync-shared": "Workspace winner"
+      },
+      "skillTool": true,
+      "requestRecordSha256": "0535e9c68db84b560940fcddb50ce01b3dcc2528858538758cd8d17da12ff74b"
+    }
+  ],
+  "otherRequests": 1
+}
