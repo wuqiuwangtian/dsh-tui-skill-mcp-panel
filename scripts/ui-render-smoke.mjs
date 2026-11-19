@@ -11,6 +11,8 @@
 import { createRequire } from 'node:module'
 import { EventEmitter } from 'node:events'
 import { readFileSync } from 'node:fs'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createManagerScene } from '../lib/types/ui/ManagerScene.js'
@@ -75,7 +77,7 @@ class StubRuntime {
       refreshing: false,
       refreshReason: 'smoke',
       services: [],
-      paths: { homePatch: join(process.env.DSH_HOME ?? '', 'cordis.patch.yml'), panelHome: '/tmp/skill-mcp-panel' },
+      paths: { homePatch: join(scan.dshHome, 'cordis.patch.yml'), panelHome: '/tmp/skill-mcp-panel' },
       detail: { status: 'idle' },
       groups: {},
       mcp: { rows: [], errors: [], warnings: [] },
@@ -158,10 +160,9 @@ async function terminalScreen(raw, columns, rows) {
   return lines.join('\n').replace(/\n+$/u, '')
 }
 
-async function renderAt(columns) {
+async function renderAt(columns, scan) {
   const stdout = new FakeStdout(columns, 40)
   const stdin = new FakeStdin()
-  const scan = await scanSkills({ cwd: process.cwd() })
   const runtime = new StubRuntime(scan)
   const Component = createManagerScene(runtime, 'skill-mcp-panel')
   const element = React.createElement(Component, {
@@ -194,7 +195,20 @@ const assertContains = (label, text, needles) => {
   }
 }
 
-const frameWide = await renderAt(160)
+async function renderFixture() {
+  const root = await mkdtemp(join(tmpdir(), 'skill-mcp-render-'))
+  try {
+    const options = { cwd: join(root, 'project'), dshHome: join(root, 'dsh'), agentsHome: join(root, 'agents'), bundledDir: join(root, 'bundled') }
+    for (const [dir, name] of [[join(options.cwd, '.dsh', 'skills'), 'alpha'], [join(options.cwd, '.dsh', 'skills'), 'beta'], [join(options.dshHome, 'skills'), 'global-fixture']]) {
+      await mkdir(dir, { recursive: true })
+      await writeFile(join(dir, name + '.md'), `---\nname: ${name}\ndescription: Render fixture\n---\nFixture body.\n`)
+    }
+    const scan = await scanSkills(options)
+    return [await renderAt(160, scan), await renderAt(58, scan)]
+  } finally { await rm(root, { recursive: true, force: true }) }
+}
+
+const [frameWide, frameNarrow] = await renderFixture()
 assertContains('wide', frameWide, [
   'Skill / MCP manager',
   'Skills 技能',
@@ -203,12 +217,11 @@ assertContains('wide', frameWide, [
   '详情',
   'alpha',
   'beta',
-  'software-delivery-workflow',
+  'global-fixture',
   'project/.dsh',
   '[空格 启停]',
 ])
 
-const frameNarrow = await renderAt(58)
 
 const dumpDir = process.env.RENDER_SMOKE_DUMP
 if (dumpDir) {

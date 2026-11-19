@@ -397,13 +397,13 @@ try {
     await runtime.refresh('reload-after-delete')
   } finally { concurrent.dispose() }
 
-  // MCP tab renders (this runtime has no profile patch → empty state)
+  // MCP tab reports an incomplete read when the runtime cannot locate its profile patch.
   await press('\t') // groups -> diagnostics
   await press('\t') // diagnostics -> skills
   await press('\t') // skills -> mcp
   await sleep(250)
   screen = await screenText()
-  check('mcp tab renders', screen.includes('MCP servers') && screen.includes('没有 MCP 行'), screen.slice(0, 400))
+  check('mcp tab renders', screen.includes('MCP servers') && screen.includes('读取不完整') && screen.includes('4 查看路径'), screen.slice(0, 400))
   // P0 FR-2: actual runtime writes tab preference and browses the registered git root.
   const currentAlpha = join(project, '.dsh/skills/alpha', existsSync(join(project, '.dsh/skills/alpha/SKILL.md')) ? 'SKILL.md' : 'SKILL.md.disabled')
   const currentAlphaBytes = await readFile(currentAlpha)

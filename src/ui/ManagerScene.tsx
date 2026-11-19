@@ -14,6 +14,7 @@
 import type { ComponentType, ReactNode } from 'react'
 import { basename, dirname, isAbsolute } from 'node:path'
 import type { TuiSceneProps } from '@deepseek-harness-tui/dsh-tui/scenes'
+import { backupsRoot } from '../domain/store.js'
 import { groupMemberCount } from '../domain/groups.js'
 import { describeMcpConfig, type McpRowView } from '../domain/mcp/patch.js'
 import { configChanges, fieldDisplay, fieldInput, patchMcpField, validateMcpConfig, type McpConfig, type McpField } from '../domain/mcp/model.js'
@@ -309,8 +310,11 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   push('  撤销可确认后单行合并；旧迁移仅重试原批次/身份/状态，变化须重载确认。')
   push('')
   push('MCP（当前 profile patch + home 层 + loader）')
-  push(`  profile patch: ${state.mcp.profilePatchPath ?? '(unknown)'}`)
-  push(`  home patch: ${state.mcp.homePatchPath ?? '(unknown)'}`)
+  lines.push(...wrapTextLines([
+    `  profile patch: ${state.mcp.profilePatchPath ?? '(unknown)'}`,
+    `  home patch: ${state.mcp.homePatchPath ?? '(unknown)'}`,
+    `  写前备份目录：${backupsRoot(state.paths.panelHome)}`,
+  ], width))
   push(`  rows: ${state.mcp.rows.length} · 读取于 ${state.mcp.loadedAt ?? '(pending)'}`)
   if (state.configWarning !== undefined) push(`  显示配置警告：${state.configWarning}`)
   push(`  当前 profile 的 MCP 分组：${state.mcp.profilePatchPath === undefined ? 0 : Object.keys(groupsForMcpProfile(state.config.mcpGroups, state.mcp.profilePatchPath)).length}`)
@@ -323,7 +327,7 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
     if (migration.backupPath !== undefined) push(`  迁移前备份：${migration.backupPath}`)
   }
   if (state.mcp.latestDeletion !== undefined) push(`  可撤销 MCP 删除：${state.mcp.latestDeletion.serverName} · ${state.mcp.latestDeletion.createdAt}（MCP 页 u）`)
-  for (const error of state.mcp.errors) push(`  错误：${error}`)
+  lines.push(...wrapTextLines(state.mcp.errors.map(error => `  错误：${error}`), width))
   for (const warning of state.mcp.warnings) push(`  警告：${warning}`)
   if (state.mcp.lastAction !== undefined) {
     const action = state.mcp.lastAction
@@ -334,7 +338,7 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   push('')
   push('发现根 Discovery roots（rank 小者优先）')
   for (const root of scan?.roots ?? []) {
-    push(`  [${root.rank}] ${root.source} ${root.scope} ${root.readError === 'permission' ? '无权限' : root.readError ? '读取失败' : root.exists ? '存在' : '缺失'} ${root.path}`)
+    lines.push(...wrapTextLines([`  [${root.rank}] ${root.source} ${root.scope} ${root.readError === 'permission' ? '无权限' : root.readError ? '读取失败' : root.exists ? '存在' : '缺失'} ${root.path}`], width))
   }
   if (scan === undefined) push('  (扫描中…)')
   push('')
@@ -2149,7 +2153,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const legacyCount = state.mcp.legacyToggles?.length ?? 0
     const unknownCount = mcpRows.filter(row => row.enabled === undefined).length
     const mcpCounts = `启用 ${mcpRows.filter(row => row.enabled).length} · 停用 ${mcpRows.filter(row => row.enabled === false).length}${unknownCount ? ` · 未知 ${unknownCount}` : ''}`
-    const mcpErrors = [...state.mcp.errors.map(error => `错误：${error}`),
+    const mcpErrors = [...state.mcp.errors.map(error => `错误：4 查看路径 · ${error}`),
       ...(legacyCount ? [`旧启停配置 ${legacyCount} 条，web 开关可能不一致；按 m 迁移`] : [])]
       .slice(0, Math.min(2, Math.max(0, bodyRows - 4)))
     const mcpFixedRows = 2 + mcpErrors.length + (mcpRows.length > 1 ? 1 : 0)
@@ -2160,7 +2164,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       Math.min(selectedMcpIndex - Math.floor(mcpListRows / 2), Math.max(0, mcpRows.length - mcpListRows)),
     )
     const mcpListNodes = mcpRows.length === 0
-      ? wrapTextLines([state.mcp.rows.length === 0 ? (columns < 72 ? '没有 MCP 行。按 a 新增；已有行仅启停。' : '当前 profile / home 层没有 MCP 行。按 a 新增；仅本面板受管行支持编辑/删除，已有 profile 行可启停。') : '没有匹配的 MCP 行。按 x 清除搜索、状态与分组过滤。'], contentWidth - 6)
+      ? wrapTextLines([state.mcp.rows.length === 0 && state.mcp.errors.length ? '读取不完整。按 4 查看原文件及备份路径，修复后按 r 刷新。' : state.mcp.rows.length === 0 ? (columns < 72 ? '没有 MCP 行。按 a 新增；已有行仅启停。' : '当前 profile / home 层没有 MCP 行。按 a 新增；仅本面板受管行支持编辑/删除，已有 profile 行可启停。') : '没有匹配的 MCP 行。按 x 清除搜索、状态与分组过滤。'], contentWidth - 6)
           .slice(0, Math.max(1, bodyRows - 2 - mcpErrors.length)).map((line, index) => <Text key={`mcp-empty-${index}`} dimColor wrap="truncate">{line}</Text>)
       : mcpRows.slice(mcpWindowStart, mcpWindowStart + mcpListRows).map((row) => {
           const isSelected = row.id === selectedMcp?.id

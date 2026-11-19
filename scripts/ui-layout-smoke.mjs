@@ -266,7 +266,19 @@ for (const [columns, rows] of sizes) {
     await press('2'); await press('\x1b[F'); await press('\r'); await press('d')
     await check('readonly-no-confirm', (s) => s.includes('只读') && !s.includes('[y 确认]') && !s.includes('编辑 MCP'))
     await press('4')
-    for (let i = 0; i < 12; i++) await press('\x1b[6~')
+    if (columns === 58) {
+      runtime.state.mcp.homePatchPath = '/fixture/' + 'nested/'.repeat(14) + 'HOME-YAML-END'
+      runtime.state = { ...runtime.state }; runtime.notify()
+      const pages = []
+      for (let i = 0; i < 12; i++) {
+        pages.push(await screen())
+        await press('\x1b[6~')
+      }
+      const text = pages.join('').replace(/[│\s]/gu, '')
+      await check('diagnostic-repair-paths-readable', () => text.includes('HOME-YAML-END') && text.includes('/fixture/panel/backups'))
+    } else {
+      for (let i = 0; i < 12; i++) await press('\x1b[6~')
+    }
     await check('diagnostics-clamped-end', (s) => s.includes('说明 Notes') || s.includes('只覆盖文件来源'))
     const versionCalls = runtime.calls.length
     runtime.state.versions = { plugin: { value: '0.1.0-dev.0', source: '/fixture/package.json' }, host: { value: '0.19.0', source: 'tuiPluginHost.hostDescriptor()' }, kernel: { source: 'current CLI', reason: 'No confirmed CLI' }, node: { value: '26.3.0', source: 'process.versions.node' } }; runtime.notify()
@@ -302,7 +314,7 @@ for (const [columns, rows] of sizes) {
     await press('n')
     await check('workspace-cancel-does-not-switch', () => !runtime.calls.some(call => call.startsWith('workspace:')))
     await press('2')
-    await check('error-empty-mcp', (s) => s.includes('没有 MCP 行') && s.includes('SCAN-ERROR-END') && (s.includes('home只读') || s.includes('home 全局')))
+    await check('error-empty-mcp', (s) => s.includes('读取不完整') && s.includes('SCAN-ERROR-END') && (s.includes('home只读') || s.includes('home 全局')))
     await press('3')
     await check('error-empty-groups', (s) => s.includes('还没有') && s.includes('SCAN-ERROR-END'))
     await press('1'); await press('f')

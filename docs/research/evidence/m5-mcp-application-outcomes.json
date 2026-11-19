@@ -1,0 +1,84 @@
+{
+  "host": "0.20.1",
+  "kernel": "0.2.2-rc.3",
+  "beforeChange": {
+    "homeOverrideAfterProfileWrite": [
+      {
+        "effectiveDisabled": true,
+        "homeOverrideDisplayed": true,
+        "lastStatus": "已保存，但 10s 内未观察到生效；请检查诊断页/日志，可能被更高层覆盖或需要重启",
+        "timeout": true,
+        "profileChanged": true
+      },
+      {
+        "mode": "fullscreen",
+        "terminalColumns": 60,
+        "scene": "56x30",
+        "layout": "single",
+        "exit": 0,
+        "chatAlternate": true,
+        "temporaryFixture": true
+      }
+    ],
+    "explicitlyDisabledHmrAndRestart": [
+      {
+        "boot": 1,
+        "hmrExplicitlyDisabled": true,
+        "persisted": true,
+        "effectiveDisabled": true,
+        "timeout": true
+      },
+      {
+        "mode": "fullscreen",
+        "terminalColumns": 60,
+        "scene": "56x30",
+        "layout": "single",
+        "exit": 0,
+        "chatAlternate": true,
+        "temporaryFixture": true
+      },
+      {
+        "boot": 2,
+        "enabledActive": true
+      },
+      {
+        "mode": "fullscreen",
+        "terminalColumns": 60,
+        "scene": "56x30",
+        "layout": "single",
+        "exit": 0,
+        "chatAlternate": true,
+        "temporaryFixture": true
+      }
+    ],
+    "homeOverrideIndependentColdRestart": [
+      {
+        "boot": 1,
+        "disabledByHome": true,
+        "timeout": true
+      },
+      {
+        "mode": "fullscreen",
+        "terminalColumns": 60,
+        "scene": "56x30",
+        "layout": "single",
+        "exit": 0,
+        "chatAlternate": true,
+        "temporaryFixture": true
+      },
+      {
+        "boot": 2,
+        "disabledByHomeAfterRestart": true
+      },
+      {
+        "mode": "fullscreen",
+        "terminalColumns": 60,
+        "scene": "56x30",
+        "layout": "single",
+        "exit": 0,
+        "chatAlternate": true,
+        "temporaryFixture": true
+      }
+    ]
+  }
+}
