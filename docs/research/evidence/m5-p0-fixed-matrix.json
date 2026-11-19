@@ -1,0 +1,93 @@
+{
+  "host": "0.20.1",
+  "kernel": "0.2.2-rc.3",
+  "node": "26.3.0",
+  "layout": [
+    {
+      "mode": "fullscreen",
+      "terminalColumns": 60,
+      "scene": "56x30",
+      "layout": "single",
+      "exit": 0,
+      "chatAlternate": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "mode": "fullscreen",
+      "terminalColumns": 82,
+      "scene": "78x30",
+      "layout": "dual",
+      "exit": 0,
+      "chatAlternate": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "mode": "fullscreen",
+      "terminalColumns": 116,
+      "scene": "112x30",
+      "layout": "tree",
+      "exit": 0,
+      "chatAlternate": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "mode": "inline",
+      "terminalColumns": 60,
+      "scene": "56x30",
+      "layout": "single",
+      "exit": 0,
+      "chatAlternate": false,
+      "fixtureUnchanged": true
+    },
+    {
+      "mode": "inline",
+      "terminalColumns": 82,
+      "scene": "78x30",
+      "layout": "dual",
+      "exit": 0,
+      "chatAlternate": false,
+      "fixtureUnchanged": true
+    },
+    {
+      "mode": "inline",
+      "terminalColumns": 116,
+      "scene": "112x30",
+      "layout": "tree",
+      "exit": 0,
+      "chatAlternate": false,
+      "fixtureUnchanged": true
+    }
+  ],
+  "stdio": {
+    "enableCycles": 2,
+    "childStarts": 4,
+    "matchedDigest": true,
+    "nonTargetBytesExact": true,
+    "checked": [
+      "dump.json",
+      "render.txt",
+      "user/.dsh-tui/restart.log"
+    ],
+    "rawBytes": 22331,
+    "exit": 0
+  },
+  "groups": {
+    "check": "skill-groups-web-interop",
+    "ok": true,
+    "version": "2.3.7",
+    "webGroupsSha256": "5983d85b298ea841b7e3348ef10e61457b70604e0a66ab71a7a8201d6d56dced",
+    "verified": [
+      "v1 format read by both implementations",
+      "workspace and global members survive sequential changes",
+      "stale TUI write after a real web write is refused",
+      "refresh/retry preserves web members",
+      "exact prewrite backup"
+    ],
+    "boundary": {
+      "lateWebOverwriteObserved": true,
+      "fullSimultaneousWebTuiProtection": false,
+      "reason": "web 2.3.7 groups.js does not honor groups.json.panel.lock or compare snapshots"
+    },
+    "isolation": "all writes and backups under temporary home; no installed package or real ~/.dsh data changed"
+  }
+}
