@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, chmod, writeFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { findProjectRoot, scanSkills } from '../../lib/types/domain/skills/index.js'
@@ -141,6 +141,24 @@ test('missing roots are reported but do not fail the scan', async () => {
   } finally {
     await rm(root, { recursive: true, force: true })
   }
+})
+
+test('scan distinguishes an unreadable root and a non-directory from missing roots', async t => {
+  const fx = await fixture()
+  t.after(() => rm(fx.root, { recursive: true, force: true }))
+  const file = join(fx.root, 'regular-file')
+  await writeFile(file, 'fixture')
+  const scan = () => scanSkills({ ...fx.options, customDirs: [file, fx.custom] })
+  const result = await scan()
+  assert.equal(result.roots.find(root => root.path === file).readError, 'unreadable')
+  if (process.getuid?.() === 0 || process.platform === 'win32') return
+  await chmod(fx.custom, 0)
+  try {
+    const denied = await scan()
+    assert.equal(denied.roots.find(root => root.path === fx.custom).readError, 'permission')
+    assert.ok(denied.warnings.some(line => line.includes(fx.custom) && line.includes('EACCES')))
+    assert.ok(denied.instances.some(row => row.name === 'alpha'))
+  } finally { await chmod(fx.custom, 0o700) }
 })
 
 test('findProjectRoot walks up to the nearest .git and falls back to cwd', async () => {

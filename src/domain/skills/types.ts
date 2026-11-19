@@ -22,6 +22,7 @@ export interface SkillRoot {
   path: string
   scope: SkillScope
   exists: boolean
+  readError?: 'permission' | 'unreadable'
   skipSystem: boolean
   /** Bundled roots are conceptually read-only (upgrades overwrite them). */
   writable: boolean

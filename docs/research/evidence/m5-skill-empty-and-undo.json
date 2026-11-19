@@ -1,0 +1,41 @@
+{
+  "host": "0.20.1",
+  "kernel": "0.2.2-rc.3",
+  "node": "26.3.0",
+  "rootReadability": [
+    {
+      "denied": true,
+      "missing": true,
+      "empty": true,
+      "recovered": true,
+      "fileSha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd"
+    },
+    {
+      "mode": "fullscreen",
+      "terminalColumns": 60,
+      "scene": "56x30",
+      "layout": "single",
+      "exit": 0,
+      "chatAlternate": true,
+      "temporaryFixture": true
+    }
+  ],
+  "sameSessionUndo": [
+    {
+      "skillHash": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd",
+      "profileHash": "7e0ca4b4db1a629788c4ccffa9a26955fc6de943b6b1cecdc6547e68d2cddc9f",
+      "homeHash": "9e8a1ddb3a8bcfedd9c509062f7c5d312a938b2e70c9e4b446d922fd6f79ac90",
+      "skillDeletedThenRestored": true,
+      "mcpDeletedThenRestored": true
+    },
+    {
+      "mode": "fullscreen",
+      "terminalColumns": 60,
+      "scene": "56x30",
+      "layout": "single",
+      "exit": 0,
+      "chatAlternate": true,
+      "temporaryFixture": true
+    }
+  ]
+}

@@ -288,6 +288,14 @@ for (const [columns, rows] of sizes) {
     runtime.state.status = 'error'; runtime.state.error = 'SCAN-ERROR-END'; runtime.state.statusMessage = undefined
     runtime.notify(); await press('1')
     await check('error-empty-skills', (s) => s.includes('SCAN-ERROR-END') && s.includes('没有任何技能'))
+    const root = { source: 'project-dsh', rank: 100, scope: 'workspace', path: '/fixture/skills', exists: false }
+    for (const [readError, expected] of [[undefined, '技能根目录不存在'], ['permission', '无权限读取'], ['unreadable', '技能目录读取失败']]) {
+      runtime.state.scan = { ...runtime.state.scan, roots: [{ ...root, readError }] }
+      runtime.state = { ...runtime.state }; runtime.notify()
+      await check('skill-empty-root-' + (readError ?? 'missing'), s => s.replace(/[│\s]/gu, '').includes(expected))
+    }
+    runtime.state.scan = { ...runtime.state.scan, roots: [{ ...root, exists: true }] }
+    runtime.notify()
     await press('o'); await check('workspace-picker-all-sizes', s => s.includes('面板管理工作区') && s.includes('Other workspace'))
     await press('\x1b[B'); await press('\r'); await press('\x1b[F')
     await check('workspace-confirm-all-sizes', s => s.includes('不改变当前聊天会话') && s.includes('[y 确认]'))

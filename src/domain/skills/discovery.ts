@@ -131,9 +131,11 @@ async function listRootEntries(
   let dirents
   try {
     dirents = await readdir(root.path, { withFileTypes: true })
+    root.exists = true
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code
-    if (code !== 'ENOENT' && code !== 'ENOTDIR') {
+    if (code !== 'ENOENT') {
+      root.readError = code === 'EACCES' || code === 'EPERM' ? 'permission' : 'unreadable'
       warnings.push(`无法读取技能根 ${root.path}：${(error as Error).message}`)
     }
     return []
@@ -235,8 +237,6 @@ export async function scanSkills(options: SkillScanOptions = {}): Promise<SkillS
   let providerOrder = 0
 
   for (const root of roots) {
-    root.exists = await pathExists(root.path)
-    if (!root.exists) continue
     const entries = await listRootEntries(root, warnings)
     // Kernel sorts root entries by name before producing provider candidates.
     entries.sort((left, right) => left.name.localeCompare(right.name))

@@ -211,6 +211,15 @@ function statusFlags(instance: SkillInstance): string {
   return flags.join(' ')
 }
 
+function emptySkillRootsMessage(scan: SkillScanResult, scope: ScopeFilter): string | undefined {
+  if (scan.instances.some(row => scope === 'all' || row.scope === scope)) return undefined
+  const roots = scan.roots.filter(root => scope === 'all' || root.scope === scope)
+  if (roots.some(root => root.readError === 'permission')) return '无权限读取技能目录。按 4 查看路径，检查权限后按 r 刷新。'
+  if (roots.some(root => root.readError)) return '技能目录读取失败。按 4 查看路径和原因，修复后按 r 刷新。'
+  if (roots.length && roots.every(root => !root.exists)) return '技能根目录不存在。按 4 查看路径，或按 a 添加技能。'
+  return undefined
+}
+
 function counts(scan: SkillScanResult | undefined): {
   total: number
   enabled: number
@@ -325,7 +334,7 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   push('')
   push('发现根 Discovery roots（rank 小者优先）')
   for (const root of scan?.roots ?? []) {
-    push(`  [${root.rank}] ${root.source} ${root.scope} ${root.exists ? '存在' : '缺失'} ${root.path}`)
+    push(`  [${root.rank}] ${root.source} ${root.scope} ${root.readError === 'permission' ? '无权限' : root.readError ? '读取失败' : root.exists ? '存在' : '缺失'} ${root.path}`)
   }
   if (scan === undefined) push('  (扫描中…)')
   push('')
@@ -2022,7 +2031,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
             <Text key="empty" dimColor wrap="wrap">
               {scan === undefined
                 ? '扫描中…'
-                : skillStatus !== 'all'
+                : emptySkillRootsMessage(scan, scope) ?? (skillStatus !== 'all'
                   ? `没有匹配的技能（状态：${SKILL_STATUS_LABELS[skillStatus]}；f 更改状态，x 清除筛选）。`
                 : query.length > 0
                   ? '没有匹配的技能（/ 修改搜索）。'
@@ -2030,7 +2039,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
                     ? `分组「${state.groups[groupFilter]?.name ?? groupFilter}」在当前作用域没有技能（x 清除过滤）。`
                     : scope !== 'all' && summary.total > 0
                       ? `当前筛选「${SCOPE_LABELS[scope]}」下没有技能（←/→ 切换作用域）。`
-                      : '没有任何技能。按 a 添加，或把技能放到发现根。'}
+                      : '没有任何技能。按 a 添加，或把技能放到发现根。')}
             </Text>,
           ]
         : filtered.slice(listWindowStart, listWindowStart + skillPageRows).map((instance) => {
