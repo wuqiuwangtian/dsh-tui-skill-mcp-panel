@@ -37,7 +37,7 @@ async function fixture(t) {
   })
   await runtime.refresh('conflict-test')
   const change = async () => { const text = await readFile(patchPath, 'utf8') + '# external\n'; await writeFile(patchPath, text); return text }
-  return { root, runtime, patchPath, change, switchPath: path => { currentPath = path } }
+  return { root, ctx, runtime, patchPath, change, switchPath: path => { currentPath = path } }
 }
 
 test('runtime confirmations are bound to the pending operation, latest preview, profile and lifecycle', async t => {
@@ -329,4 +329,34 @@ test('migration retry reoffers a fresh conflict on another edit and refuses chan
   assert.equal(await r.previewMcpConflict(replacement.token), undefined)
   assert.match(r.snapshot().statusMessage.text, /重新确认整批/u)
   assert.equal(await readFile(fx.patchPath, 'utf8'), changed)
+})
+
+
+test('an unavailable loader cannot confirm disk-only disable or deletion', async t => {
+  const { ctx, runtime, patchPath } = await fixture(t)
+  const get = ctx.get
+  let unavailable = true
+  ctx.get = name => unavailable && name === 'loader' ? undefined : get(name)
+  await runtime.refreshMcp()
+  assert.equal(runtime.snapshot().mcp.loaderComplete, false)
+  assert.equal(runtime.snapshot().mcp.rows.find(row => row.id === 'existing').diskOnly, true)
+  await runtime.toggleMcp('existing')
+  assert.equal(runtime.snapshot().mcp.lastAction.outcome, 'timeout')
+  assert.equal(parsePatchText(await readFile(patchPath, 'utf8')).rows.find(row => row.id === 'existing').disabled, true)
+
+  const removing = runtime.deleteMcp('managed')
+  try {
+    // Await a completed post-save poll with the target absent on disk.
+    for (let poll = 0; poll < 100; poll++) {
+      if (!runtime.snapshot().mcp.rows.some(row => row.id === 'managed')) break
+      await new Promise(resolve => setTimeout(resolve, 30))
+    }
+    assert.ok(!runtime.snapshot().mcp.rows.some(row => row.id === 'managed'))
+    assert.equal(runtime.snapshot().mcp.lastAction.outcome, 'saved')
+  } finally {
+    unavailable = false
+    await removing
+  }
+  assert.equal(runtime.snapshot().mcp.lastAction.outcome, 'applied')
+  assert.equal(runtime.snapshot().mcp.rows.find(row => row.id === 'existing').diskOnly, false)
 })

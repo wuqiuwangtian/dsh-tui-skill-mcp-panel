@@ -119,6 +119,14 @@ const chooseFieldValue = async (text) => { await enter(); await clear(); await p
 try {
   await sleep(200)
   await press('2')
+  entries = []
+  await runtime.refreshMcp()
+  await sleep(120)
+  const diskView = await screen()
+  assert.ok(diskView.includes('existing') && diskView.includes('配置启用'), 'on-disk definition survives a missing runtime row')
+  recompose(original)
+  await runtime.refreshMcp()
+  assert.equal(runtime.snapshot().mcp.rows.length, 1, 'live row replaces disk fallback')
   await press('a')
   assert.ok((await screen()).includes('新增 MCP'))
   await chooseFieldValue('crud-test')

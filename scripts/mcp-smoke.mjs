@@ -103,7 +103,7 @@ try {
   const expr = mcp.rows.find((row) => row.id === 'mcp-expr')
   check('alpha is profile layer + targetable', alpha?.layer === 'profile' && alpha?.targetable === true, JSON.stringify(alpha))
   check('alpha config masked in detail helper', alpha?.config?.env?.TOKEN === 'secret')
-  check('beta is home layer + read-only', beta?.layer === 'home' && beta?.targetable === false && beta?.overriddenByHome === true)
+  check('beta is home layer + read-only', beta?.layer === 'home' && beta?.targetable === false && beta?.overriddenByHome === false)
   check('expr row blocked by !!js disabled', expr?.targetable === false && expr?.disabledExpression?.includes('process.env.OFF'), JSON.stringify(expr))
   const delta = mcp.rows.find((row) => row.id === 'mcp-delta')
   check('delta overridden by home layer', delta?.layer === 'home' && delta?.overriddenByHome === true, JSON.stringify(delta))

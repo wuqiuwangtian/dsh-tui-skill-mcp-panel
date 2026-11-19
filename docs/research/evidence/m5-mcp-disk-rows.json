@@ -1,0 +1,135 @@
+{
+  "date": "2026-11-19",
+  "minimalReproduction": {
+    "profileMcpDefinitions": 1,
+    "homeRows": 0,
+    "loaderRows": 0,
+    "visibleBefore": 0,
+    "visibleAfter": 1
+  },
+  "realTui": {
+    "hostVersion": "0.20.1",
+    "kernelVersion": "0.2.2-rc.3",
+    "observations": [
+      {
+        "earlyDiskOnly": true
+      },
+      {
+        "mode": "fullscreen",
+        "terminalColumns": 116,
+        "scene": "112x30",
+        "layout": "tree",
+        "exit": 0,
+        "chatAlternate": true,
+        "temporaryFixture": true
+      }
+    ],
+    "sequence": [
+      "empty search",
+      "external disabled stdio definition appended to isolated profile",
+      "one disk-only row on refresh",
+      "one runtime row after hot reload"
+    ]
+  },
+  "packageLifecycle": [
+    {
+      "hostVersion": "0.19.0",
+      "kernelVersion": "0.2.2-rc.1",
+      "nodeVersion": "26.3.0",
+      "fileCount": 98,
+      "sha256": "3fb9206c296c1259240e3ef8366e34c204bcd98d768163a58f4a7a9825111974",
+      "installedAndUninstalled": [
+        {
+          "installed": true,
+          "command": true,
+          "panelRegistered": true,
+          "exit": 0
+        },
+        {
+          "installed": false,
+          "command": false,
+          "panelRegistered": false,
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "hostVersion": "0.20.1",
+      "kernelVersion": "0.2.2-rc.3",
+      "nodeVersion": "26.3.0",
+      "fileCount": 98,
+      "sha256": "3fb9206c296c1259240e3ef8366e34c204bcd98d768163a58f4a7a9825111974",
+      "installedAndUninstalled": [
+        {
+          "installed": true,
+          "command": true,
+          "panelRegistered": true,
+          "exit": 0
+        },
+        {
+          "installed": false,
+          "command": false,
+          "panelRegistered": false,
+          "exit": 0
+        }
+      ]
+    }
+  ],
+  "localPerformance": {
+    "environment": {
+      "node": "26.3.0",
+      "host": "0.20.1",
+      "platform": "linux",
+      "release": "6.18.58.1-microsoft-standard-WSL2",
+      "cpu": "Intel(R) Core(TM) Ultra X7 358H",
+      "logicalCpus": 14,
+      "totalMemoryBytes": 25201803264,
+      "filesystem": "/ /dev/sdd ext4",
+      "physicalSSD": "unverified; virtual block device does not establish physical medium"
+    },
+    "fixture": {
+      "skills": 1000,
+      "bytes": 9027890,
+      "bodyBytes": 8960,
+      "directory": 500,
+      "flat": 500,
+      "workspace": 600,
+      "global": 400,
+      "enabled": 800,
+      "disabled": 200,
+      "groups": 20,
+      "all1000SkillFilesAndGroupBytesPreserved": true
+    },
+    "coldOpenObserved": {
+      "samples": 6,
+      "minMs": 504.24793299999965,
+      "medianMs": 616.889152,
+      "p95Ms": 979.3252219999995,
+      "maxMs": 979.3252219999995
+    },
+    "warmOpenObserved": {
+      "samples": 6,
+      "minMs": 16.542073000000073,
+      "medianMs": 19.84971200000109,
+      "p95Ms": 43.28248200000053,
+      "maxMs": 43.28248200000053
+    },
+    "searchObserved": {
+      "samples": 168,
+      "minMs": 2.912615999999616,
+      "medianMs": 15.031600000000253,
+      "p95Ms": 26.09618700000101,
+      "maxMs": 30.4562279999991
+    },
+    "localThresholds": {
+      "coldOpenUnder1s": true,
+      "warmOpenUnder1s": true,
+      "everySearchKeyUnder100ms": true
+    },
+    "limits": [
+      "Local observation only; not physical SSD or disk-cold certification",
+      "No full user manual acceptance or model requests",
+      "Input pacing waits for each completed key; burst backlog and physical terminal transport not measured"
+    ]
+  }
+}

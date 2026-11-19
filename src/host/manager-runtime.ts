@@ -144,6 +144,7 @@ export interface McpPanelState {
   rows: McpRowView[]
   errors: string[]
   warnings: string[]
+  loaderComplete?: boolean
   legacyToggles?: ToggleRow[]
   togglingId?: string
   lastAction?: McpToggleOutcome
@@ -762,18 +763,18 @@ export class ManagerRuntime {
     return undefined
   }
 
-  private readLoaderMcpRows(warnings: string[]): LoaderMcpRow[] {
+  private readLoaderMcpRows(warnings: string[]): { rows: LoaderMcpRow[]; complete: boolean } {
     const loader = getService<LoaderLike>(this.ctx, 'loader')
     if (loader === undefined) {
       warnings.push('loader 服务不可用，无法读取 MCP 运行时状态')
-      return []
+      return { rows: [], complete: false }
     }
     const rows: LoaderMcpRow[] = []
     try {
       for (const entry of loader.entries()) {
         const options = (entry as LoaderEntryLike).options
         if (options?.name !== MCP_MODULE || typeof options.id !== 'string') continue
-        let disabled = false
+        let disabled: boolean | undefined
         try {
           disabled = (entry as LoaderEntryLike).disabled === true
         } catch {
@@ -790,8 +791,9 @@ export class ManagerRuntime {
       }
     } catch (error) {
       warnings.push(`读取 loader 条目失败：${error instanceof Error ? error.message : String(error)}`)
+      return { rows, complete: false }
     }
-    return rows
+    return { rows, complete: true }
   }
 
   /** Re-read both patch layers + loader runtime rows into `state.mcp`. */
@@ -837,7 +839,8 @@ export class ManagerRuntime {
       profileRows = await readLayer(profilePatchPath, 'profile patch ')
     }
     homeRows = await readLayer(homePatchPath, 'home patch ')
-    const loaderRows = this.readLoaderMcpRows(warnings)
+    if ([...profileRows, ...homeRows].some(row => row.name === MCP_MODULE && !row.id)) warnings.push('存在缺少 entryId 的 MCP 定义，无法与运行时对应；请检查配置')
+    const loader = this.readLoaderMcpRows(warnings)
     let legacyToggles: ToggleRow[] = []
     try {
       legacyToggles = legacyMcpToggles(texts[profilePatchPath ?? ''] ?? '')
@@ -846,7 +849,7 @@ export class ManagerRuntime {
     let managedIds = new Set<string>()
     try { managedIds = new Set(managedMcpEntries(texts[profilePatchPath ?? ''] ?? '').map((row) => row.id)) }
     catch { warnings.push('MCP 受管块无法安全解析，编辑/删除已禁用；请手工检查标记与 YAML') }
-    const rows = buildMcpRows({ loaderRows, profileRows, homeRows }).map((row) => ({
+    const rows = buildMcpRows({ loaderRows: loader.rows, profileRows, homeRows }).map((row) => ({
       ...row,
       managed: managedIds.has(row.id) && row.layer === 'profile' && row.targetable,
       editReadOnlyReason: row.layer !== 'profile' || !row.targetable ? row.readOnlyReason :
@@ -869,6 +872,7 @@ export class ManagerRuntime {
         errors,
         warnings,
         legacyToggles,
+        loaderComplete: loader.complete,
         latestDeletion,
         conflict: this.state.mcp.conflict,
         restoreConflict: this.state.mcp.restoreConflict,
@@ -977,7 +981,9 @@ export class ManagerRuntime {
   }
 
   private assertRestoreRuntimeFree(plan: McpRestorePlan): void {
-    if (this.readLoaderMcpRows([]).some(row => row.id === plan.id || row.config?.serverName === plan.serverName)) {
+    const loader = this.readLoaderMcpRows([])
+    if (!loader.complete) throw new Error('无法核对宿主中的同名 MCP，请刷新后重试；未恢复')
+    if (loader.rows.some(row => row.id === plan.id || row.config?.serverName === plan.serverName)) {
       throw new Error('运行时已有同 id 或 serverName，请刷新/等待旧连接移除后重试；未恢复')
     }
   }
@@ -1056,7 +1062,7 @@ export class ManagerRuntime {
         this.patchState({ mcp: { ...this.state.mcp, togglingId: target.id, lastAction: saved } })
         this.setStatus(`已保存，热加载中…（${labels[action]} ${target.serverName}）`, 'info')
         const source = await readPatchSnapshot(this.mcpFiles().patchPath)
-        let disabled = false
+        let disabled: boolean | undefined
         for (const row of parsePatchText(source.text).rows) {
           if (row.id === target.id && typeof row.disabled === 'boolean') disabled = row.disabled
         }
@@ -1072,7 +1078,7 @@ export class ManagerRuntime {
           if (action !== 'delete' && revised && current?.enabled && current.phase === 'failed') {
             throw new Error('配置已保存，但 MCP 插件加载失败；请检查诊断/宿主日志')
           }
-          const ready = action === 'delete' ? current === undefined : current !== undefined &&
+          const ready = action === 'delete' ? current === undefined && this.state.mcp.loaderComplete : current !== undefined && !current.diskOnly &&
             current.enabled === !disabled && (disabled ? current.phase === undefined || current.phase === 'disposed' : current.phase === 'active') &&
             (action !== 'edit' || revised)
           if (ready) {
@@ -1137,7 +1143,7 @@ export class ManagerRuntime {
       this.setStatus('MCP 行不存在，请按 r 刷新', 'error')
       return
     }
-    if (!row.targetable) {
+    if (!row.targetable || row.enabled === undefined) {
       this.setStatus(row.readOnlyReason ?? '该 MCP 行不可直接启停', 'warning')
       return
     }
@@ -1184,7 +1190,7 @@ export class ManagerRuntime {
           const settled = desiredEnabled
             ? current?.phase === 'active'
             : current?.phase === undefined || current.phase === 'disposed'
-          if (current !== undefined && current.enabled === desiredEnabled && settled) {
+          if (current !== undefined && !current.diskOnly && current.enabled === desiredEnabled && settled) {
             this.patchState({
               mcp: {
                 ...this.state.mcp,

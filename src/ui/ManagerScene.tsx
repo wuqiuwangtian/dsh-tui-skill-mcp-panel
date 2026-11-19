@@ -424,6 +424,12 @@ type Modal =
   | { kind: 'info'; title: string; lines: string[] }
   | { kind: 'reader'; title: string; instance: SkillInstance }
 
+function mcpStateLabel(row: McpRowView): string {
+  if (row.enabled === undefined) return '状态未知'
+  const label = row.enabled ? '启用' : '停用'
+  return row.diskOnly ? `配置${label}（未观察）` : label
+}
+
 function mcpDetailLines(row: McpRowView | undefined, width: number): string[] {
   if (row === undefined) {
     return ['（未选择 MCP 行）', '', '按 a 新增 MCP；仅本面板受管行支持编辑/删除，已有 profile 行可启停。']
@@ -434,7 +440,7 @@ function mcpDetailLines(row: McpRowView | undefined, width: number): string[] {
   }
   push(`id ${row.id} · entryId ${row.entryId} · 层 ${row.layer}`)
   push(
-    `serverName ${row.serverName} · transport ${row.transport} · ${row.enabled ? '启用' : '停用'}${row.phase === undefined ? '' : ` · ${row.phase}`}`,
+    `serverName ${row.serverName} · transport ${row.transport} · ${mcpStateLabel(row)}${row.phase === undefined ? '' : ` · ${row.phase}`}`,
   )
   if (row.overriddenByHome) push('home 层覆盖同名 profile 行（只读）')
   if (row.disabledExpression !== undefined) push(`disabled 表达式 !!js ${row.disabledExpression}`)
@@ -1749,7 +1755,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       ...verificationRows,
       `selected=${selected?.name ?? '(none)'} status=${selected?.status ?? '-'} path=${selected?.path ?? '-'}`,
       `groups(${groupEntries.length}): ${groupEntries.map(([id, group]) => `${id}:${group.name}:${groupMemberCount(group)}`).join(' ')}`,
-      `mcp(${mcpRows.length}): ${mcpRows.map((row) => `${row.id}:${row.enabled ? 'on' : 'off'}:${row.layer}${row.targetable ? '' : ':ro'}`).join(' ')}`,
+      `mcp(${mcpRows.length}): ${mcpRows.map((row) => `${row.id}:${row.enabled === undefined ? 'unknown' : row.enabled ? 'on' : 'off'}:${row.layer}${row.targetable ? '' : ':ro'}`).join(' ')}`,
       `mcpView query=${JSON.stringify(mcpQuery)} status=${mcpStatus} group=${mcpGroupFilter ?? '-'} groupKind=${groupKind}`,
       `mcpGroups(${mcpGroupEntries.length}): ${mcpGroupEntries.map(([id, group]) => `${id}:${group.name}:${group.members.length}`).join(' ')}`,
       `trash=${state.latestTrash?.batchId ?? '-'} status=${state.statusMessage?.text ?? '-'}`,
@@ -2132,6 +2138,8 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
 
     // ── MCP tab ─────────────────────────────────────────────────────────────
     const legacyCount = state.mcp.legacyToggles?.length ?? 0
+    const unknownCount = mcpRows.filter(row => row.enabled === undefined).length
+    const mcpCounts = `启用 ${mcpRows.filter(row => row.enabled).length} · 停用 ${mcpRows.filter(row => row.enabled === false).length}${unknownCount ? ` · 未知 ${unknownCount}` : ''}`
     const mcpErrors = [...state.mcp.errors.map(error => `错误：${error}`),
       ...(legacyCount ? [`旧启停配置 ${legacyCount} 条，web 开关可能不一致；按 m 迁移`] : [])]
       .slice(0, Math.min(2, Math.max(0, bodyRows - 4)))
@@ -2148,7 +2156,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       : mcpRows.slice(mcpWindowStart, mcpWindowStart + mcpListRows).map((row) => {
           const isSelected = row.id === selectedMcp?.id
           const flags = [
-            row.enabled ? '启用' : '停用',
+            mcpStateLabel(row),
             row.layer,
             ...(row.phase === undefined ? [] : [row.phase]),
             ...(row.targetable ? [] : ['只读']),
@@ -2172,7 +2180,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     ].slice(0, mcpDetailRows)
     const mcpCard = card({
       title: 'MCP servers',
-      subtitle: `${mcpRows.length} 行 · 启用 ${mcpRows.filter((row) => row.enabled).length} · 停用 ${mcpRows.filter((row) => !row.enabled).length}${state.mcp.togglingId === undefined ? '' : ' · 热加载中…'}`,
+      subtitle: `${mcpRows.length} 行 · ${mcpCounts}${state.mcp.togglingId === undefined ? '' : ' · 热加载中…'}`,
       focused: tab === 'mcp' && focus === 'body',
       width: contentWidth,
       onClick: () => setFocus('body'),
@@ -2256,7 +2264,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
     const footerStats = state.busy
       ? '处理中…'
       : tab === 'mcp'
-        ? `MCP ${mcpRows.length} · 启用 ${mcpRows.filter((row) => row.enabled).length} · 停用 ${mcpRows.filter((row) => !row.enabled).length}${state.mcp.togglingId === undefined ? '' : ' · 热加载中…'}`
+        ? `MCP ${mcpRows.length} · ${mcpCounts}${state.mcp.togglingId === undefined ? '' : ' · 热加载中…'}`
         : `共 ${summary.total} · 生效 ${summary.enabled - summary.shadowed} · 停用 ${summary.disabled} · 无效 ${summary.invalid} · 遮蔽 ${summary.shadowed}`
     const statusColor =
       statusTone === 'success' ? 'success' : statusTone === 'warning' ? 'warning' : statusTone === 'error' ? 'error' : 'accent'

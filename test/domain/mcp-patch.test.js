@@ -228,3 +228,28 @@ test('managed block extraction tolerates malformed content and patch files round
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+test('disk definitions survive an empty loader without inventing runtime status', () => {
+  const profile = parsePatchText(PATCH).rows
+  const home = parsePatchText('- id: mcp-beta\n  disabled: !!js process.env.FLAG\n').rows
+  const rows = buildMcpRows({ profileRows: profile, homeRows: home, loaderRows: [] })
+  const alpha = rows.find(row => row.id === 'mcp-alpha')
+  const beta = rows.find(row => row.id === 'mcp-beta')
+  assert.ok(alpha.diskOnly && beta.diskOnly)
+  assert.equal(alpha.serverName, 'alpha')
+  assert.equal(alpha.phase, undefined)
+  assert.equal(beta.enabled, undefined)
+  assert.equal(beta.targetable, false)
+  assert.equal(beta.overriddenByHome, true)
+  assert.equal(beta.serverName, 'beta')
+  const merged = buildMcpRows({ profileRows: profile, homeRows: home,
+    loaderRows: [{ id: 'mcp-alpha', disabled: false, phase: 'active' }] })
+  assert.equal(merged.filter(row => row.id === 'mcp-alpha').length, 1)
+  assert.equal(merged.find(row => row.id === 'mcp-alpha').diskOnly, false)
+  const duplicate = buildMcpRows({ profileRows: [...profile, ...profile], homeRows: [], loaderRows: [] })
+  assert.equal(duplicate.find(row => row.id === 'mcp-alpha').targetable, false)
+  const malformed = parsePatchText('- id: mcp-alpha\n  disabled: "false"\n').rows
+  const invalid = buildMcpRows({ profileRows: [...profile, ...malformed], homeRows: [], loaderRows: [] })
+  assert.equal(invalid.find(row => row.id === 'mcp-alpha').enabled, undefined)
+  assert.equal(invalid.find(row => row.id === 'mcp-alpha').targetable, false)
+})

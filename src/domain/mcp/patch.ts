@@ -49,6 +49,7 @@ export interface PatchRow {
   name?: string
   config?: Record<string, unknown>
   disabled?: boolean | JsValue
+  invalidDisabled?: true
   /** False for rows inside an `insert:` list, true for row overrides. */
   override: boolean
   order: number
@@ -66,10 +67,10 @@ export interface ParsedPatch {
   error?: string
 }
 
-function normalizeDisabled(value: unknown): boolean | JsValue | undefined {
-  if (typeof value === 'boolean') return value
-  if (isJsValue(value)) return value
-  return undefined
+function disabledField(row: Record<string, unknown>): Pick<PatchRow, 'disabled' | 'invalidDisabled'> {
+  if (!Object.hasOwn(row, 'disabled')) return {}
+  const value = row.disabled
+  return typeof value === 'boolean' || isJsValue(value) ? { disabled: value } : { invalidDisabled: true }
 }
 
 interface ManagedBlock {
@@ -163,9 +164,7 @@ export function parsePatchText(text: string): ParsedPatch {
           ...(typeof raw.id === 'string' ? { id: raw.id } : {}),
           ...(typeof raw.name === 'string' ? { name: raw.name } : {}),
           ...(isRecord(raw.config) ? { config: raw.config } : {}),
-          ...(normalizeDisabled(raw.disabled) === undefined
-            ? {}
-            : { disabled: normalizeDisabled(raw.disabled) as boolean | JsValue }),
+          ...disabledField(raw),
           override: false,
           order,
         })
@@ -176,9 +175,7 @@ export function parsePatchText(text: string): ParsedPatch {
       ...(typeof item.id === 'string' ? { id: item.id } : {}),
       ...(typeof item.name === 'string' ? { name: item.name } : {}),
       ...(isRecord(item.config) ? { config: item.config } : {}),
-      ...(normalizeDisabled(item.disabled) === undefined
-        ? {}
-        : { disabled: normalizeDisabled(item.disabled) as boolean | JsValue }),
+      ...disabledField(item),
       override: true,
       order,
     })
@@ -299,7 +296,7 @@ export function removeLegacyMcpToggle(text: string, id: string): string {
 export interface LoaderMcpRow {
   id: string
   config?: Record<string, unknown>
-  disabled: boolean
+  disabled: boolean | undefined
   phase?: string
 }
 
@@ -308,7 +305,8 @@ export interface McpRowView {
   entryId: string
   serverName: string
   transport: string
-  enabled: boolean
+  enabled: boolean | undefined
+  diskOnly?: boolean
   layer: 'profile' | 'home' | 'bundle'
   /** True when this row can be toggled by editing the profile patch. */
   targetable: boolean
@@ -327,8 +325,8 @@ function lastRowFor(rows: PatchRow[], id: string): PatchRow | undefined {
   return [...rows].reverse().find((row) => row.id === id)
 }
 
-function disabledFor(rows: PatchRow[], id: string): PatchRow['disabled'] {
-  return [...rows].reverse().find((row) => row.id === id && row.disabled !== undefined)?.disabled
+function disabledFor(rows: PatchRow[], id: string): PatchRow | undefined {
+  return [...rows].reverse().find(row => row.id === id && (row.disabled !== undefined || row.invalidDisabled))
 }
 
 /** Combine loader runtime rows with profile/home patches into the panel model. */
@@ -337,38 +335,67 @@ export function buildMcpRows(input: {
   profileRows: PatchRow[]
   homeRows: PatchRow[]
 }): McpRowView[] {
-  const views = input.loaderRows.map<McpRowView>((loaderRow) => {
-    const profileRow = lastRowFor(input.profileRows, loaderRow.id)
-    const homeRow = lastRowFor(input.homeRows, loaderRow.id)
+  const loaded = new Map(input.loaderRows.map(row => [row.id, row]))
+  const definitions = new Set<string>()
+  const fileConfigs = new Map<string, Record<string, unknown>>()
+  const repeated = new Set<string>()
+  const otherModules = new Set<string>()
+  for (const row of [...input.profileRows, ...input.homeRows]) {
+    if (!row.id) continue
+    if (row.name !== undefined && row.name !== MCP_MODULE) {
+      otherModules.add(row.id)
+      continue
+    }
+    if (row.config) fileConfigs.set(row.id, { ...fileConfigs.get(row.id), ...row.config })
+    if (row.name !== MCP_MODULE) continue
+    if (definitions.has(row.id)) repeated.add(row.id)
+    definitions.add(row.id)
+  }
+  const ids = new Set([...loaded.keys(), ...definitions])
+  const views = [...ids].map<McpRowView>((id) => {
+    const loaderRow = loaded.get(id)
+    const profileRow = lastRowFor(input.profileRows, id)
+    const homeRow = lastRowFor(input.homeRows, id)
     const layer: McpRowView['layer'] = homeRow !== undefined ? 'home' : profileRow !== undefined ? 'profile' : 'bundle'
-    const config = loaderRow.config ?? homeRow?.config ?? profileRow?.config
-    const disabledValue = disabledFor(input.homeRows, loaderRow.id) ?? disabledFor(input.profileRows, loaderRow.id)
+    const ambiguous = repeated.has(id) || otherModules.has(id)
+    const config = loaderRow?.config ?? (ambiguous ? undefined : fileConfigs.get(id))
+    const stateRow = disabledFor(input.homeRows, id) ?? disabledFor(input.profileRows, id)
+    const disabledValue = stateRow?.disabled
     const disabledExpression = isJsValue(disabledValue) ? disabledValue.__js : undefined
-    const notes: string[] = []
+    const notes: string[] = loaderRow === undefined ? ['仅磁盘配置；尚未观察到宿主运行状态'] : []
     let readOnlyReason: string | undefined
     if (layer === 'home') {
       readOnlyReason = 'home 层（跨 profile 全局层）只读；请手工编辑 ~/.dsh/cordis.patch.yml'
-      notes.push('home 层覆盖同名 profile 行')
+      if (profileRow) notes.push('home 层覆盖同名 profile 行')
+    } else if (stateRow?.invalidDisabled) {
+      readOnlyReason = 'disabled 不是普通布尔值或受支持的表达式，请检查配置'
+    } else if (ambiguous) {
+      readOnlyReason = 'entryId 对应多个定义或其他模块，请先检查配置'
     } else if (layer === 'bundle') {
       readOnlyReason = '该行来自 bundle/其他来源，本面板不管理'
     } else if (disabledExpression !== undefined) {
       readOnlyReason = 'disabled 由 !!js 表达式控制，不提供布尔开关'
       notes.push(`!!js ${disabledExpression}`)
     }
+    if (!readOnlyReason && loaderRow && loaderRow.disabled === undefined) readOnlyReason = '宿主启停状态不可读，请刷新后重试'
     if (layer === 'home' && homeRow?.disabled === true) notes.push('home 层已停用')
+    const disabled = loaderRow === undefined
+      ? (ambiguous || stateRow?.invalidDisabled || disabledExpression !== undefined ? undefined : disabledValue === true)
+      : loaderRow.disabled
     return {
-      id: loaderRow.id,
-      entryId: loaderRow.id,
+      id,
+      entryId: id,
       serverName:
-        typeof config?.serverName === 'string' && config.serverName.length > 0 ? config.serverName : loaderRow.id,
+        typeof config?.serverName === 'string' && config.serverName.length > 0 ? config.serverName : id,
       transport: typeof config?.transport === 'string' ? config.transport : 'unknown',
-      enabled: !loaderRow.disabled,
+      enabled: disabled === undefined ? undefined : !disabled,
+      diskOnly: loaderRow === undefined,
       layer,
-      targetable: layer === 'profile' && disabledExpression === undefined,
+      targetable: readOnlyReason === undefined,
       ...(readOnlyReason === undefined ? {} : { readOnlyReason }),
-      overriddenByHome: layer === 'home',
+      overriddenByHome: layer === 'home' && profileRow !== undefined,
       ...(disabledExpression === undefined ? {} : { disabledExpression }),
-      ...(loaderRow.phase === undefined ? {} : { phase: loaderRow.phase }),
+      ...(loaderRow?.phase === undefined ? {} : { phase: loaderRow.phase }),
       ...(config === undefined ? {} : { config }),
       notes,
     }

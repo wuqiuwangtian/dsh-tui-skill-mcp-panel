@@ -132,7 +132,7 @@ export function filterMcpRows(rows: McpRowView[], options: { query: string; stat
   const tokens = options.query.trim().toLowerCase().split(/\s+/u).filter(Boolean)
   return rows.filter((row) => {
     if (options.status === 'enabled' && !row.enabled) return false
-    if (options.status === 'disabled' && row.enabled) return false
+    if (options.status === 'disabled' && row.enabled !== false) return false
     if (options.status === 'failed' && row.phase !== 'failed') return false
     const names = Object.entries(groups).filter(([, group]) => group.members.includes(mcpMemberKey(row)))
     if (options.groupId !== undefined && !names.some(([id]) => id === options.groupId)) return false

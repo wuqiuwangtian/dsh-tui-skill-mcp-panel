@@ -78,7 +78,8 @@ const watch = setInterval(async () => {
     }
   } finally { polling = false }
 }, 50)
-const ctx = { get: (name) => name === 'loader' ? { entries: () => entries } : name === 'configEditor' ? { documentPath: patchPath } : undefined }
+let loaderOffline = false
+const ctx = { get: (name) => name === 'loader' ? (loaderOffline ? undefined : { entries: () => entries }) : name === 'configEditor' ? { documentPath: patchPath } : undefined }
 const runtime = new ManagerRuntime(ctx)
 await runtime.refresh('crud-smoke')
 class Output extends EventEmitter {
@@ -305,14 +306,28 @@ try {
   assert.ok((await screen()).includes('已在组内'))
   assert.ok(!(await screen()).includes('修复旧引用'))
   await press('\x1b')
-  // Member inspection remains accessible even if no current MCP row is loaded.
-  entries = []
+  // Group membership identifies a configured server even while the loader is unavailable.
+  loaderOffline = true
   await runtime.refreshMcp()
   await press('3'); await press('\x1b[F'); await press('i')
   await waitScreen('MCP 分组成员（只读）')
+  assert.ok((await screen()).includes('已匹配：managed-repaired'))
+  await press('\x1b')
+  // With both patch layers empty, keep the original zero-row inspection check.
+  await writeFile(patchPath, '')
+  await writeFile(join(home, 'cordis.patch.yml'), '')
+  await runtime.refreshMcp()
+  assert.equal(runtime.snapshot().mcp.rows.length, 0)
+  await press('2'); await view('mcp(0):')
+  await press('3'); await press('\x1b[F')
+  await press('i'); await waitScreen('MCP 分组成员（只读）')
   assert.ok((await screen()).includes('managed-repaired'))
   assert.ok((await screen()).includes('未匹配（已保留）'))
-  await press('\x1b'); recompose(renamed); await runtime.refreshMcp(); await press('2')
+  await press('\x1b')
+  await writeFile(patchPath, renamed)
+  await writeFile(join(home, 'cordis.patch.yml'), homeText)
+  loaderOffline = false
+  recompose(renamed); await runtime.refreshMcp(); await press('2')
   for (const label of ['g分组', 'f筛选', '/搜索', 'x清除']) {
     if (columns < 110) assert.ok((await screen()).includes(label), `narrow footer exposes ${label}`)
   }
