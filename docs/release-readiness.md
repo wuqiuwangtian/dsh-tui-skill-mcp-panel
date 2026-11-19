@@ -1378,3 +1378,15 @@ FR-1 要求打开场景不产生会话事件。隔离 TUI 先向本地模型端�
 §33 修改后完整 `pnpm check:release` 退出 0，258 项域层/发布测试、793 项布局、242 项鼠标、107 项导航和 52 项筛选断言及全部交互/MCP 冒烟通过。实际打包检查为 98 文件、135011 字节，SHA256 `4fc76512d2f61b168b27f67c172005d6f4825ef3d5d3d1679ad6b9106b886605`。在独立 profile 安装同一摘要的 tgz，沿用 dst 的 NODE_ENV=production，实际打开和关闭面板，CLI 卸载后重启无面板命令或场景，两次正常退出。
 
 补测直接运行 dsh CLI 并清空 NODE_ENV：安装该包时出现空白屏，命令和场景已注册、宿主日志为 UI mounted，但未进入备用屏幕；移除测试观察插件后仍复现。同一夹具卸载面板后清空 NODE_ENV 可正常显示。dst 自身启动器会设置 production。需继续核对面板入口静态加载宿主 JSX runtime 的时序，在独立包内验证修复再判定。当前未修改宿主。
+
+## 34 打包后的直接启动与命令审计（2026-11-19）
+
+**空白屏。** 在隔离 profile 中安装 §33 的 tgz，清空 NODE_ENV 后直接运行 DSH CLI，命令和场景注册成功，屏幕却始终空白。移除观察插件仍复现；卸载面板或在相同条件下设置 NODE_ENV=production 均可正常进入聊天。平时使用的 dst 入口会先选择 React 模式，因此只跑 dst 容易漏检。
+
+原产物在发现 Cordis 插件时就从 ManagerScene.js 导入宿主 JSX runtime；宿主的该入口转导出 react/jsx-runtime，会触发 React 模块初始化。宿主需要在首次加载 React 前选择运行模式。修复只改变 ManagerScene.tsx 的 JSX 编译方式，生成的元素直接调用场景参数中的宿主 React.createElement，保持同一 React 实例，消除发现阶段的导入。真实安装包在无 NODE_ENV 下直接启动、进入面板、关闭、重开均通过。解包导入检查现在也拦截发现阶段对 React、reconciler 或宿主 JSX runtime 的意外加载。
+
+**FR-1 决策 D-15。** 用户接受已有会话中每次打开面板产生的一对宿主 command/run 与 command/done。注册无参数命令时设置 recordInput=false。用同一最终 tgz 在独立 home/profile 启动并向本地端点发一轮测试消息，再连续两次进入面板，分别使用普通命令和带夹具标记参数的命令。解压会话记录后验证旧字节完整保留，新增四个事件按调用编号配对，两次均成功，无 args 字段、无夹具参数、无新增聊天消息。模型端点请求记录逐字节不变。宿主自身输入历史中仍出现完整夹具命令；关闭审计参数不会删除历史，也不会清除过去的记录。
+
+最终测试 tgz 用 production 环境冷启动同样能打开面板；CLI 卸载后再次冷启动，命令与场景均已消失，两次退出码均为 0。包为 98 文件、135261 字节；未发布。[版本、包摘要、会话前缀指纹及安装状态](research/evidence/m5-command-audit-and-boot.json)
+
+**下一处验收差异。** FR-9 要求解析磁盘定义并与 loader 交叉检查。用一条合法的 profile MCP 定义、空 home 和空 loader 输入 buildMcpRows，可解析定义 1 条，实际显示 0 条。目前列表只遍历 loaderRows，故 HMR 未出现条目或服务不可读时会漏掉已保存的行。后续需核对磁盘与运行状态的展示、覆盖与重复身份、loader 不可读时的删除完成判定，再作回归。AC-15 和 KI-01～03 保持原处置。

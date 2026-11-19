@@ -1,3 +1,6 @@
+/** @jsxRuntime classic */
+// Build elements with the React supplied to this scene. Importing the host JSX
+// runtime at plugin discovery time can initialize React before the host boots.
 /**
  * Full-screen manager: skill writes, panel-owned MCP CRUD, and diagnostics.
  *

@@ -53,6 +53,7 @@ export function registerManagerCommands(ctx: Context, runtime: ManagerRuntime, s
         commands.register({
           name: commandName,
           description: 'Open the Skill & MCP manager',
+          recordInput: false,
           handler: () => runtime.openScene(sceneId),
         }),
       )

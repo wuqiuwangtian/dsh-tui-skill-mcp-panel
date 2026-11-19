@@ -52,6 +52,7 @@ export interface CommandsLike {
   register(definition: {
     name: string
     description?: string
+    recordInput?: boolean
     handler: (invocation?: unknown) => CommandResultLike | Promise<CommandResultLike>
   }): () => void
 }

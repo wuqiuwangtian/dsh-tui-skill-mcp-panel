@@ -4,7 +4,7 @@ import { execFile } from 'node:child_process'
 import { mkdtemp, mkdir, readFile, readdir, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join, posix } from 'node:path'
-import { isBuiltin } from 'node:module'
+import { isBuiltin, registerHooks } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import ts from 'typescript'
@@ -115,7 +115,20 @@ export async function checkTarball(root = repoRoot) {
     // Resolve declared dependencies from this locked checkout; this is an archive
     // import smoke, not proof of a clean registry install or host acceptance.
     await symlink(join(root, 'node_modules'), join(extracted, 'node_modules'), 'dir')
-    const entry = await import(pathToFileURL(join(extracted, extractedPkg.main)).href)
+    // Discovering a Cordis bundle can precede the host's React mode selection.
+    const hook = registerHooks({
+      resolve(specifier, context, nextResolve) {
+        assert.doesNotMatch(specifier, /^(?:react(?:-reconciler)?|@deepseek-harness-tui\/dsh-tui\/jsx-runtime)(?:\/|$)/u,
+          'plugin discovery must leave React initialization to the host')
+        return nextResolve(specifier, context)
+      },
+    })
+    let entry
+    try {
+      entry = await import(pathToFileURL(join(extracted, extractedPkg.main)).href)
+    } finally {
+      hook.deregister()
+    }
     assert.equal(entry.name, pkg.name, 'Cordis plugin name export')
     assert.ok(entry.Config, 'Cordis Config export')
     assert.equal(typeof entry.apply, 'function', 'Cordis apply export')

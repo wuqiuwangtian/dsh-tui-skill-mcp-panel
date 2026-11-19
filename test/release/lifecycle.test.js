@@ -27,6 +27,7 @@ test('real Cordis activation releases registrations on service removal, recovers
     let commandFiber = root.plugin(commandProvider)
     await settle()
     assert.equal(commands.size, 1)
+    assert.equal(commands.get('skill-mcp').recordInput, false, 'unused arguments are omitted from command/run')
     assert.equal(scenes.size, 1)
     assert.equal(commands.get('skill-mcp').handler().kind, 'success')
 

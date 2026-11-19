@@ -1,0 +1,34 @@
+{
+  "host": "0.20.1",
+  "kernel": "0.2.2-rc.3",
+  "node": "26.3.0",
+  "archiveSha256": "11fb273abe14e778076f1d2ddd70cb98b8c440886a9341d781391ada09fa8324",
+  "directCLIWithoutNodeEnv": {
+    "argsAbsent": true,
+    "extraEvents": [
+      "command/run",
+      "command/done",
+      "command/run",
+      "command/done"
+    ],
+    "baselineBytes": 39602,
+    "lines": 23,
+    "sha256": "4fd1012d36a8d19a39430f4a2ebdd2509c6fd8e7301de2fd00f38763be23ff14",
+    "noAdditionalRequests": true,
+    "historyContainsTestMarker": true
+  },
+  "productionLifecycle": [
+    {
+      "installed": true,
+      "command": true,
+      "panelRegistered": true,
+      "exit": 0
+    },
+    {
+      "installed": false,
+      "command": false,
+      "panelRegistered": false,
+      "exit": 0
+    }
+  ]
+}
