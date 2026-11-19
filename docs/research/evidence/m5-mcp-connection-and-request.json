@@ -1,0 +1,106 @@
+{
+  "archiveSha256": "fb1eb23c84bb7e7bf3c90a9ba0912aa58f2182cbcccbaa91d3f88d384136ef9b",
+  "fileCount": 98,
+  "host": "0.20.1",
+  "kernel": "0.2.2-rc.3",
+  "sessionCount": 1,
+  "localEndpoint": true,
+  "sessionTurns": [
+    {
+      "marker": "fr38-before",
+      "toolCount": 28,
+      "matchedNames": [],
+      "requestSha256": "4ab9a3ef536549f92d1f66a016e20aad8487607c5f219f0312d07d1e37b08fff"
+    },
+    {
+      "marker": "fr38-enabled",
+      "toolCount": 32,
+      "matchedNames": [
+        "mcp__mcp-probe__ping"
+      ],
+      "requestSha256": "edd244b247446dc1187a7fcc6ab63ac1f79165d884c14a6b6b11a9d136a0c3c2"
+    },
+    {
+      "marker": "fr38-disabled",
+      "toolCount": 28,
+      "matchedNames": [],
+      "requestSha256": "a2a88aba78decd9225c406d6958eed8c3027758d406667d244b9069ca2e5818d"
+    },
+    {
+      "marker": "fr38-reenabled",
+      "toolCount": 32,
+      "matchedNames": [
+        "mcp__mcp-probe__ping"
+      ],
+      "requestSha256": "3f4942950327ec2c93c89f2761c2ef062a078b3e3c2dfe22e3991f9346eb4648"
+    }
+  ],
+  "observedInstanceToolCounts": [
+    null,
+    1,
+    null,
+    1
+  ],
+  "exitedNormally": true,
+  "oldHost": {
+    "host": "0.19.0",
+    "kernel": "0.2.2-rc.1",
+    "sameArchive": true,
+    "namespaceCountAfterEachToggle": [
+      1,
+      null,
+      1
+    ],
+    "connectionUnobserved": true
+  },
+  "failedConnection": {
+    "activeFiber": true,
+    "connected": false,
+    "connectionFailedReportedAfterSave": true,
+    "connectionFailed": true,
+    "failedFilterMatchesOnlyTarget": true,
+    "detailRendersFailure": true
+  },
+  "connectedDetailVerifiedInActualTty": true,
+  "fullFormLifecycle": {
+    "sessionCount": 1,
+    "viaPanelKeyboard": true,
+    "sessionTurns": [
+      {
+        "marker": "before",
+        "toolCount": 28,
+        "matchedNames": [],
+        "requestSha256": "2813a963142eea201ae9d88a201c723c8ab00adf0e60a4a92956f2199fe963c5"
+      },
+      {
+        "marker": "added",
+        "toolCount": 32,
+        "matchedNames": [
+          "mcp__ac38form__ping"
+        ],
+        "requestSha256": "66f0db9b6fe2e5d5af547f481b20cfd9e3556e5b35bf5a1eb75815ef2f55e293"
+      },
+      {
+        "marker": "disabled",
+        "toolCount": 28,
+        "matchedNames": [],
+        "requestSha256": "1dda55ad015970b9a351cdfea4fb031f7d3445ae0efea83ad5da9e6ed74ec103"
+      },
+      {
+        "marker": "reenabled",
+        "toolCount": 32,
+        "matchedNames": [
+          "mcp__ac38form__ping"
+        ],
+        "requestSha256": "d464ed950f8f60f35389bfba07fd4580dbea891c53236053eedbd083ea3c8dde"
+      },
+      {
+        "marker": "deleted",
+        "toolCount": 28,
+        "matchedNames": [],
+        "requestSha256": "d6f50c989831ac72cdecb8c182fd56bf4e74125b8a5776d589a07031addc1e5a"
+      }
+    ],
+    "exitCode": 0
+  }
+}

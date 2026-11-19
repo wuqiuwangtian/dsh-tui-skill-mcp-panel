@@ -78,6 +78,7 @@ export interface LoaderEntryLike {
     disabled?: unknown
   }
   disabled?: boolean
+  moduleNamespace?: { connectionStatusOf?(fiber: object): { current(): unknown } | undefined }
   fiber?: { state?: number }
 }
 

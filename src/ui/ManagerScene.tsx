@@ -437,6 +437,16 @@ type Modal =
   | { kind: 'info'; title: string; lines: string[] }
   | { kind: 'reader'; title: string; instance: SkillInstance }
 
+const MCP_CONNECTION_LABELS = {
+  closed: '已关闭', 'waiting-credentials': '等待凭据', connecting: '连接中', connected: '已连接', reconnecting: '重连中', failed: '连接失败',
+} as const
+
+function mcpConnectionLabel(row: McpRowView): string | undefined {
+  if (!row.connectionState) return undefined
+  const label = MCP_CONNECTION_LABELS[row.connectionState]
+  return row.toolCount === undefined ? label : `${label} · ${row.toolCount} 个工具`
+}
+
 function mcpStateLabel(row: McpRowView): string {
   if (row.enabled === undefined) return '状态未知'
   const label = row.enabled ? '启用' : '停用'
@@ -455,6 +465,9 @@ function mcpDetailLines(row: McpRowView | undefined, width: number): string[] {
   push(
     `serverName ${row.serverName} · transport ${row.transport} · ${mcpStateLabel(row)}${row.phase === undefined ? '' : ` · ${row.phase}`}`,
   )
+  push(`连接：${mcpConnectionLabel(row) ?? '未观察'}`)
+  if (row.namespaceToolCount !== undefined) push(`同名前缀的全局工具：${row.namespaceToolCount}（按注册名统计）`)
+  if (row.duplicateServerName) push('同名服务器；请按 entryId 辨认。')
   if (row.overriddenByHome) push('home 层覆盖同名 profile 行（只读）')
   if (row.disabledExpression !== undefined) push(`disabled 表达式 !!js ${row.disabledExpression}`)
   if (row.readOnlyReason !== undefined) push(`只读：${row.readOnlyReason}`)
@@ -2171,9 +2184,13 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           const flags = [
             mcpStateLabel(row),
             row.layer,
+            ...(row.duplicateServerName ? ['同名'] : []),
+            ...(row.namespaceToolCount === undefined ? [] : [`前缀工具 ${row.namespaceToolCount}`]),
+            ...(row.connectionState ? [mcpConnectionLabel(row)] : []),
             ...(row.phase === undefined ? [] : [row.phase]),
             ...(row.targetable ? [] : ['只读']),
             ...(row.managed ? ['受管'] : row.targetable ? ['仅启停'] : []),
+            `#${row.entryId.slice(-6)}`,
             ...mcpGroupIds(state.config.mcpGroups, profilePath ?? '', row).map((id) => `◆${profileGroups[id]?.name}`),
           ].join(' · ')
           return rowNode(

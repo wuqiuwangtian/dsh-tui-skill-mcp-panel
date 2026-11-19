@@ -133,7 +133,7 @@ export function filterMcpRows(rows: McpRowView[], options: { query: string; stat
   return rows.filter((row) => {
     if (options.status === 'enabled' && !row.enabled) return false
     if (options.status === 'disabled' && row.enabled !== false) return false
-    if (options.status === 'failed' && row.phase !== 'failed') return false
+    if (options.status === 'failed' && row.phase !== 'failed' && row.connectionState !== 'failed') return false
     const names = Object.entries(groups).filter(([, group]) => group.members.includes(mcpMemberKey(row)))
     if (options.groupId !== undefined && !names.some(([id]) => id === options.groupId)) return false
     const haystack = [row.serverName, row.entryId, row.transport, row.layer, ...names.map(([, group]) => group.name)].join(' ').toLowerCase()

@@ -293,14 +293,20 @@ export function removeLegacyMcpToggle(text: string, id: string): string {
   return block.before + block.after
 }
 
+export type McpConnectionState = 'closed' | 'waiting-credentials' | 'connecting' | 'connected' | 'reconnecting' | 'failed'
+
 export interface LoaderMcpRow {
   id: string
   config?: Record<string, unknown>
   disabled: boolean | undefined
+  connectionState?: McpConnectionState
+  toolCount?: number
   phase?: string
 }
 
 export interface McpRowView {
+  duplicateServerName?: boolean
+  namespaceToolCount?: number
   id: string
   entryId: string
   serverName: string
@@ -313,6 +319,8 @@ export interface McpRowView {
   readOnlyReason?: string
   overriddenByHome: boolean
   disabledExpression?: string
+  connectionState?: McpConnectionState
+  toolCount?: number
   phase?: string
   config?: Record<string, unknown>
   notes: string[]
@@ -395,11 +403,22 @@ export function buildMcpRows(input: {
       ...(readOnlyReason === undefined ? {} : { readOnlyReason }),
       overriddenByHome: layer === 'home' && profileRow !== undefined,
       ...(disabledExpression === undefined ? {} : { disabledExpression }),
+      ...(loaderRow?.connectionState === undefined ? {} : { connectionState: loaderRow.connectionState }),
+      ...(loaderRow?.toolCount === undefined ? {} : { toolCount: loaderRow.toolCount }),
       ...(loaderRow?.phase === undefined ? {} : { phase: loaderRow.phase }),
       ...(config === undefined ? {} : { config }),
       notes,
     }
   })
+  const names = new Set<string>()
+  const duplicates = new Set<string>()
+  for (const row of views) {
+    if (names.has(row.serverName)) duplicates.add(row.serverName)
+    names.add(row.serverName)
+  }
+  for (const row of views) {
+    if (duplicates.has(row.serverName)) row.duplicateServerName = true
+  }
   return views.sort(
     (left, right) =>
       left.serverName.localeCompare(right.serverName) || left.id.localeCompare(right.id),

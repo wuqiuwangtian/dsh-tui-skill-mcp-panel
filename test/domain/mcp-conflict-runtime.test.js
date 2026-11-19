@@ -360,3 +360,43 @@ test('an unavailable loader cannot confirm disk-only disable or deletion', async
   assert.equal(runtime.snapshot().mcp.lastAction.outcome, 'applied')
   assert.equal(runtime.snapshot().mcp.rows.find(row => row.id === 'existing').diskOnly, false)
 })
+
+test('connection observations belong to the live fiber and expose only state and count', async t => {
+  const { ctx, runtime } = await fixture(t)
+  const get = ctx.get
+  let status = { state: 'connected', toolCount: 0, lastError: 'private-status-text' }
+  const fiber = { state: 2 }
+  const entry = { options: { name: MCP_MODULE, id: 'existing' }, disabled: false, fiber,
+    moduleNamespace: { connectionStatusOf(target) { assert.equal(target, fiber); return { current: () => status } } } }
+  ctx.get = name => name === 'loader' ? { entries: () => [entry] } : get(name)
+  async function row() {
+    await runtime.refreshMcp()
+    return runtime.snapshot().mcp.rows.find(item => item.id === 'existing')
+  }
+  assert.equal((await row()).toolCount, 0)
+  status = { state: 'failed', lastError: 'private-status-text' }
+  const failed = await row()
+  assert.equal(failed.connectionState, 'failed')
+  assert.equal(failed.toolCount, undefined)
+  assert.ok(!JSON.stringify(failed).includes('private-status-text'))
+  entry.moduleNamespace.connectionStatusOf = () => { throw new Error('private-status-text') }
+  assert.equal((await row()).connectionState, undefined)
+  assert.equal((await row()).phase, 'active')
+})
+
+test('registry fallback counts only an unambiguous active namespace, without inferring a connection', async t => {
+  const { ctx, runtime } = await fixture(t)
+  const get = ctx.get
+  const entry = (id, serverName) => ({ options: { id, name: MCP_MODULE, config: { serverName } }, disabled: false, fiber: { state: 2 } })
+  const entries = [entry('a', 'alpha'), entry('b', 'beta'), entry('c', 'beta__shared'), entry('d', 'dupe'), entry('e', 'dupe'), entry('f', 'gamma'), entry('g', 'gamma_')]
+  const tools = { definitions: () => [{ name: 'mcp__alpha__ping' }, { name: 'mcp__alphabet__other' }] }
+  ctx.get = name => name === 'loader' ? { entries: () => entries } : name === 'tools' ? tools : get(name)
+  await runtime.refreshMcp()
+  const rows = runtime.snapshot().mcp.rows
+  const alpha = rows.find(row => row.id === 'a')
+  assert.equal(alpha.namespaceToolCount, 1)
+  assert.equal(alpha.connectionState, undefined)
+  assert.equal(alpha.toolCount, undefined)
+  assert.ok(rows.filter(row => row.id !== 'a').every(row => row.namespaceToolCount === undefined))
+  assert.ok(rows.filter(row => row.serverName === 'dupe').every(row => row.duplicateServerName))
+})

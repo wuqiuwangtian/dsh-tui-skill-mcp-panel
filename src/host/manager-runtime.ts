@@ -95,6 +95,22 @@ const PROBED_SERVICES = [
   'loader',
 ] as const
 
+function readMcpConnection(entry: LoaderEntryLike): Pick<LoaderMcpRow, 'connectionState' | 'toolCount'> {
+  try {
+    if (!entry.fiber) return {}
+    const status = entry.moduleNamespace?.connectionStatusOf?.(entry.fiber)?.current()
+    if (!isRecordValue(status)) return {}
+    const state = status.state
+    if (state === 'connected') {
+      const count = status.toolCount
+      return typeof count === 'number' && Number.isSafeInteger(count) && count >= 0
+        ? { connectionState: state, toolCount: count } : { connectionState: state }
+    }
+    if (state === 'closed' || state === 'waiting-credentials' || state === 'connecting' || state === 'reconnecting' || state === 'failed') return { connectionState: state }
+  } catch { /* An unavailable connection snapshot does not invalidate the loader row. */ }
+  return {}
+}
+
 export interface ManagerServiceInfo {
   name: string
   present: boolean
@@ -763,6 +779,29 @@ export class ManagerRuntime {
     return undefined
   }
 
+  private addNamespaceToolCounts(rows: McpRowView[]): void {
+    const candidates = rows.filter(row => row.phase === 'active' && !row.connectionState && !row.duplicateServerName &&
+      typeof row.config?.serverName === 'string' && /^[A-Za-z0-9_-]{1,32}$/u.test(row.serverName))
+    if (candidates.length === 0) return
+    try {
+      const tools = getService<{ definitions?(): readonly { name: string }[] }>(this.ctx, 'tools')
+      const definitions = tools?.definitions?.()
+      if (!Array.isArray(definitions)) return
+      const names = definitions.map(tool => tool.name).filter(name => typeof name === 'string' && name.startsWith('mcp__'))
+      for (const row of candidates) {
+        const prefix = `mcp__${row.serverName}__`
+        // Overlapping namespaces cannot identify an instance from a tool name.
+        const overlaps = rows.some(other => {
+          if (other.id === row.id) return false
+          const otherPrefix = `mcp__${other.serverName}__`
+          return otherPrefix.startsWith(prefix) || prefix.startsWith(otherPrefix)
+        })
+        if (row.serverName.includes('__') || overlaps) continue
+        row.namespaceToolCount = names.filter(name => name.startsWith(prefix)).length
+      }
+    } catch { /* Older hosts may not expose the global registry in this context. */ }
+  }
+
   private readLoaderMcpRows(warnings: string[]): { rows: LoaderMcpRow[]; complete: boolean } {
     const loader = getService<LoaderLike>(this.ctx, 'loader')
     if (loader === undefined) {
@@ -784,6 +823,7 @@ export class ManagerRuntime {
         const state = (entry as LoaderEntryLike).fiber?.state
         rows.push({
           id: options.id,
+          ...readMcpConnection(entry),
           ...(config === undefined ? {} : { config }),
           disabled,
           ...(typeof state === 'number' && FIBER_PHASE[state] !== undefined ? { phase: FIBER_PHASE[state] } : {}),
@@ -855,6 +895,7 @@ export class ManagerRuntime {
       editReadOnlyReason: row.layer !== 'profile' || !row.targetable ? row.readOnlyReason :
         managedIds.has(row.id) ? undefined : '已有 profile 行仅支持启停；编辑/删除仅限本面板新增的受管行',
     }))
+    this.addNamespaceToolCounts(rows)
     let latestDeletion: McpDeletionSummary | undefined
     if (profilePatchPath !== undefined) {
       try { latestDeletion = (await listMcpDeletions(this.mcpTrashDir(), profilePatchPath, (warning) => warnings.push(warning)))[0] }
@@ -1075,6 +1116,9 @@ export class ManagerRuntime {
           const revised = after.options !== before.options || after.fiber !== before.fiber || after.signature !== before.signature
           // HMR keeps the previous failed entry until the replacement is ready.
           // Only a new revision can fail this mutation; deletion waits for removal.
+          if (action !== 'delete' && revised && current?.enabled && current.connectionState === 'failed') {
+            throw new Error('配置已保存，但 MCP 连接失败；请检查诊断页/宿主日志')
+          }
           if (action !== 'delete' && revised && current?.enabled && current.phase === 'failed') {
             throw new Error('配置已保存，但 MCP 插件加载失败；请检查诊断/宿主日志')
           }
@@ -1184,6 +1228,9 @@ export class ManagerRuntime {
           await new Promise((resolve) => setTimeout(resolve, 400))
           await this.loadMcp()
           const current = this.state.mcp.rows.find((entry) => entry.id === id)
+          if (desiredEnabled && current?.enabled && current.connectionState === 'failed') {
+            throw new Error('配置已保存，但 MCP 连接失败；请检查诊断页/宿主日志')
+          }
           if (desiredEnabled && current?.enabled && current.phase === 'failed') {
             throw new Error('配置已保存，但 MCP 插件加载失败；请检查诊断页/宿主日志')
           }
