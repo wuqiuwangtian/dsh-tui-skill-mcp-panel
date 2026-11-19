@@ -644,6 +644,17 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
       return true
     }
 
+    const applySkillAction = async (targets: SkillInstance[], action: 'toggle' | 'delete'): Promise<void> => {
+      try {
+        const lines = action === 'toggle' ? await runtime.toggleSkills(targets) : await runtime.deleteSkillInstances(targets)
+        if (lines === undefined) return
+        setMarked(current => new Set([...current].filter(id => !marked.has(id))))
+        if (targets.length > 1) setModal({ kind: 'info', title: action === 'toggle' ? '批量启停结果' : '批量删除结果', lines })
+      } catch (error) {
+        runtime.setStatus(`技能操作未完成：${error instanceof Error ? error.message : String(error)}`, 'error')
+      }
+    }
+
     const runToggle = (): void => {
       if (blockNavigationTarget()) return
       const targets = targetInstances()
@@ -651,8 +662,15 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
         runtime.setStatus('没有可切换的技能', 'warning')
         return
       }
-      void runtime.toggleSkills(targets)
-      clearMarks()
+      if (targets.length === 1) { void applySkillAction(targets, 'toggle'); return }
+      setModal({
+        kind: 'confirm', title: '确认批量启停',
+        message: targets.flatMap((instance, index) => [
+          `${index + 1}. ${instance.name} · ${instance.source === 'bundled' || instance.status === 'invalid' ? '不可切换' : instance.status === 'enabled' ? '停用' : '启用'}`,
+          instance.skillFile,
+        ]),
+        onConfirm: () => { void applySkillAction(targets, 'toggle') },
+      })
     }
 
     const askDelete = (): void => {
@@ -678,8 +696,7 @@ export function createManagerScene(runtime: ManagerRuntime, sceneId: string): Co
           ]),
         ],
         onConfirm: () => {
-          void runtime.deleteSkillInstances(targets)
-          clearMarks()
+          void applySkillAction(targets, 'delete')
         },
       })
     }

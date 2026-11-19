@@ -173,6 +173,42 @@ try {
   await press(' ')
   await sleep(200)
 
+  // Confirm the reviewed pair before writing. An external edit makes beta fail
+  // independently; alpha must complete and both outcomes must remain readable.
+  const betaPath = join(project, '.dsh/skills/beta.md')
+  const betaBefore = await readFile(betaPath)
+  const batchProgress = new Set()
+  const unsubscribe = runtime.subscribe(() => batchProgress.add(runtime.snapshot().statusMessage?.text))
+  for (const action of ['toggle', 'delete']) {
+    await press('\x1b[H'); await press('v'); await press('\x1b[B'); await press('v')
+    const key = action === 'toggle' ? ' ' : 'd'
+    await press(key)
+    screen = await screenText()
+    check(`${action} reviews both targets`, screen.includes('alpha') && screen.includes(betaPath) && screen.includes('[y 确认]'))
+    await press('\x1b')
+    check(`${action} cancel leaves files intact`, (await readFile(textPath)).equals(originalText) && (await readFile(betaPath)).equals(betaBefore))
+    await press(key)
+    await writeFile(betaPath, SKILL('external-change'))
+    await press('y')
+    screen = await screenText()
+    check(`${action} shows success and failure with identity`, screen.includes(action === 'toggle' ? '批量启停结果' : '批量删除结果') && screen.includes('alpha · 已') && screen.includes('beta · 失败') && screen.includes(betaPath))
+    const progress = action === 'toggle' ? '切换' : '删除'
+    check(`${action} publishes each item`, batchProgress.has(`${progress} 1/2 · alpha`) && batchProgress.has(`${progress} 2/2 · beta`))
+    check(`${action} preserves failed target`, await readFile(betaPath, 'utf8') === SKILL('external-change'))
+    await press('\r')
+    if (action === 'toggle') {
+      check('first batch toggle persisted', existsSync(textPath + '.disabled'))
+      await rename(textPath + '.disabled', textPath)
+    } else {
+      check('first batch deletion persisted', !existsSync(textPath))
+      await press('u')
+      check('partial batch undo restores alpha', (await readFile(textPath)).equals(originalText))
+    }
+    await writeFile(betaPath, betaBefore); await runtime.refresh('batch-fixture-restored')
+  }
+  unsubscribe()
+  await press('\x1b[H')
+
   // delete + undo
   await press('d')
   screen = await screenText()

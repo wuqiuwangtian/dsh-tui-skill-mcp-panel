@@ -601,13 +601,17 @@ export class ManagerRuntime {
 
   // ── skill write operations (M2) ───────────────────────────────────────────
   /** Space / batch enable-disable. */
-  async toggleSkills(instances: SkillInstance[]): Promise<void> {
+  async toggleSkills(instances: SkillInstance[]): Promise<string[] | undefined> {
     if (instances.length === 0) return
-    await this.withBusy(async () => {
+    return this.withBusy(async () => {
       if (!this.skillsStillInView(instances)) return
       const failures: string[] = []
-      for (const instance of instances) {
+      const lines: string[] = []
+      for (const [index, instance] of instances.entries()) {
+        if (instances.length > 1) this.setStatus(`切换 ${index + 1}/${instances.length} · ${instance.name}`)
         const result = await toggleSkill(instance)
+        const outcome = result.ok ? (result.newStatus === 'enabled' ? '已启用' : '已停用') : `失败：${result.error ?? 'unknown'}`
+        lines.push(`${instance.name} · ${outcome}`, instance.skillFile)
         if (!result.ok) failures.push(`${instance.name}：${result.error ?? 'unknown'}`)
       }
       await this.refresh('toggle')
@@ -620,15 +624,27 @@ export class ManagerRuntime {
           'warning',
         )
       }
+      return lines
     })
   }
 
   /** Delete selected skills into the trash (undoable). */
-  async deleteSkillInstances(instances: SkillInstance[]): Promise<void> {
+  async deleteSkillInstances(instances: SkillInstance[]): Promise<string[] | undefined> {
     if (instances.length === 0) return
-    await this.withBusy(async () => {
+    return this.withBusy(async () => {
       if (!this.skillsStillInView(instances)) return
-      const result = await deleteSkillsOp(instances, { panelHome: this.panelHomePath })
+      const result = await deleteSkillsOp(instances, {
+        panelHome: this.panelHomePath,
+        onProgress: (instance, position) => {
+          if (instances.length > 1) this.setStatus(`删除 ${position}/${instances.length} · ${instance.name}`)
+        },
+      })
+      const failures = new Map(result.failed.map(entry => [entry.id, entry.error]))
+      const lines = instances.flatMap(instance => [
+        `${instance.name} · ${failures.has(instance.id) ? `失败：${failures.get(instance.id)}` : '已移入回收站'}`, instance.skillFile,
+      ])
+      const journalError = result.batchId === undefined ? undefined : failures.get(result.batchId)
+      if (journalError !== undefined) lines.push(journalError)
       await this.performTrashCleanup('after-delete')
       await this.refresh('delete')
       if (result.deleted.length === 0) {
@@ -636,11 +652,13 @@ export class ManagerRuntime {
           `删除失败：${result.failed.map((entry) => entry.error).slice(0, 3).join('；') || 'unknown'}`,
           'error',
         )
-        return
+        return lines
       }
       const suffix = result.failed.length > 0 ? `；失败 ${result.failed.length}：${result.failed[0]?.error ?? ''}` : ''
       const cleanupIssue = this.state.trashCleanup?.phase === 'blocked' || (this.state.trashCleanup?.failed.length ?? 0) > 0
-      this.setStatus(`已移入回收站 ${result.deleted.length} 个技能，可按 u 撤销${suffix}${cleanupIssue ? '；清理未完成，请查看诊断页' : ''}`, cleanupIssue ? 'warning' : 'success')
+      this.setStatus(`已移入回收站 ${result.deleted.length} 个技能，可按 u 撤销${suffix}${cleanupIssue ? '；清理未完成，请查看诊断页' : ''}`, cleanupIssue || result.failed.length > 0 ? 'warning' : 'success')
+      if (cleanupIssue) lines.push('清理未完成，请查看诊断页')
+      return lines
     })
   }
 

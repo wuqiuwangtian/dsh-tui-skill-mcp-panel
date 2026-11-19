@@ -73,6 +73,7 @@ class Runtime {
     this.state.scan.instances = this.state.scan.instances.map(row => rows.includes(row)
       ? { ...row, id: row.id + '.disabled', path: row.path + '.disabled', status: 'disabled', effective: false } : row)
     this.notify()
+    return rows.map(row => row.name)
   }
   async deleteSkillInstances(rows) { this.calls.push(`delete:${rows[0].id}`) }
   async undoLastDelete() {
@@ -286,6 +287,17 @@ for (const [columns, rows] of [[40, 16], [58, 22], [64, 24], [90, 24], [116, 33]
     }
     await check('navigation clear restores list', s => s.includes('技能列表') && s.includes('mouse-000'))
     assert.equal(runtime.calls.length, navigationCalls); passed('group navigation pointer never invokes writers')
+
+    if (columns >= 110) {
+      await click('mouse-000'); await press('v')
+      await click('mouse-001'); await press('v')
+      const before = runtime.calls.length
+      await click('空格 启停'); await check('pointer previews marked pair', s => s.includes('确认批量启停') && s.includes('mouse-000') && s.includes('mouse-001'))
+      await click('n / Esc 取消')
+      assert.equal(runtime.calls.length, before); passed('pointer batch cancel skips writer')
+      await click('空格 启停'); await click('y 确认')
+      await check('pointer confirms marked pair', s => s.includes('批量启停结果') && s.includes('mouse-000') && s.includes('mouse-001'))
+    }
 
   } finally { app.unmount(); term.dispose() }
 }

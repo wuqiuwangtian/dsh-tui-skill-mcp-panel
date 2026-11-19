@@ -150,16 +150,22 @@ async function moveToTrash(
   return entry
 }
 
+interface DeleteOptions {
+  panelHome: string
+  now?: () => Date
+  onProgress?: (instance: SkillInstance, position: number) => void
+}
+
 /** Soft-delete skills into a timestamped trash batch with a manifest. */
 export async function deleteSkills(
   instances: SkillInstance[],
-  options: { panelHome: string; now?: () => Date },
+  options: DeleteOptions,
 ): Promise<DeleteResult> {
   options = { ...options, panelHome: resolve(options.panelHome) }
   return withSkillTrashLock(options.panelHome, () => deleteSkillsUnlocked(instances, options))
 }
 
-async function deleteSkillsUnlocked(instances: SkillInstance[], options: { panelHome: string; now?: () => Date }): Promise<DeleteResult> {
+async function deleteSkillsUnlocked(instances: SkillInstance[], options: DeleteOptions): Promise<DeleteResult> {
   const now = options.now?.() ?? new Date()
   const batchId = `${compactTimestamp(now)}-${randomSuffix()}`
   const batchDir = join(trashRoot(options.panelHome), batchId)
@@ -168,7 +174,8 @@ async function deleteSkillsUnlocked(instances: SkillInstance[], options: { panel
   const entries: TrashEntry[] = []
   let ownsBatch = false
   let index = 0
-  for (const instance of instances) {
+  for (const [position, instance] of instances.entries()) {
+    options.onProgress?.(instance, position + 1)
     let pending: TrashEntry | undefined
     if (instance.source === 'bundled') {
       failed.push({ id: instance.id, error: 'bundled（随包）技能只读，不能删除' })
