@@ -1,0 +1,34 @@
+[
+  {
+    "turn": "ac11-before",
+    "messages": 1,
+    "tools": 28,
+    "mcpToolNames": [],
+    "sha256": "76145a7a64737ab5d7447dab75b67b54a7b34e82377bc0a48ce6edaca840828c"
+  },
+  {
+    "turn": "ac11-enabled",
+    "messages": 5,
+    "tools": 32,
+    "mcpToolNames": [
+      "mcp__ac11-stdio__ping"
+    ],
+    "sha256": "a506ce3c02c12cdc3a4ac1bdf1fc5f917251f5f2cf1347a2a8b8aca8b0c400d1"
+  },
+  {
+    "turn": "ac11-disabled",
+    "messages": 7,
+    "tools": 28,
+    "mcpToolNames": [],
+    "sha256": "46d8fae68cd4103fa1a41c54ea1dc5fefc5baafdfbc3c2c8400a96c79e7fdcd0"
+  },
+  {
+    "turn": "ac11-reenabled",
+    "messages": 11,
+    "tools": 32,
+    "mcpToolNames": [
+      "mcp__ac11-stdio__ping"
+    ],
+    "sha256": "783a1ef31f296820dc084246bed72327e8f278fbd383c2913a6a754292162bc8"
+  }
+]
