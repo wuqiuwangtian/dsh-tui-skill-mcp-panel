@@ -83,7 +83,8 @@ ${documents.map((doc, index) => `${index + 1}. ${doc.purpose}：${doc.path}:${do
    初始 mcp-probe 停用；冷启动已启用 MCP 的 TTY 风险见 KI-03，专项另行记录。
 3. 技能同步：${quote(sync.launcher)}；观察步骤见发布准备 §10。
 4. 实际安装：${quote(install.manage)} add ${quote(install.archive)}
-   然后 ${quote(install.launcher)}；生命周期核对见发布准备 §8。
+   然后 ${quote(install.launcher)}；当前生命周期核对见发布准备 §40、§42、§43。
+   在 TUI 内卸载后，看到宿主显示“已卸载”再输入安装命令，随后核对信任提示。
    停用/再启用/卸载必须操作这个临时 profile，不要换成真实 profile。
 
 AC-12 的 HTTP、模型请求级 AC-10/11 与 AC-15 不能仅用这些本地夹具勾选通过。

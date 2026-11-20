@@ -1,0 +1,92 @@
+{
+  "host": "0.20.2",
+  "kernel": "0.2.2-rc.5",
+  "node": "26.3.0",
+  "archiveSha256": "c93e609bc11c492a6722565c0dcd92077a946a8a645c6f336c9a408fd49686c5",
+  "timing": [
+    {
+      "gate": "loader",
+      "msAfterRemovalObserved": 0,
+      "prompt": false
+    },
+    {
+      "gate": "ui",
+      "msAfterRemovalObserved": 227,
+      "prompt": true
+    },
+    {
+      "gate": "loader",
+      "msAfterRemovalObserved": 0,
+      "prompt": true
+    },
+    {
+      "gate": "ui",
+      "msAfterRemovalObserved": 313,
+      "prompt": true
+    }
+  ],
+  "profileGroups": [
+    {
+      "group": "P43First",
+      "profile": "panel-verification",
+      "members": [
+        "[\"rc5-shared\",\"rc5-shared-id\"]"
+      ],
+      "visibleBefore": 0
+    },
+    {
+      "group": "P43Second",
+      "profile": "p43-second",
+      "members": [
+        "[\"rc5-shared\",\"rc5-shared-id\"]"
+      ],
+      "visibleBefore": 0
+    }
+  ],
+  "mcpRestore": {
+    "coldMerge": true,
+    "defaultCancelUnchanged": true,
+    "staleConfirmationUnchanged": true,
+    "backupExact": true,
+    "backupMode": "0600",
+    "allProfileBytesExact": true,
+    "otherProfileAndHomeUnchanged": true,
+    "groupsTotal": 2
+  },
+  "skills": {
+    "bothToggleDirectionsExact": true,
+    "cancelUnchanged": true,
+    "coldUndoFreeMemberRestored": true,
+    "occupiedDefaultCancel": true,
+    "stalePreviewRefused": true,
+    "externalBytesBackedUp": true,
+    "otherScopeRestored": true,
+    "bootsExited": [
+      0,
+      0
+    ]
+  },
+  "retention": {
+    "normalBefore": 103,
+    "expired": 1,
+    "overBudget": 2,
+    "remainingNormal": 100,
+    "protected": [
+      "pending recovery",
+      "malformed manifest",
+      "MCP trash",
+      "backup"
+    ],
+    "survivingFilesUnchanged": true,
+    "reportRetainedAcrossColdBoot": true,
+    "ttyExit": [
+      0,
+      0
+    ]
+  },
+  "focusedDomainTests": {
+    "passCount": 97,
+    "skipped": 0,
+    "failed": 0
+  }
+}
