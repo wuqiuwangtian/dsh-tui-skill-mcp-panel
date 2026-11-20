@@ -1,0 +1,111 @@
+{
+  "host": "0.20.2",
+  "kernel": "0.2.2-rc.5",
+  "node": "26.3.0",
+  "artifactSha256": "c93e609bc11c492a6722565c0dcd92077a946a8a645c6f336c9a408fd49686c5",
+  "install": "DSH CLI add of actual local tgz, isolated profile",
+  "protocol": {
+    "missingHeaderStatus": 401,
+    "tools": [
+      "ping"
+    ],
+    "records": [
+      {
+        "sequence": 1,
+        "method": "POST",
+        "path": "/mcp",
+        "headerMatched": false,
+        "status": 401
+      },
+      {
+        "sequence": 2,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "initialize",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 3,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "notifications/initialized",
+        "headerMatched": true,
+        "status": 202
+      },
+      {
+        "sequence": 4,
+        "method": "GET",
+        "path": "/mcp",
+        "headerMatched": true,
+        "status": 405
+      },
+      {
+        "sequence": 5,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "tools/list",
+        "headerMatched": true,
+        "status": 200
+      },
+      {
+        "sequence": 6,
+        "method": "POST",
+        "path": "/mcp",
+        "rpcMethod": "tools/call",
+        "headerMatched": true,
+        "status": 200
+      }
+    ]
+  },
+  "restoredHeaderLine": "X-Panel-Test-Token: !!js \"(process.env.PANEL_HTTP_TEST_TOKEN ?? \\\"\\\")\"",
+  "boots": [
+    {
+      "boot": 1,
+      "authenticated": [
+        "server/discover",
+        "initialize",
+        "tools/list"
+      ],
+      "exit": 0,
+      "profileSha256": "c87301dc196b9e5b79a5236ac5cb8a78113ff269f1925021e279d1c1b9e7c2a5",
+      "skillSha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd",
+      "originalSkillSha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd",
+      "homeUnchanged": true,
+      "rawRenderDumpPatchAndRequestLogMasked": true
+    },
+    {
+      "boot": 2,
+      "authenticated": [
+        "server/discover",
+        "initialize",
+        "tools/list"
+      ],
+      "exit": 0,
+      "profileSha256": "90cb8261424572ce66888b1ed3d572339ba1a65d247d0b65cc0bbeca54df2712",
+      "skillSha256": null,
+      "originalSkillSha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd",
+      "homeUnchanged": true,
+      "rawRenderDumpPatchAndRequestLogMasked": true
+    },
+    {
+      "boot": 3,
+      "authenticated": [
+        "server/discover",
+        "initialize",
+        "tools/list"
+      ],
+      "exit": 0,
+      "profileSha256": "c87301dc196b9e5b79a5236ac5cb8a78113ff269f1925021e279d1c1b9e7c2a5",
+      "skillSha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd",
+      "originalSkillSha256": "d4402e598996838c951e14f1cf26752ae219bb370b4b57d1717f129beb95e2cd",
+      "homeUnchanged": true,
+      "rawRenderDumpPatchAndRequestLogMasked": true
+    }
+  ],
+  "additionalPlaintextLogsChecked": [
+    "pnpm.log",
+    "restart.log"
+  ],
+  "scope": "Local stateless Streamable HTTP, synthetic environment variable, no model turn."
+}
