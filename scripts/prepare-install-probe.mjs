@@ -62,7 +62,7 @@ export function apply(ctx) {
         command: commands?.find(agentKey, 'skill-mcp') !== undefined,
         scenes: scenes ? getHostSceneRuntime(scenes)?.list().map(s => s.id) : [],
         active: scenes?.active?.id,
-        rows: loader ? [...loader.entries()].filter(e => e.options?.id === 'skill-mcp-panel').map(e => ({ id:e.options.id, disabled:e.disabled, optionDisabled:e.options.disabled, state:e.fiber?.state })) : [],
+        rows: loader ? [...loader.entries()].filter(e => e.options?.id === 'dsh-tui-skill-mcp-panel').map(e => ({ id:e.options.id, disabled:e.disabled, optionDisabled:e.options.disabled, state:e.fiber?.state })) : [],
       }
       const next = JSON.stringify(value)
       if (next !== last) { last = next; fs.writeFileSync(output, JSON.stringify({ at:new Date().toISOString(), ...value },null,2)); fs.appendFileSync(${JSON.stringify(join(root, 'lifecycle.jsonl'))}, JSON.stringify({ at:new Date().toISOString(), ...value })+'\\n') }

@@ -1,4 +1,5 @@
 /** Cooperative web-panel lock + optimistic conflict checks for MCP patch writes. */
+import { isUtf8 } from 'node:buffer'
 import { createHash, randomUUID } from 'node:crypto'
 import { lstat, open, readFile, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -22,9 +23,16 @@ export class PatchConflictError extends Error {
   }
 }
 
+// Lossy decoding would change unrelated bytes and collapse distinct snapshots.
+export async function readExactUtf8(path: string): Promise<string> {
+  const bytes = await readFile(path)
+  if (!isUtf8(bytes)) throw new Error(`文件不是有效 UTF-8，请先核对编码：${path}`)
+  return bytes.toString('utf8')
+}
+
 export async function readPatchSnapshot(path: string): Promise<PatchSnapshot> {
   try {
-    const text = await readFile(path, 'utf8')
+    const text = await readExactUtf8(path)
     return { text, fingerprint: patchFingerprint(text) }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
@@ -146,7 +154,7 @@ async function saveMcpMutation(
     let backupPath: string
     try {
       backupPath = await backupPatchFile(input.patchPath, join(input.backupRoot, `${Date.now()}-${randomUUID()}`))
-      if (await readFile(backupPath, 'utf8') !== profile.text) throw new PatchConflictError()
+      if (await readExactUtf8(backupPath) !== profile.text) throw new PatchConflictError()
     } catch (error) {
       if (error instanceof PatchConflictError) throw error
       throw new Error('MCP 备份失败，已停止写入；请检查备份目录权限或磁盘空间')

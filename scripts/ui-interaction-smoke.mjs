@@ -130,7 +130,7 @@ try {
   const auditPath = join(panel, 'trash-cleanup.json'), auditBytes = await readFile(auditPath)
   await press('4'); await press('v')
   screen = await screenText()
-  check('actual runtime versions include plugin and Node', screen.includes('0.1.0-dev.0') && runtime.snapshot().versions.node.value === process.versions.node)
+  check('actual runtime versions include plugin and Node', screen.includes(require('../package.json').version) && runtime.snapshot().versions.node.value === process.versions.node)
   check('headless host and CLI unavailable', runtime.snapshot().versions.host.value === undefined && runtime.snapshot().versions.kernel.value === undefined)
   check('version viewing preserves cleanup record', (await readFile(auditPath)).equals(auditBytes))
   await press('\r'); await press('c'); await press('\x1b[F')

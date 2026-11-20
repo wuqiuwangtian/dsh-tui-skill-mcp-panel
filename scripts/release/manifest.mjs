@@ -87,6 +87,6 @@ export async function checkManifest(root = repoRoot) {
   const result = await validateManifestDocument(await json(join(root, 'dsh-plugin.json')), pkg)
   const patch = parseDocument(await readFile(join(root, 'cordis.patch.yml'), 'utf8'))
   assert.deepEqual(patch.errors, [], 'bundle patch parses')
-  same(patch.toJS(), [{ insert: [{ id: 'skill-mcp-panel', name: pkg.name }] }], 'bundle inserts only its plugin row')
+  same(patch.toJS(), [{ insert: [{ id: pkg.name, name: pkg.name }] }], 'bundle inserts only its plugin row')
   return result.report
 }

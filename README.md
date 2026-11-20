@@ -1,34 +1,34 @@
 # dsh-tui-skill-mcp-panel
 
-给 [dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI) 的技能（skill）与 MCP 服务器可视化管理面板：在终端里输入 `/skill-mcp` 打开全屏管理场景，不用离开 TUI 就能查看、启用/停用、添加、分组技能与 MCP 服务器；改动尽量热加载，不要求重启 TUI。
+在 [dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI) 中输入 `/skill-mcp`，即可在当前终端管理本地技能和 MCP 服务器。可以查看哪些技能对当前工作区生效，给技能或服务器分组，也可以修改当前 profile 的 MCP 配置并观察热加载结果。
 
-> **开发状态（2026-11-17）**：技能管理与 MCP 列表/启停已实现；M4 已支持**本面板新增 MCP 的编辑、删除与撤销**，含 stdio/HTTP 表单、共享锁、冲突检测、备份和热加载等待。已有 profile 行仍仅支持启停，home 层只读。已支持按 profile 隔离的 MCP 分组、搜索与状态筛选；M5 的 manifest、打包检查与准入自查已补齐，首版 P1 已确认延后，P0 细项整改及完整人工验收仍待完成，**npm 尚未发布**。完整范围以 [docs/需求文档.md §14](docs/需求文档.md#14-项目现状与下一步维护) 为准。
+## 安装与打开
 
-## 功能与进度
-
-| 模块 | 能力 | 状态 |
-| --- | --- | --- |
-| 技能 | **只读**：全局/工作区列表、详情、作用域/状态/分组筛选、搜索；**写入（M2 P0）**：启用/停用（`*.disabled`）、软删除 + 回收站撤销、本地路径添加/导入、分组、批量；迁移/复制、zip 导入为 P1（未实现） | ✅ 主要流程；P0 细项待补 |
-| MCP | 列表/启停；stdio/HTTP 新增表单；本面板受管行编辑、删除、撤销；`!!js` 保留与脱敏；home 全局层只读。按 profile 分组、搜索与状态筛选；连接测试为 P1 可选 | ✅ 受管 CRUD / 分组筛选 |
-| 分组 | 显示层分组、加入/移出、按组过滤；技能分组与 web 版共享 `groups.json`（v1）；MCP 分组存私有配置并按 profile 隔离；组内批量动作（P1） | ✅ 基础 / 🚧 批量 |
-| 诊断 | 发现根与路径、frontmatter 合法性、遮蔽/停用状态、宿主能力探测；锁 / 备份 / 回收站（M2+） | ✅ 基础 |
-| 入口 | `/skill-mcp` 命令打开全屏场景 | ✅ |
-
-热加载：技能靠磁盘 watcher，MCP 靠 HMR 重组合。保存后面板显示「已保存，热加载中…」，生效后改为「已生效」，不承诺瞬时生效。
-
-## 安装
-
-**尚未发布到 npm。** 本插件以 `trusted-in-process` 方式运行：与宿主同进程、无沙箱，能读写下方披露的文件；`permissions: []` 不构成文件系统隔离。请先确认信任来源。发布后：
+0.1.0 主支持本地 dsh-TUI `0.20.2` 搭配 DSH `0.2.2-rc.5`，实测环境为 Linux/WSL2。以下命令使用已装有 dsh-TUI 的 `dsh-tui` profile。使用自定义 profile 时，两条命令都换成相应名称。
 
 ```sh
-dsh plugin --profile dsh-tui add dsh-tui-skill-mcp-panel
+dsh plugin --profile dsh-tui add dsh-tui-skill-mcp-panel@0.1.0
+dsh --profile dsh-tui
 ```
 
-从源码安装、构建与真机验证流程见 [AGENT.md](AGENT.md) §7。维护者可运行 `pnpm check:release`；发布前完整测试步骤见[发布准备与人工验收](docs/release-readiness.md#4-发布前完整测试表)。
+进入 TUI 后输入 `/skill-mcp`。按 `1–4` 切换技能、MCP、分组和诊断，按 `?` 查看当前页帮助，回到页签后可按 `q` 关闭。安装前请核对包来源，插件与宿主同进程执行，有权读写技能和 profile 配置。[npm 包](https://www.npmjs.com/package/dsh-tui-skill-mcp-panel) · [GitHub 发布与安装包](https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/releases)
+
+如果同时使用 web 面板，**一次只在一端修改技能分组，切换前在即将使用的一端重新加载**。旧网页可能用先前的分组覆盖刚在 TUI 添加的成员。兼容版本、其余共存限制和恢复办法见下方「兼容性」与「已知限制」。
+
+从源码开发版升级时，如果你曾在 profile 中手写覆盖旧 loader 行 `skill-mcp-panel`，请先按插件包名确认目标。正式版 TUI 的 loader 行 ID 是 `dsh-tui-skill-mcp-panel`。只迁移确实属于 TUI 的覆盖，web 的同名旧行应保留。打开命令仍为 `/skill-mcp`，分组与回收站沿用原目录。
+
+## 能管理什么
+
+| 对象 | 可执行的操作 |
+| --- | --- |
+| 本地技能 | 查看全局与工作区技能、遮蔽来源、原文件全文，按状态或分组筛选，本地导入、启停、软删除和撤销，也可对选中项批量操作。 |
+| MCP 服务器 | 查看定义和运行状态，精确启停当前 profile 中可写的行。通过面板新增的 stdio 或 Streamable HTTP 配置还可编辑、删除和撤销。home 层和表达式控制的开关只读。 |
+| 分组 | 技能分组与 web 共享。MCP 分组按当前 profile 隔离，同名服务器可分别管理。 |
+| 诊断 | 查看宿主与内核版本、配置路径、扫描和加载警告，以及回收站清理记录。 |
 
 ## 使用
 
-在 dsh-TUI 中输入 `/skill-mcp` 回车打开管理场景，`Esc` / `q` 关闭。当前版本提供：
+在 dsh-TUI 中输入 `/skill-mcp` 回车打开管理场景，`Esc` / `q` 关闭。
 
 打开 `/skill-mcp` 时，DSH 在已有会话中记录命令调用和结果。面板无需参数，rc.3 的命令审计会省略参数；终端输入历史仍可保留完整输入。打开面板不会新增聊天消息或模型请求。
 
@@ -64,36 +64,38 @@ MCP 分组存本插件的 `config.json`，按当前 profile patch 的绝对路�
 | 技能只发现一层 | 与 DSH 内核一致：`<root>/<name>/SKILL.md` 或 `<root>/<name>.md`，不递归嵌套分类目录。 |
 | 热加载有延迟 | MCP 配置写入后需要 HMR 重组合（实测约 2–2.5 秒），面板如实显示状态，不假装瞬时。 |
 | 外部修改冲突 | MCP 新增/编辑/启停/受管行删除遇到外部变化，可选重新加载、取消或「覆盖前备份」重试；二次确认后备份最新原文，仅重试目标操作，编辑只应用本次改过的字段（env/headers 按改动键合并）。其他行和未编辑字段保留；确认期间再次变化仍拒写，成功后显示具体备份路径。目标改名/缺失、home 控制、表达式/歧义结构等不能借此放开。MCP 撤销提供单行合并选择，旧覆盖迁移也提供上述选择，但只重试原批次/身份/保存状态；有变化则重新加载并确认整批。共享分组变化按大写 `R` 刷新。不遵守锁的写入与最终 rename 之间仍有极短竞争窗口。 |
-| 旧版 MCP 启停配置 | 旧覆盖行会导致 web 2.3.7 开关不一致。新版启停精确修改定义的 `disabled`；旧条目在下次启停时清理，也可在 MCP 页按 `m` 查看目标并确认迁移，保留保存的启停状态。确认页列完整名称、entryId、目标状态和两层路径；文件变化时可重新加载、取消或二次确认后备份最新文件重试。备份重试要求原批次/名称/保存状态不变；任一变化须重新确认整批，不迁入新目标。结果与诊断显示具体备份路径；保存不等于连接就绪，热加载可能重建连接。迁移遇歧义整批停止，不自动改 home/表达式。完整共存验收状态见开发文档。 |
-| web / TTY 待验边界 | web 2.3.7 开关后的空值崩溃已由官方 2.3.12 修复；部分多行 flow 编辑缺陷在 2.3.12 仍存在。冷启动 Node MCP 继承终端 stderr、退出时恢复旧模式，可导致 TUI 按键失效，且宿主重复开启 raw 无法恢复。按现象确认、临时恢复及修复证据见 [已知问题速查](docs/release-readiness.md#115-已知问题速查与处理入口2026-11-12)。当前选择保持原安装，未应用临时补丁，完整共存验收未通过。 |
+| 旧版 MCP 启停配置 | 旧覆盖行会导致 web 2.3.7 开关不一致。新版启停精确修改定义的 `disabled`；旧条目在下次启停时清理，也可在 MCP 页按 `m` 查看目标并确认迁移，保留保存的启停状态。确认页列完整名称、entryId、目标状态和两层路径；文件变化时可重新加载、取消或二次确认后备份最新文件重试。备份重试要求原批次/名称/保存状态不变；任一变化须重新确认整批，不迁入新目标。结果与诊断显示具体备份路径；保存不等于连接就绪，热加载可能重建连接。迁移遇歧义整批停止，不自动改 home/表达式。双端操作的已测范围见下方「兼容性」。 |
+| web 切换 MCP 后卡片消失 | 在 web 2.3.7 切换后可能出现空卡片，配置可能已写入。停止重复点击，重新加载网页，再到 TUI 刷新核对状态。2.3.12 与 Git v2.3.16 的两个开关方向均已实测正常。 |
+| web 拒写部分手写 YAML | 三个已测 web 版本对含多行 flow 数组或映射的部分 MCP 配置会拒绝启停、编辑或删除，测试中文件原样保留。避开 web 的该项操作；已有 profile 行可在 TUI 权限范围内启停。 |
+| 停用 stdio MCP 后按键失效或回显 | 冷启动时继承终端的部分 Node MCP 进程退出时会切换终端模式。停止输入，优先正常退出并重启 TUI。回到 shell 后若终端仍异常，再执行 `stty sane`。[症状与排障步骤](https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/blob/main/docs/release-readiness.md#115-已知问题速查与处理入口2026-11-12) |
 | 场景内自绘交互 | 场景内不依赖宿主对话框 / toast（实测不可用）；确认与表单输入在场景内完成。 |
 | 工作区管理边界 | 优先读取场景的会话 cwd，再按最近 `.git` 求实际根。工作区列表来自公开 `tuiWorkspaces`；服务不可用/拒绝/超时可查看说明并继续管理当前本地目标和全局。远程 provider 目录不作本机路径扫描。其他工作区的写入只说明已保存，不声称当前会话已加载。工作区目标不跨进程记忆；最后页签会记忆。 |
 | 面板只列文件来源技能 | 运行期/agent scope 注册的技能不在扫盘结果内；`customSkillDirs` 在宿主层不可读（按未配置处理）。 |
-| 迁移/复制、zip 导入 | 首版未实现（P1）；添加仅支持本地绝对路径的 `.md` 或目录束。 |
+| 迁移/复制、zip 导入 | 首版未提供；添加仅支持本地绝对路径的 `.md` 或目录束。 |
 | MCP 撤销合并 | 删除后文件未变时，`u` 精确恢复原文件；发生外部变化时默认取消，也可预览并确认只恢复被删的受管行，保留当前其他内容。恢复前备份当前文件；同 id/同名、home 冲突、旧覆盖及 YAML 别名等歧义拒绝合并。合并位置可能不同，启用行会重新连接。确认期间文件、清单或源备份变化仍拒写。撤销记录清理失败会提示“配置已恢复”，原备份保留。 |
 | 回收站保留 | 面板启动及删除后自动按清单删除时间清理：默认 7 天或最近 100 个正常技能批次，清理后无法撤销。诊断页 `c` 保留执行前快照与结果。MCP、未知/损坏、链接批次、待恢复和清理中断数据保留，不占正常批次预算；备份不自动清理。配置/清理记录异常时停止自动清理。 |
-| 首版 P0 细项 | 删除确认已支持全部目标和完整路径；跨设备删除/撤销已支持复制校验及失败保护。撤销冲突已支持默认取消、确认后备份替换或另作用域恢复；清理生命周期已补齐；页签记忆与已知本地工作区入口已补齐；完整路径与分页全文已补齐；诊断版本已补齐；技能状态筛选与原设计布局已补齐，双模式及本机性能已有局部验证；目标存储环境与完整人工验收仍待完成，见[范围与整改清单](docs/需求文档.md#141-首版范围与-p0-差异清单2026-11-12)。P1 延后不取消这些 P0 要求。 |
+| 备份占用与撤销 | 首版持续保留 MCP YAML 备份、尚待撤销的 MCP 删除清单和技能分组备份。使用越久可能占用越多空间；成功撤销后移除相应清单。撤销会核对清单指向的原路径和内容，移动、改写或删除该备份会令撤销失败。维护者可从源码运行[只读盘点命令](https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/blob/main/docs/release-readiness.md#45-只读盘点-mcp-备份2026-11-20)，盘点结果不能作为可删除清单。 |
 | 全文读取边界 | 只读普通 UTF-8 技能文件（含指向普通文件的链接）；按块读取、稀疏索引，初次打开或改变宽度需重新扫描文件并显示进度，可取消。检测到文件修改/替换后停止旧视图，按 r 重读；不编辑、不自动打开文件管理器，也不自动写系统剪贴板。路径提供终端选择复制文本。 |
 | 版本来源 | 插件读取自身包元数据；宿主读取公开 host descriptor；内核读取已确认的当前 DSH CLI 入口解析到的 app-boot 包元数据；Node 读取当前进程。来源不可用/拒绝/无效时显示 unavailable，不以兼容范围或其他安装代替。包元数据不等于代码完整性校验，`r` 可重新读取。 |
-| 首版不做 | 技能正文编辑、插件安装/更新、MCP OAuth、单工具禁用、伴随 CLI。 |
+| 首版不做 | 技能正文编辑、zip 导入、技能迁移/复制、整组批量动作、增强设置界面、MCP 连接测试、OAuth、单工具禁用、插件安装/更新或伴随 CLI。 |
 
 ## 兼容性
 
-- 目标宿主：`@deepseek-harness-tui/dsh-tui` `>=0.19.0 <0.21.0`；开发基线为 `0.20.2`
-- DSH 内核：当前验证线 `0.2.2-rc.5`，保留宿主 `0.19.0` / 内核 `0.2.2-rc.1` 的既有兼容线；Node `>=24.9`。不把宿主 `0.19.0` 与新版内核混合作为已验证组合。
-- 与 web 版 [`dsh-skill-mcp-panel`](https://github.com/Fishquito7/dsh-skill-mcp-panel) 共享磁盘约定（`*.disabled`、`groups.json`、补丁锁 `<patch>.panel.lock`，但受管块标记不同名）；技能分组已有 TUI 锁与快照冲突保护；web 2.3.7 未使用该分组锁，避免两端同时改同一分组文件。
+- 主验证组合为 dsh-TUI `0.20.2` / DSH `0.2.2-rc.5` / Node `26.3.0`，覆盖本地 TUI 的 inline 与 fullscreen。保留 `0.19.0` / `0.2.2-rc.1` 既有安装、启停、撤销等实测路径；宿主版本声明范围为 `>=0.19.0 <0.21.0`。跨版本混搭和其他平台没有同等覆盖。[主线验证记录](https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/blob/main/docs/release-readiness.md#40-新版宿主兼容验证2026-11-20)
+- MCP 支持 stdio、Streamable HTTP 及环境变量引用。HTTP 已验证本机回环服务和认证头，私有远端的 TLS、代理与断网重连未验证，OAuth 未纳入首版。[HTTP 验证记录](https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/blob/main/docs/release-readiness.md#41-http-认证头与冷启动撤销2026-11-20)
+- web 与 TUI 可共装，已验证普通技能和 MCP 的顺序操作、刷新互读。web 2.3.7、2.3.12、Git v2.3.16 均能用旧技能分组快照覆盖 TUI 新成员。一次使用一个编辑端，切换前重载网页或在 TUI 按大写 `R`。web 版自己的 MCP 分组与 TUI 私有分组分别保存。[三版 web 实测对照](https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/blob/main/docs/release-readiness.md#46-ac-15-的三个-web-版本对照2026-11-20)
 
 ## 权限与信任
 
-- 插件 `permissions: []`：不申请额外权限，不安装插件、不执行用户命令、不 `eval` 用户表达式。
+- 插件声明 `permissions: []`。启用 stdio MCP 后，宿主可按配置启动其命令。启用 HTTP MCP 后，宿主可向目标 URL 发送配置的认证头。添加前请核对可执行文件、目标地址和凭据。
 - 插件直接读写 `~/.dsh` 下的技能文件与当前 profile 的 `cordis.patch.yml`（`trusted-in-process`，非沙箱，安装前需信任）；写前备份、原子写；配置编辑/删除限本面板受管行，已有 profile MCP 仅精确修改普通布尔 `disabled`，其他内容保留；删除走回收站可撤销。
 - 停用面板只释放面板的命令、场景和计时器；卸载面板保留技能、已保存的 MCP 配置、分组、备份和回收站，不提供 purge。MCP 与技能本身的启停状态不会随管理器卸载而恢复。
 - MCP 的 `env` / `headers` 可能含令牌：表单、诊断、dump 和日志脱敏。原配置、备份与回收站仍保留原值；插件新建的备份/清单使用私有目录与 0600 文件权限。
 
 ## 开发文档
 
-需求与设计在 [`docs/`](docs/)：需求唯一权威 [docs/需求文档.md](docs/需求文档.md)、调研与真机实测 [docs/research/README.md](docs/research/README.md)（含 M1 与内核发现一致性验证）、关键决策 [docs/decisions/](docs/decisions/)、仓库工作约定与开发流程 [AGENT.md](AGENT.md)。
+从源码安装和运行检查请见[仓库开发说明](https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/blob/main/AGENT.md)。维护者可运行 `pnpm check:release` 复核类型、域层、打包和界面检查。[需求与设计](https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/blob/main/docs/需求文档.md) · [发布前验证记录](https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/blob/main/docs/release-readiness.md)
 
 ## 许可证
 
-[MIT](LICENSE)。
+[MIT](https://github.com/wuqiuwangtian/dsh-tui-skill-mcp-panel/blob/main/LICENSE)。

@@ -1,7 +1,7 @@
 /** Inspect npm's actual file list and archive; no publish, registry write or user-profile install. */
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { mkdtemp, mkdir, readFile, readdir, rm, symlink } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join, posix } from 'node:path'
 import { isBuiltin, registerHooks } from 'node:module'
@@ -82,7 +82,7 @@ export function validateImports(path, specifiers, packaged, pkg) {
   }
 }
 
-export async function checkTarball(root = repoRoot) {
+export async function checkTarball(root = repoRoot, outputDirectory) {
   const temp = await mkdtemp(join(tmpdir(), 'skill-mcp-pack-'))
   try {
     const pkg = await json(join(root, 'package.json'))
@@ -139,6 +139,7 @@ export async function checkTarball(root = repoRoot) {
     assert.equal(versions.node.value, process.versions.node)
     assert.equal(versions.host.value, undefined, 'headless archive import has no live host')
     assert.equal(versions.kernel.value, undefined, 'headless archive import has no confirmed DSH CLI')
+    if (outputDirectory) await writeFile(join(outputDirectory, packed.filename), bytes, { flag: 'wx' })
     return { name: pkg.name, version: pkg.version, fileCount: packed.files.length, bytes: bytes.length,
       sha256: sha256(bytes), npmIntegrity: packed.integrity, dryRunFileCount: dry.files.length,
       manifestId: manifest.id, importSmoke: 'Cordis name/Config/apply from extracted archive with checkout dependencies',

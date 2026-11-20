@@ -39,6 +39,21 @@ test('guarded toggle backs up exact bytes, preserves permissions and releases th
   assert.equal(await readFile(input.patchPath, 'utf8'), PATCH)
 })
 
+test('non-UTF-8 input cannot silently change unrelated bytes or match a valid replacement character', async t => {
+  const { input } = await fixture(t)
+  const valid = Buffer.from(`\uFEFF# 中文 �\n${PATCH}`)
+  const replacement = valid.indexOf(Buffer.from('�'))
+  const invalid = Buffer.concat([valid.subarray(0, replacement), Buffer.from([0xe9]), valid.subarray(replacement + 3)])
+  await writeFile(input.patchPath, valid)
+  const snapshot = await readPatchSnapshot(input.patchPath)
+  assert.deepEqual(Buffer.from(snapshot.text), valid, 'UTF-8 BOM and literal U+FFFD survive decoding')
+  await writeFile(input.patchPath, invalid)
+  await assert.rejects(saveMcpToggle({ ...input, expectedProfile: snapshot.fingerprint }), /UTF-8/u)
+  assert.deepEqual(await readFile(input.patchPath), invalid)
+  await assert.rejects(stat(input.backupRoot), { code: 'ENOENT' })
+  await assert.rejects(stat(`${input.patchPath}.panel.lock`), { code: 'ENOENT' })
+})
+
 test('explicit migration backs up the complete legacy file and preserves enabled state', async (t) => {
   const { input } = await fixture(t)
   const legacy = upsertManagedToggle(PATCH, 'mcp-alpha', true).text

@@ -1,11 +1,11 @@
 /** Guarded CRUD for panel-owned MCP inserts, plus durable deletion recovery. */
 import { randomUUID } from 'node:crypto'
-import { lstat, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
 import { addManagedMcp, deleteManagedMcp, editManagedMcp, findManagedMcp, mergeManagedMcpRestore } from './managed.js'
 import { isRecord, validateMcpConfig, type McpConfig } from './model.js'
 import { backupPatchFile, extractManagedBlock, isJsValue, parsePatchText, upsertManagedToggle, writePatchFileAtomic } from './patch.js'
-import { PatchConflictError, patchFingerprint, readPatchSnapshot, withPatchLock, type PatchSnapshot } from './write.js'
+import { PatchConflictError, patchFingerprint, readExactUtf8, readPatchSnapshot, withPatchLock, type PatchSnapshot } from './write.js'
 
 export interface McpEditSession {
   patchPath: string
@@ -65,7 +65,7 @@ async function transact<T>(
       } else {
         backupPath = await backupPatchFile(input.patchPath, backupDir)
       }
-      if (await readFile(backupPath, 'utf8') !== profile.text) throw new PatchConflictError()
+      if (await readExactUtf8(backupPath) !== profile.text) throw new PatchConflictError()
     } catch (error) {
       if (error instanceof PatchConflictError) throw error
       throw new Error('MCP 备份失败，已停止写入；请检查目录权限或磁盘空间')
@@ -140,7 +140,7 @@ export async function listMcpDeletions(trashDir: string, patchPath: string, repo
 
 async function readDeletion(trashDir: string, batchId: string): Promise<DeletionRecord> {
   if (!/^[0-9a-f-]{36}$/u.test(batchId)) throw new Error('回收站批次无效')
-  return parseDeletion(await readFile(join(trashDir, batchId, 'manifest.json'), 'utf8'), batchId)
+  return parseDeletion(await readExactUtf8(join(trashDir, batchId, 'manifest.json')), batchId)
 }
 
 function parseDeletion(text: string, batchId: string): DeletionRecord {
@@ -216,7 +216,7 @@ interface RestoreSource { record: DeletionRecord; text: string; journalFingerpri
 
 async function readRestoreSource(input: RestoreInput): Promise<RestoreSource> {
   if (!/^[0-9a-f-]{36}$/u.test(input.batchId)) throw new Error('回收站批次无效')
-  const journal = await readFile(join(input.trashDir, input.batchId, 'manifest.json'), 'utf8')
+  const journal = await readExactUtf8(join(input.trashDir, input.batchId, 'manifest.json'))
   const record = parseDeletion(journal, input.batchId)
   if (input.expectedIdentity !== undefined && (record.id !== input.expectedIdentity.id || record.serverName !== input.expectedIdentity.serverName)) {
     throw new Error('撤销目标已变化，请刷新后重新选择；未恢复')
@@ -224,7 +224,7 @@ async function readRestoreSource(input: RestoreInput): Promise<RestoreSource> {
   if (record.patchPath !== input.files.patchPath) throw new Error('该删除记录属于其他 profile')
   const backup = resolve(record.backupPath)
   if (!backup.startsWith(`${resolve(input.backupRoot)}${sep}`)) throw new Error('备份路径不在本插件目录中')
-  const text = await readFile(backup, 'utf8')
+  const text = await readExactUtf8(backup)
   if (patchFingerprint(text) !== record.beforeFingerprint) throw new Error('备份内容已变化，请手工恢复')
   const deletion = buildDeletion(text, record.id, record.serverName)
   if (deletion.removed !== record.removed || deletion.offset !== record.offset || patchFingerprint(deletion.text) !== record.afterFingerprint) {

@@ -29,9 +29,8 @@ Object.assign(pkg.dependencies, {
   '@deepseek-ai/dsh-web-app': `link:${webAppDir}`,
   'dsh-skill-mcp-panel': `link:${webDir}`,
 })
-// Both panel bundles use entry id "skill-mcp-panel". Keep the actual web
-// bundle, then insert our plugin with a distinct loader id below.
-pkg.dsh.profile.bundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-harness-tui/dsh-tui', 'dsh-skill-mcp-panel']
+// Compose both shipped bundle patches, just as a normal co-install does.
+pkg.dsh.profile.bundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-harness-tui/dsh-tui', 'dsh-skill-mcp-panel', 'dsh-tui-skill-mcp-panel']
 await writeFile(packagePath, JSON.stringify(pkg, null, 2) + '\n')
 const startup = join(root, 'web-startup.mjs')
 await writeFile(startup, `import fs from 'node:fs'
@@ -53,8 +52,6 @@ await writeFile(patchPath, await readFile(patchPath, 'utf8') + `
 - insert:
     - id: interop-web-startup
       name: ${JSON.stringify(startup)}
-    - id: tui-panel-interop
-      name: dsh-tui-skill-mcp-panel
 `)
 const skillDir = join(root, 'dsh/skills/interop-skill')
 await mkdir(skillDir, { recursive: true })

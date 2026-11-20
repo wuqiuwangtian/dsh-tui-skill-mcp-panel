@@ -1,0 +1,101 @@
+name: Release
+run-name: ${{ inputs.publish && 'Publish' || 'Review' }} v${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable package version, e.g. 0.1.0
+        required: true
+        type: string
+      commit:
+        description: Full reviewed main commit SHA
+        required: true
+        type: string
+      publish:
+        description: Publish the verified archive to npm and GitHub
+        default: false
+        type: boolean
+
+permissions: {}
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+env:
+  VERSION: ${{ inputs.version }}
+  REVIEWED_COMMIT: ${{ inputs.commit }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.artifact.outputs.artifact-id }}
+      sha256: ${{ steps.pack.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Match checkout to the reviewed stable version
+        shell: bash
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_SHA" = "$REVIEWED_COMMIT"
+          [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          test "$(node -p "require('./package.json').version")" = "$VERSION"
+          test -s "docs/releases/v$VERSION.md"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 26.3.0
+          package-manager-cache: false
+      - name: Install reviewed build tools and dependencies
+        run: |
+          npm install --global --ignore-scripts npm@12.2.3 pnpm@12.6.0
+          pnpm install --frozen-lockfile
+      - run: pnpm check:release
+      - name: Retain the inspected archive
+        id: pack
+        run: |
+          mkdir release-output
+          node scripts/check-tarball.mjs release-output
+          cp "docs/releases/v$VERSION.md" release-output/notes.md
+          archive="release-output/dsh-tui-skill-mcp-panel-$VERSION.tgz"
+          digest=$(sha256sum "$archive" | cut -d' ' -f1)
+          echo "sha256=$digest" >> "$GITHUB_OUTPUT"
+          printf 'Archive SHA-256: `%s`\n' "$digest" >> "$GITHUB_STEP_SUMMARY"
+      - id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-${{ github.run_attempt }}
+          path: release-output/
+          if-no-files-found: error
+
+  publish:
+    needs: verify
+    if: inputs.publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      EXPECTED_SHA256: ${{ needs.verify.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ needs.verify.outputs.artifact-id }}
+          path: release-output
+          merge-multiple: true
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 26.3.0
+          package-manager-cache: false
+      - run: npm install --global --ignore-scripts npm@12.2.3
+      - name: Publish verified bytes and finalise the release page
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: bash .github/publish-release.sh

@@ -1,6 +1,8 @@
 # 发布准备与人工验收
 
-面向维护者与发布前测试者。项目阶段以[需求文档 §14](需求文档.md#14-项目现状与下一步维护)为准；这里维护准入 A–G 的证据、复核入口和发布前测试步骤。开发包为 `0.1.0-dev.0`，不声明官方认证或 Verified claim。
+面向维护者与发布前测试者。项目阶段以[需求文档 §14](需求文档.md#14-项目现状与下一步维护)为准；这里维护准入 A–G 的证据、复核入口和发布前测试步骤。历史开发包为 `0.1.0-dev.0`，不声明官方认证或 Verified claim。
+
+**0.1.0 发布决定（2026-11-20）。** 原 AC-15 的实测偏差继续登记。用户接受按 D-17 的本地 TUI 支持范围发布，D-18 确认保留撤销所需备份。公开页面需要说明三版 web 共享分组的旧快照覆盖、部分 YAML 拒写、2.3.7 卡片消失和冷启动 stdio 的按键恢复办法。用户已授权完成候选包、发布页与项目独立复核后执行 AC-19。下文各批次的阻塞状态反映当时的决定。
 
 ## 1. 可复核的检查
 
@@ -1610,3 +1612,12 @@ withoutKnownReference 表示当前可读清单里没有找到该路径。即使�
 Git v2.3.16 的 MCP 分组另存于 mcp-groups.json，以 serverName 记录成员。本面板继续按 D-11 使用 profile 路径及 serverName + entryId。共享技能分组的过期写回是独立问题。[上游 MCP 分组实现](https://github.com/Fishquito7/dsh-skill-mcp-panel/blob/8797c338e4d41acce6d097a5ba26f1a2f0bbf5f5/lib/mcp/groups.js)
 
 复核入口为 scripts/prepare-web-interop-probe.mjs，依次传入 CLI 已装 TUI 目录和对应 web 包目录，依赖须能从该包解析。启动临时 launcher 后分别在浏览器和 TUI 操作表中目标，认证链接仅在本地使用。共享技能分组可用 `node scripts/skill-groups-interop.mjs <web包目录>` 独立复验。本轮未施加兼容补丁，AC-15 仍阻塞发布；KI-03 的 rc.5 终端证据见 §42。
+
+## 47. 首版候选复核与发布条件
+
+0.1.0 采用需求 D-17 / D-18。维护者在 GitHub 和 npm 展示的支持范围、安装命令、升级提示与故障处理见[首版说明](releases/v0.1.0.md)。既有验收证据按 §4 的版本和操作路径复用。
+
+- 独立审查发现，旧编码 YAML 注释中的单字节 `e9` 经 UTF-8 宽松解码后，在切换另一行 MCP 时变为 `ef bf bd`。修正 profile/home 快照、撤销清单及备份的读取入口，在写盘前拒绝无效 UTF-8。合法 BOM 和字面 U+FFFD 继续保留，写入与撤销专项 54 项通过。
+- 开发包的 Cordis 加载行与 web 同为 `skill-mcp-panel`；§11 的临时夹具给 TUI 插入了不同的行。正式包使用包名 `dsh-tui-skill-mcp-panel` 作为加载行 ID。0.20.2 / rc.5 的隔离宿主实际组合两个原装 bundle 后，真实 TTY 的 `/skill-mcp` 和 Chromium 中 web 2.3.12 的 MCP 页面均可读取同一条 profile 记录。场景 ID 和命令保持原值。升级前有手写覆盖的用户须按包名确认归属。
+- 单独在全新的临时目录安装候选 tgz 与 0.20.2，核对两个 manifest 均为 0.1.0、包内 98 个文件，导入入口提供 Cordis 的 name、Config、apply。另以 Chromium 在 390 和 1280 像素宽预览 README 和 Release 正文，核对安装代码与帮助链接。
+- 发布流程固定主线提交，在 GitHub runner 完成整套检查后保存实际检验过的归档。发布任务向 npm 提交该归档，回读公开包核对 provenance 和全部字节，再上传相同的 GitHub Release 附件并核对 tag。公共 registry 和 Release 均可读且验证通过后才算 AC-19 完成。

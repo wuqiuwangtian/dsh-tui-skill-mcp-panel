@@ -49,6 +49,20 @@ test('strict undo still refuses external changes; explicit merge retains latest 
   await assert.rejects(stat(fx.manifest), { code: 'ENOENT' })
 })
 
+test('a backup with invalid bytes cannot impersonate a valid UTF-8 replacement character during undo', async t => {
+  const source = addManagedMcp(FOREIGN + '# �\n', target.id, CONFIG)
+  const fx = await fixture(t, source)
+  const backup = await readFile(fx.deleted.backupPath)
+  const offset = backup.indexOf(Buffer.from('�'))
+  assert.ok(offset >= 0)
+  await writeFile(fx.deleted.backupPath, Buffer.concat([backup.subarray(0, offset), Buffer.from([0xe9]), backup.subarray(offset + 3)]))
+  const before = await readFile(fx.patchPath), journal = await readFile(fx.manifest)
+  await assert.rejects(restoreMcpEntry(await fx.request()), /UTF-8/u)
+  await assert.rejects(fx.prepare(), /UTF-8/u)
+  assert.deepEqual(await readFile(fx.patchPath), before)
+  assert.deepEqual(await readFile(fx.manifest), journal)
+})
+
 test('merge recovery supports a newly empty root and CRLF source without reviving removed foreign rows', async t => {
   for (const current of ['[]\n# current empty\n', '# current comments only\n']) {
     const fx = await fixture(t, addManagedMcp(FOREIGN, target.id, CONFIG).replaceAll('\n', '\r\n'))

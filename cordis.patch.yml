@@ -9,5 +9,5 @@
 # Override rows (no `insert`) replace the target row's WHOLE `config`; this
 # bundle only inserts its own row, never re-mounts host service rows.
 - insert:
-    - id: skill-mcp-panel
+    - id: dsh-tui-skill-mcp-panel
       name: 'dsh-tui-skill-mcp-panel'

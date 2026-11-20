@@ -1,6 +1,6 @@
 {
   "name": "dsh-tui-skill-mcp-panel",
-  "version": "0.1.0-dev.0",
+  "version": "0.1.0",
   "description": "Visual skill & MCP manager for dsh-TUI: full-screen scene behind /skill-mcp.",
   "type": "module",
   "main": "lib/types/index.js",
