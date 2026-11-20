@@ -116,6 +116,11 @@ const screenText = async () => {
 const press = async (key) => {
   stdin.push(key)
   await sleep(140)
+  const deadline = Date.now() + 5000
+  while (runtime.snapshot().busy) {
+    if (Date.now() >= deadline) throw new Error('Timed out waiting for panel operation')
+    await sleep(25)
+  }
 }
 const pressText = async (text) => {
   for (const char of text) await press(char)
@@ -190,8 +195,14 @@ try {
     await press(key)
     await writeFile(betaPath, SKILL('external-change'))
     await press('y')
-    screen = await screenText()
-    check(`${action} shows success and failure with identity`, screen.includes(action === 'toggle' ? '批量启停结果' : '批量删除结果') && screen.includes('alpha · 已') && screen.includes('beta · 失败') && screen.includes(betaPath))
+    const resultTitle = action === 'toggle' ? '批量启停结果' : '批量删除结果'
+    const deadline = Date.now() + 5000
+    do {
+      screen = await screenText()
+      if (screen.includes(resultTitle)) break
+      await sleep(25)
+    } while (Date.now() < deadline)
+    check(`${action} shows success and failure with identity`, screen.includes(resultTitle) && screen.includes('alpha · 已') && screen.includes('beta · 失败') && screen.includes(betaPath))
     const progress = action === 'toggle' ? '切换' : '删除'
     check(`${action} publishes each item`, batchProgress.has(`${progress} 1/2 · alpha`) && batchProgress.has(`${progress} 2/2 · beta`))
     check(`${action} preserves failed target`, await readFile(betaPath, 'utf8') === SKILL('external-change'))
