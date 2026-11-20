@@ -8,7 +8,7 @@
 import { appendFile, lstat, mkdir, stat, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { scanSkills } from '../domain/skills/index.js'
 import { findProjectRoot } from '../domain/skills/discovery.js'
@@ -141,7 +141,7 @@ const FIBER_PHASE: Record<number, string> = {
 }
 
 export interface McpToggleOutcome {
-  outcome: 'saved' | 'applied' | 'timeout' | 'conflict' | 'error'
+  outcome: 'saved' | 'applied' | 'overridden' | 'restart-required' | 'timeout' | 'conflict' | 'error'
   id: string
   serverName?: string
   savedAt: number
@@ -1206,13 +1206,23 @@ export class ManagerRuntime {
       backupRoot: backupsRoot(this.panelHomePath) })
   }
 
+  private hmrExplicitlyDisabled(): boolean {
+    try {
+      if (this.ctx.get('hmr', false)) return false
+      const loader = getService<LoaderLike>(this.ctx, 'loader')
+      if (!loader) return false
+      const entries = [...loader.entries()].filter(entry => entry.options?.name === '@deepseek-ai/dsh-hmr')
+      return entries.length > 0 && entries.every(entry => entry.disabled === true && !entry.fiber)
+    } catch { return false }
+  }
+
   private async applyMcpToggle(input: TogglePatchInput): Promise<void> {
     const id = input.id
     const row = { serverName: input.serverName }
     await this.withBusy(async () => {
       const desiredEnabled = !input.disabled
       try {
-        const { backupPath } = await saveMcpToggle(input)
+        const { backupPath, profileFingerprint } = await saveMcpToggle(input)
         const savedAt = Date.now()
         this.patchState({
           mcp: {
@@ -1227,7 +1237,17 @@ export class ManagerRuntime {
         while (Date.now() < deadline && !this.disposed) {
           await new Promise((resolve) => setTimeout(resolve, 400))
           await this.loadMcp()
-          const current = this.state.mcp.rows.find((entry) => entry.id === id)
+          if (this.disposed) return
+          const mcp = this.state.mcp
+          const current = mcp.rows.find(entry => entry.id === id)
+          if (mcp.profilePatchPath !== input.patchPath || mcp.profileFingerprint !== profileFingerprint || mcp.errors.length) break
+          if (current?.overriddenByHome && current.homeDisabled === desiredEnabled) {
+            if (current.diskOnly || current.enabled !== !desiredEnabled || !mcp.loaderComplete) continue
+            const detail = `配置已保存，但被 home 层覆盖：${input.homePatchPath}；请检查目标 ${id} 的 disabled。`
+            this.patchState({ mcp: { ...mcp, togglingId: undefined, lastAction: { outcome: 'overridden', id, serverName: row.serverName, savedAt, backupPath, detail } } })
+            this.setStatus(detail, 'warning')
+            return
+          }
           if (desiredEnabled && current?.enabled && current.connectionState === 'failed') {
             throw new Error('配置已保存，但 MCP 连接失败；请检查诊断页/宿主日志')
           }
@@ -1249,14 +1269,22 @@ export class ManagerRuntime {
             return
           }
         }
-        this.patchState({
-          mcp: {
-            ...this.state.mcp,
-            togglingId: undefined,
-            lastAction: { outcome: 'timeout', id, serverName: row.serverName, savedAt, detail: '10s 内未观察到 loader 状态变化' },
-          },
-        })
-        this.setStatus('已保存，但 10s 内未观察到生效；请检查诊断页/日志，可能被更高层覆盖或需要重启', 'warning')
+        if (this.disposed) return
+        const mcp = this.state.mcp
+        const observed = mcp.rows.find(entry => entry.id === id)
+        const restart = mcp.profilePatchPath === input.patchPath && mcp.profileFingerprint === profileFingerprint &&
+          mcp.homeFingerprint === input.expectedHome && !mcp.errors.length && mcp.loaderComplete &&
+          observed?.layer === 'profile' && !observed.diskOnly && observed.enabled === !desiredEnabled && this.hmrExplicitlyDisabled()
+        const profile = basename(dirname(input.patchPath))
+        const command = /^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$/u.test(profile) && input.patchPath === join(this.dshHomePath(), 'profiles', profile, 'cordis.patch.yml')
+          ? `dsh --profile ${profile}` : '原启动命令'
+        const detail = restart
+          ? `配置已保存，需要重启：宿主已停用热重载。退出当前 TUI 后用 ${command} 重新打开。`
+          : '配置已保存，尚未观察到生效；按 r 刷新，按 4 查看诊断。'
+        this.patchState({ mcp: { ...mcp, togglingId: undefined, lastAction: {
+          outcome: restart ? 'restart-required' : 'timeout', id, serverName: row.serverName, savedAt, backupPath, detail,
+        } } })
+        this.setStatus(detail, 'warning')
       } catch (error) {
         this.patchState({
           mcp: {

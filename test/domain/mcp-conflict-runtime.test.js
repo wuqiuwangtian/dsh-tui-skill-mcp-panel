@@ -342,6 +342,7 @@ test('an unavailable loader cannot confirm disk-only disable or deletion', async
   assert.equal(runtime.snapshot().mcp.rows.find(row => row.id === 'existing').diskOnly, true)
   await runtime.toggleMcp('existing')
   assert.equal(runtime.snapshot().mcp.lastAction.outcome, 'timeout')
+  assert.ok(!/重启|覆盖/u.test(runtime.snapshot().statusMessage.text))
   assert.equal(parsePatchText(await readFile(patchPath, 'utf8')).rows.find(row => row.id === 'existing').disabled, true)
 
   const removing = runtime.deleteMcp('managed')
@@ -399,4 +400,43 @@ test('registry fallback counts only an unambiguous active namespace, without inf
   assert.equal(alpha.toolCount, undefined)
   assert.ok(rows.filter(row => row.id !== 'a').every(row => row.namespaceToolCount === undefined))
   assert.ok(rows.filter(row => row.serverName === 'dupe').every(row => row.duplicateServerName))
+})
+
+
+test('an observed opposite home override takes precedence over a disabled HMR entry', async t => {
+  const { ctx, runtime, patchPath } = await fixture(t)
+  const home = runtime.snapshot().mcp.homePatchPath
+  const get = ctx.get
+  const loader = get('loader')
+  ctx.get = name => name === 'loader' ? { entries: () => [
+    ...loader.entries().map(entry => entry.options.id === 'existing' ? { ...entry, disabled: false } : entry),
+    { options: { name: '@deepseek-ai/dsh-hmr' }, disabled: true },
+  ] } : get(name)
+  const pending = runtime.toggleMcp('existing')
+  try {
+    for (let i = 0; i < 100 && runtime.snapshot().mcp.lastAction?.outcome !== 'saved'; i++) await new Promise(resolve => setTimeout(resolve, 20))
+    assert.equal(runtime.snapshot().mcp.lastAction.outcome, 'saved')
+    await mkdir(join(home, '..'), { recursive: true })
+    await writeFile(home, '- id: existing\n  disabled: false\n')
+  } finally { await pending }
+  const action = runtime.snapshot().mcp.lastAction
+  assert.equal(action.outcome, 'overridden')
+  assert.ok(action.detail.includes(home))
+  assert.ok(action.backupPath)
+  assert.equal(parsePatchText(await readFile(patchPath, 'utf8')).rows.find(row => row.id === 'existing').disabled, true)
+})
+
+test('an explicitly disabled HMR entry and unchanged saved config identify a required restart', async t => {
+  const { ctx, runtime, patchPath } = await fixture(t)
+  const get = ctx.get
+  const entries = get('loader').entries()
+  ctx.get = name => name === 'loader' ? { entries: () => [
+    ...entries, { options: { name: '@deepseek-ai/dsh-hmr' }, disabled: true },
+  ] } : get(name)
+  await runtime.toggleMcp('existing')
+  const action = runtime.snapshot().mcp.lastAction
+  assert.equal(action.outcome, 'restart-required')
+  assert.ok(action.backupPath)
+  assert.ok(action.detail.includes('原启动命令'))
+  assert.equal(parsePatchText(await readFile(patchPath, 'utf8')).rows.find(row => row.id === 'existing').disabled, true)
 })

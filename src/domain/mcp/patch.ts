@@ -317,6 +317,7 @@ export interface McpRowView {
   /** True when this row can be toggled by editing the profile patch. */
   targetable: boolean
   readOnlyReason?: string
+  homeDisabled?: boolean
   overriddenByHome: boolean
   disabledExpression?: string
   connectionState?: McpConnectionState
@@ -367,7 +368,8 @@ export function buildMcpRows(input: {
     const layer: McpRowView['layer'] = homeRow !== undefined ? 'home' : profileRow !== undefined ? 'profile' : 'bundle'
     const ambiguous = repeated.has(id) || otherModules.has(id)
     const config = loaderRow?.config ?? (ambiguous ? undefined : fileConfigs.get(id))
-    const stateRow = disabledFor(input.homeRows, id) ?? disabledFor(input.profileRows, id)
+    const homeState = disabledFor(input.homeRows, id)
+    const stateRow = homeState ?? disabledFor(input.profileRows, id)
     const disabledValue = stateRow?.disabled
     const disabledExpression = isJsValue(disabledValue) ? disabledValue.__js : undefined
     const notes: string[] = loaderRow === undefined ? ['仅磁盘配置；尚未观察到宿主运行状态'] : []
@@ -401,6 +403,7 @@ export function buildMcpRows(input: {
       layer,
       targetable: readOnlyReason === undefined,
       ...(readOnlyReason === undefined ? {} : { readOnlyReason }),
+      ...(!ambiguous && typeof homeState?.disabled === 'boolean' ? { homeDisabled: homeState.disabled } : {}),
       overriddenByHome: layer === 'home' && profileRow !== undefined,
       ...(disabledExpression === undefined ? {} : { disabledExpression }),
       ...(loaderRow?.connectionState === undefined ? {} : { connectionState: loaderRow.connectionState }),

@@ -125,7 +125,7 @@ export function buildMcpMigration(profile: string, home: string, expected?: McpM
 async function saveMcpMutation(
   input: PatchMutationInput,
   build: (profile: PatchSnapshot, home: PatchSnapshot) => { text: string; changed: boolean },
-): Promise<{ changed: boolean; backupPath?: string }> {
+): Promise<{ changed: boolean; backupPath?: string; profileFingerprint: string }> {
   return withPatchLock(input.patchPath, async () => {
     const checkSnapshots = async (): Promise<[PatchSnapshot, PatchSnapshot]> => {
       const snapshots = await Promise.all([readPatchSnapshot(input.patchPath), readPatchSnapshot(input.homePatchPath)])
@@ -141,7 +141,7 @@ async function saveMcpMutation(
     const homePatch = parsePatchText(home.text)
     if (!profilePatch.ok || !homePatch.ok) throw new Error('profile/home patch YAML 非法，请修复后重试')
     const next = build(profile, home)
-    if (!next.changed) return { changed: false }
+    if (!next.changed) return { changed: false, profileFingerprint: profile.fingerprint }
 
     let backupPath: string
     try {
@@ -153,12 +153,12 @@ async function saveMcpMutation(
     }
     // Catch non-cooperating editors changing either layer while we made the backup.
     await writePatchFileAtomic(input.patchPath, next.text, checkSnapshots)
-    return { changed: true, backupPath }
+    return { changed: true, backupPath, profileFingerprint: patchFingerprint(next.text) }
   })
 }
 
 /** The only new-toggle write path: local boolean edit + target legacy cleanup. */
-export async function saveMcpToggle(input: TogglePatchInput): Promise<{ changed: boolean; backupPath?: string }> {
+export async function saveMcpToggle(input: TogglePatchInput): Promise<{ changed: boolean; backupPath?: string; profileFingerprint: string }> {
   return saveMcpMutation(input, (profile, home) => {
     if (parsePatchText(home.text).rows.some(row => row.id === input.id)) throw new PatchConflictError()
     const rows = parsePatchText(profile.text).rows.filter(row => row.id === input.id)

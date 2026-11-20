@@ -95,7 +95,7 @@
 
 - **TUI 接缝是异步就绪的**：插件 activation 时 `tuiScenes/tuiDialogs/...` 尚不存在（约 +1.0s 后出现）→ 一律 `ctx.inject(['…'])`，禁止 `apply` 里同步取服务。
 - **`tuiDialogs` / `tuiToast` 实测不可用**：dialog 在场景内/命令内都 0ms 静默返回取消值，toast `delivered=false` → 确认、单行输入全部场景内自绘；反馈用场景内状态条。
-- **`pluginManager` 管不到 patch 插入的 MCP 行**：`listPlugins()` 为空、`setPluginEnabled` 返回 `failed/unknown-plugin` 且耗时 ≈33s → MCP 列表用 `ctx.loader.entries()` + patch 解析，启停以 patch 文本编辑为主；任何 `pluginManager` 调用都要带超时、不阻塞键盘。
+- **`pluginManager` 管不到 patch 插入的 MCP 行**：`listPlugins()` 为空、`setPluginEnabled` 返回 `failed/unknown-plugin` 且耗时 ≈33s → MCP 列表用 `ctx.loader.entries()` + patch 解析，D-16 确认启停只精确写入当前 profile，不调用官方写入接口。覆盖/需重启/未确认的判定见发布准备 §39。
 - **HMR 实测 ≈2.0–2.5s**（2s `awaitWriteFinish` + debounce + 探测轮询）；UI 显示「已保存，热加载中…」并轮询。
 - **注册资源归属注入作用域**：`sceneCtx.effect` / `commandCtx.effect` 随服务移除立即撤销，不能挂在父插件 `ctx.effect` 上等到整个面板停用才清理。M5 的真实 Cordis lifecycle 测试覆盖移除/恢复与重复 activation。
 - **多字符输入块**：`useInput` 可能一次收到 `"d\r"` 或整段 paste → 快捷键匹配不能假设 `input.length === 1`。

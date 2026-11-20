@@ -331,9 +331,9 @@ function diagnosticLines(state: ManagerState, width: number): string[] {
   for (const warning of state.mcp.warnings) push(`  警告：${warning}`)
   if (state.mcp.lastAction !== undefined) {
     const action = state.mcp.lastAction
-    push(
+    lines.push(...wrapTextLines([
       `  最近 MCP 操作：${action.outcome} ${action.serverName ?? action.id}${action.detail === undefined ? '' : `（${action.detail}）`}`,
-    )
+    ], width))
   }
   push('')
   push('发现根 Discovery roots（rank 小者优先）')

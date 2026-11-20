@@ -80,5 +80,251 @@
         "temporaryFixture": true
       }
     ]
-  }
+  },
+  "afterD16": [
+    {
+      "host": "0.19.0",
+      "kernel": "0.2.2-rc.1",
+      "tests": {
+        "override": [
+          {
+            "boot": 1,
+            "disabledByHome": true,
+            "specificOutcome": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          },
+          {
+            "boot": 2,
+            "disabledByHomeAfterRestart": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          }
+        ],
+        "restart": [
+          {
+            "boot": 1,
+            "hmrExplicitlyDisabled": true,
+            "persisted": true,
+            "effectiveDisabled": true,
+            "specificOutcome": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          },
+          {
+            "boot": 2,
+            "enabledActive": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          }
+        ]
+      }
+    },
+    {
+      "host": "0.20.1",
+      "kernel": "0.2.2-rc.3",
+      "tests": {
+        "override": [
+          {
+            "package": "a1b5882c48981e0ce5f27963cbf7542301a9076e019c2186e152d7e3457542eb",
+            "host": "0.20.1",
+            "kernel": "0.2.2-rc.3"
+          },
+          {
+            "boot": 1,
+            "disabledByHome": true,
+            "specificOutcome": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          },
+          {
+            "boot": 2,
+            "disabledByHomeAfterRestart": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          }
+        ],
+        "restart": [
+          {
+            "package": "a1b5882c48981e0ce5f27963cbf7542301a9076e019c2186e152d7e3457542eb",
+            "host": "0.20.1",
+            "kernel": "0.2.2-rc.3"
+          },
+          {
+            "boot": 1,
+            "hmrExplicitlyDisabled": true,
+            "persisted": true,
+            "effectiveDisabled": true,
+            "specificOutcome": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          },
+          {
+            "boot": 2,
+            "enabledActive": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          }
+        ]
+      }
+    },
+    {
+      "host": "0.20.2",
+      "kernel": "0.2.2-rc.5",
+      "tests": {
+        "override": [
+          {
+            "boot": 1,
+            "disabledByHome": true,
+            "specificOutcome": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          },
+          {
+            "boot": 2,
+            "disabledByHomeAfterRestart": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          }
+        ],
+        "restart": [
+          {
+            "boot": 1,
+            "hmrExplicitlyDisabled": true,
+            "persisted": true,
+            "effectiveDisabled": true,
+            "specificOutcome": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          },
+          {
+            "boot": 2,
+            "enabledActive": true
+          },
+          {
+            "mode": "fullscreen",
+            "terminalColumns": 60,
+            "scene": "56x30",
+            "layout": "single",
+            "exit": 0,
+            "chatAlternate": true,
+            "temporaryFixture": true
+          }
+        ]
+      }
+    }
+  ],
+  "afterD16RequestRegression": [
+    {
+      "turn": "fr38-before",
+      "toolNames": [],
+      "total": 28
+    },
+    {
+      "turn": "fr38-added",
+      "toolNames": [
+        "mcp__ac38form__ping"
+      ],
+      "total": 32
+    },
+    {
+      "turn": "fr38-disabled",
+      "toolNames": [],
+      "total": 28
+    },
+    {
+      "turn": "fr38-reenabled",
+      "toolNames": [
+        "mcp__ac38form__ping"
+      ],
+      "total": 32
+    },
+    {
+      "turn": "fr38-deleted",
+      "toolNames": [],
+      "total": 28
+    },
+    {
+      "singleSession": true,
+      "exit": 0,
+      "package": "a1b5882c48981e0ce5f27963cbf7542301a9076e019c2186e152d7e3457542eb"
+    }
+  ]
 }
