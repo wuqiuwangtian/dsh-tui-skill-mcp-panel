@@ -1,0 +1,413 @@
+{
+  "host": "0.20.2",
+  "kernel": "0.2.2-rc.5",
+  "local": "2.3.7",
+  "npmLatest": "2.3.12",
+  "npmIntegrity": "sha512-4vo73A8l2QzQfaX3v2hGqNZj3mMBeH82zPU8YmdLj9wOougMO0diNuhQaOoAX2x7Z8cCQPeLxvy3dU9SeFW9ig==",
+  "upstreamTag": "v2.3.16",
+  "tagCommit": "8797c338e4d41acce6d097a5ba26f1a2f0bbf5f5",
+  "method": "Separate temporary profiles, loopback Chromium and TUI, existing local dependencies. Mixed trial at 1.3s; separate web-only trials at 13s with reloads.",
+  "versions": [
+    {
+      "version": "2.3.7",
+      "mixedUi": {
+        "version": "2.3.7",
+        "skillWebOffTuiOn": true,
+        "skillBytesExact": true,
+        "webMcpWrite": true,
+        "cardAfter": true,
+        "displayedEnabled": true,
+        "nullOk": false,
+        "enabledAfterReload": true,
+        "tuiOffSeenAfterReload": true,
+        "profileBytesExact": false
+      },
+      "webOnlySettled": [
+        {
+          "wanted": true,
+          "visible": false,
+          "checked": null,
+          "nullOk": true
+        },
+        {
+          "wanted": false,
+          "visible": false,
+          "checked": null,
+          "nullOk": true
+        },
+        {
+          "roundTripBytesExact": true
+        }
+      ],
+      "comparedWithNoticeOnlyProfile": {
+        "profileTextMatchesFresh": false,
+        "parsedRowsMatchFresh": true,
+        "otherMcpEntryFormattingChanged": false
+      },
+      "groups": {
+        "lateWebOverwriteObserved": true,
+        "fullSimultaneousWebTuiProtection": false,
+        "reason": "web saveGroups accepts a stale snapshot after the TUI commit"
+      },
+      "ttyExit": 0
+    },
+    {
+      "version": "2.3.12",
+      "mixedUi": {
+        "version": "2.3.12",
+        "skillWebOffTuiOn": true,
+        "skillBytesExact": true,
+        "webMcpWrite": true,
+        "cardAfter": true,
+        "displayedEnabled": true,
+        "nullOk": false,
+        "enabledAfterReload": true,
+        "tuiOffSeenAfterReload": true,
+        "profileBytesExact": false
+      },
+      "webOnlySettled": [
+        {
+          "wanted": true,
+          "visible": true,
+          "checked": "true",
+          "nullOk": false
+        },
+        {
+          "wanted": false,
+          "visible": true,
+          "checked": "false",
+          "nullOk": false
+        },
+        {
+          "roundTripBytesExact": true
+        }
+      ],
+      "comparedWithNoticeOnlyProfile": {
+        "profileTextMatchesFresh": false,
+        "parsedRowsMatchFresh": true,
+        "otherMcpEntryFormattingChanged": false
+      },
+      "groups": {
+        "lateWebOverwriteObserved": true,
+        "fullSimultaneousWebTuiProtection": false,
+        "reason": "web saveGroups accepts a stale snapshot after the TUI commit"
+      },
+      "ttyExit": 0
+    },
+    {
+      "version": "2.3.16",
+      "mixedUi": {
+        "version": "2.3.16",
+        "skillWebOffTuiOn": true,
+        "skillBytesExact": true,
+        "webMcpWrite": true,
+        "cardAfter": true,
+        "displayedEnabled": true,
+        "nullOk": false,
+        "enabledAfterReload": true,
+        "tuiOffSeenAfterReload": true,
+        "profileBytesExact": false
+      },
+      "webOnlySettled": [
+        {
+          "wanted": true,
+          "visible": true,
+          "checked": "true",
+          "nullOk": false
+        },
+        {
+          "wanted": false,
+          "visible": true,
+          "checked": "false",
+          "nullOk": false
+        },
+        {
+          "roundTripBytesExact": true
+        }
+      ],
+      "comparedWithNoticeOnlyProfile": {
+        "profileTextMatchesFresh": false,
+        "parsedRowsMatchFresh": true,
+        "otherMcpEntryFormattingChanged": false
+      },
+      "groups": {
+        "lateWebOverwriteObserved": true,
+        "fullSimultaneousWebTuiProtection": false,
+        "reason": "web saveGroups accepts a stale snapshot after the TUI commit"
+      },
+      "ttyExit": 0
+    }
+  ],
+  "noticeOnlyControl": {
+    "beforeEqualsPrepared": true,
+    "noticeRowAdded": true,
+    "unrelatedEntryChanged": true,
+    "afterContainsWrappedArgs": true
+  },
+  "yamlEditor": [
+    {
+      "disk": "written",
+      "version": "2.3.7",
+      "style": "block",
+      "eol": "LF",
+      "op": "toggle",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.7",
+      "style": "block",
+      "eol": "LF",
+      "op": "edit",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.7",
+      "style": "block",
+      "eol": "LF",
+      "op": "remove",
+      "outcome": "pass"
+    },
+    {
+      "disk": "written",
+      "version": "2.3.7",
+      "style": "block",
+      "eol": "CRLF",
+      "op": "toggle",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.7",
+      "style": "block",
+      "eol": "CRLF",
+      "op": "edit",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.7",
+      "style": "block",
+      "eol": "CRLF",
+      "op": "remove",
+      "outcome": "pass"
+    },
+    {
+      "disk": "refused-original-preserved",
+      "version": "2.3.7",
+      "style": "flow",
+      "eol": "LF",
+      "op": "toggle",
+      "outcome": "invalid-yaml"
+    },
+    {
+      "version": "2.3.7",
+      "style": "flow",
+      "eol": "LF",
+      "op": "edit",
+      "outcome": "refused"
+    },
+    {
+      "version": "2.3.7",
+      "style": "flow",
+      "eol": "LF",
+      "op": "remove",
+      "outcome": "refused"
+    },
+    {
+      "disk": "refused-original-preserved",
+      "version": "2.3.7",
+      "style": "flow",
+      "eol": "CRLF",
+      "op": "toggle",
+      "outcome": "invalid-yaml"
+    },
+    {
+      "version": "2.3.7",
+      "style": "flow",
+      "eol": "CRLF",
+      "op": "edit",
+      "outcome": "refused"
+    },
+    {
+      "version": "2.3.7",
+      "style": "flow",
+      "eol": "CRLF",
+      "op": "remove",
+      "outcome": "refused"
+    },
+    {
+      "disk": "written",
+      "version": "2.3.12",
+      "style": "block",
+      "eol": "LF",
+      "op": "toggle",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.12",
+      "style": "block",
+      "eol": "LF",
+      "op": "edit",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.12",
+      "style": "block",
+      "eol": "LF",
+      "op": "remove",
+      "outcome": "pass"
+    },
+    {
+      "disk": "written",
+      "version": "2.3.12",
+      "style": "block",
+      "eol": "CRLF",
+      "op": "toggle",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.12",
+      "style": "block",
+      "eol": "CRLF",
+      "op": "edit",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.12",
+      "style": "block",
+      "eol": "CRLF",
+      "op": "remove",
+      "outcome": "pass"
+    },
+    {
+      "disk": "refused-original-preserved",
+      "version": "2.3.12",
+      "style": "flow",
+      "eol": "LF",
+      "op": "toggle",
+      "outcome": "invalid-yaml"
+    },
+    {
+      "version": "2.3.12",
+      "style": "flow",
+      "eol": "LF",
+      "op": "edit",
+      "outcome": "refused"
+    },
+    {
+      "version": "2.3.12",
+      "style": "flow",
+      "eol": "LF",
+      "op": "remove",
+      "outcome": "refused"
+    },
+    {
+      "disk": "refused-original-preserved",
+      "version": "2.3.12",
+      "style": "flow",
+      "eol": "CRLF",
+      "op": "toggle",
+      "outcome": "invalid-yaml"
+    },
+    {
+      "version": "2.3.12",
+      "style": "flow",
+      "eol": "CRLF",
+      "op": "edit",
+      "outcome": "refused"
+    },
+    {
+      "version": "2.3.12",
+      "style": "flow",
+      "eol": "CRLF",
+      "op": "remove",
+      "outcome": "refused"
+    },
+    {
+      "disk": "written",
+      "version": "2.3.16",
+      "style": "block",
+      "eol": "LF",
+      "op": "toggle",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.16",
+      "style": "block",
+      "eol": "LF",
+      "op": "edit",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.16",
+      "style": "block",
+      "eol": "LF",
+      "op": "remove",
+      "outcome": "pass"
+    },
+    {
+      "disk": "written",
+      "version": "2.3.16",
+      "style": "block",
+      "eol": "CRLF",
+      "op": "toggle",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.16",
+      "style": "block",
+      "eol": "CRLF",
+      "op": "edit",
+      "outcome": "pass"
+    },
+    {
+      "version": "2.3.16",
+      "style": "block",
+      "eol": "CRLF",
+      "op": "remove",
+      "outcome": "pass"
+    },
+    {
+      "disk": "refused-original-preserved",
+      "version": "2.3.16",
+      "style": "flow",
+      "eol": "LF",
+      "op": "toggle",
+      "outcome": "invalid-yaml"
+    },
+    {
+      "version": "2.3.16",
+      "style": "flow",
+      "eol": "LF",
+      "op": "edit",
+      "outcome": "refused"
+    },
+    {
+      "version": "2.3.16",
+      "style": "flow",
+      "eol": "LF",
+      "op": "remove",
+      "outcome": "refused"
+    },
+    {
+      "disk": "refused-original-preserved",
+      "version": "2.3.16",
+      "style": "flow",
+      "eol": "CRLF",
+      "op": "toggle",
+      "outcome": "invalid-yaml"
+    },
+    {
+      "version": "2.3.16",
+      "style": "flow",
+      "eol": "CRLF",
+      "op": "edit",
+      "outcome": "refused"
+    },
+    {
+      "version": "2.3.16",
+      "style": "flow",
+      "eol": "CRLF",
+      "op": "remove",
+      "outcome": "refused"
+    }
+  ]
+}

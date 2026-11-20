@@ -459,7 +459,7 @@ node scripts/rehearse-compat-rollout.mjs "<输出 root>/review-plan.json"
 
 ### 11.5 已知问题速查与处理入口（2026-11-12）
 
-2026-11-20 的 rc.5 终端对照和 web 2.3.7 分组旧快照复验见[发布准备 §42](#42-新版-p0-集中复核2026-11-20)。
+2026-11-20 的真实浏览器、flow 写入及共享技能分组三版本对照见[§46](#46-ac-15-的三个-web-版本对照2026-11-20)。rc.5 终端对照和 web 2.3.7 分组旧快照复验见[发布准备 §42](#42-新版-p0-集中复核2026-11-20)。
 
 
 **当前决定：用户已选择保持真实安装现状，不实施 §11.4 的临时兼容方案。** 以下问题继续登记为“已定位、真实环境未修复”；该决定不表示问题已关闭、AC-15 通过或发布条件放宽。补丁、源文件摘要和验证脚本保留在仓库，未来处理不依赖会被清理的 `/tmp` 评审目录。只有实际遇到问题、评估上游修复或用户明确改变决定时，才重新核对方案；临时补丁不再是默认待执行项。
@@ -1591,3 +1591,22 @@ withoutKnownReference 表示当前可读清单里没有找到该路径。即使�
 两个临时 profile 用 §40 的实际插件包产生删除清单。最初 4 份 YAML 无清单引用，两次删除后共有 6 份、6,868 字节，其中 2 份各自被一条清单引用。暂时移走一个源副本后，盘点只匹配到 1 条且返回 2；归还后重新匹配 2 条并返回 0。四次调用前后均比对两份 profile 和面板目录中全部普通文件的内容摘要。[四阶段结果](research/evidence/m5-mcp-backup-inventory.json)
 
 该命令随仓库提供。专项测试入口为 `node --test test/release/backup-inventory.test.js`，另覆盖同一路径的多个引用、内容变化、坏清单、未知格式、符号链接和缺少显式参数。首版保留策略仍见 §44。
+
+## 46. AC-15 的三个 web 版本对照（2026-11-20）
+
+在 TUI 0.20.2 / DSH rc.5 环境为每个 web 版本准备独立临时 profile，使用实际 Chromium 页面、TUI 键盘和本地 MCP。三个版本来自本机安装的 2.3.7、npm 官方 tarball 2.3.12（校验 SHA-512）、上游 Git 标签 v2.3.16 随库构建文件。当天查询 npm 时 latest 为 2.3.12。新版复用本机已有依赖。真实安装保留原状。[上游 v2.3.16](https://github.com/Fishquito7/dsh-skill-mcp-panel/tree/8797c338e4d41acce6d097a5ba26f1a2f0bbf5f5) · [逐版本结果](research/evidence/m5-web-rc5-versions.json)
+
+| 核对项 | 2.3.7 | 2.3.12 | Git v2.3.16 |
+| --- | --- | --- | --- |
+| 普通技能：web 停用 → TUI 观察并启用 → web 重载 | 同步，技能文件字节恢复 | 同左 | 同左 |
+| 普通 MCP：web 启用 → TUI 观察并停用 → web 重载 | 同步 | 同步 | 同步 |
+| KI-01：分别用 web 启用、停用，等 13 秒再看原页面 | 两次目标卡片均消失，捕获 null / ok 错误；重载后开关与磁盘一致 | 两次卡片均保留、状态正确 | 两次卡片均保留、状态正确 |
+| KI-02：多行 flow 映射包含多行 args 数组，LF 与 CRLF | 停用候选 YAML 无效；文件入口两次拒写，原文件字节保留。编辑、删除该行也被拒 | 同左 | 同左 |
+| 普通 block，LF 与 CRLF | 开关、编辑、删除候选均通过解析与目标检查，相邻条目字节保留 | 同左 | 同左 |
+| 共享技能分组：web 持旧快照，在 TUI 新增成员后写回 | 顺序互读和 TUI 拒绝过期写入通过；反向写回覆盖新成员 | 同左 | 同左 |
+
+2.3.7 会先乐观更新；点击后约 1.3 秒看到卡片已启用，不足以确认该问题已解决。应观察原页面，再刷新与磁盘对照。整个 profile 哈希变化也有多个来源：独立 v2.3.16 对照只点宿主首次 Preview Notice 的 Continue，宿主便保存 ui-settings-general 并改变已有 MCP 数组的换行。三版实验的最终文件与仅确认通知的对照按夹具路径归一比较，解析到的行、MCP 参数和表达式一致；目标的 disabled 字段位置可以变化。
+
+Git v2.3.16 的 MCP 分组另存于 mcp-groups.json，以 serverName 记录成员。本面板继续按 D-11 使用 profile 路径及 serverName + entryId。共享技能分组的过期写回是独立问题。[上游 MCP 分组实现](https://github.com/Fishquito7/dsh-skill-mcp-panel/blob/8797c338e4d41acce6d097a5ba26f1a2f0bbf5f5/lib/mcp/groups.js)
+
+复核入口为 scripts/prepare-web-interop-probe.mjs，依次传入 CLI 已装 TUI 目录和对应 web 包目录，依赖须能从该包解析。启动临时 launcher 后分别在浏览器和 TUI 操作表中目标，认证链接仅在本地使用。共享技能分组可用 `node scripts/skill-groups-interop.mjs <web包目录>` 独立复验。本轮未施加兼容补丁，AC-15 仍阻塞发布；KI-03 的 rc.5 终端证据见 §42。

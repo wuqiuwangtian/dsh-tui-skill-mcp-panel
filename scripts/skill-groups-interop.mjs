@@ -1,4 +1,4 @@
-/** Exercise the installed web 2.3.7 API only on an isolated temporary DSH home. */
+/** Exercise the reviewed web package API only on an isolated temporary DSH home. */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
@@ -11,7 +11,7 @@ if (!process.argv[2]) throw new Error('usage: node scripts/skill-groups-interop.
 const webRoot = resolve(process.argv[2])
 const manifest = JSON.parse(await readFile(join(webRoot, 'package.json'), 'utf8'))
 assert.equal(manifest.name, 'dsh-skill-mcp-panel')
-assert.equal(manifest.version, '2.3.7', 'review a changed web baseline before claiming interoperability')
+assert.ok(['2.3.7', '2.3.12', '2.3.16'].includes(manifest.version), 'review a changed web baseline before claiming interoperability')
 const webFile = join(webRoot, 'lib/groups.js')
 const web = await import(pathToFileURL(webFile).href)
 const root = await mkdtemp(join(tmpdir(), 'skill-groups-web-'))
@@ -53,7 +53,7 @@ try {
     verified: ['v1 format read by both implementations', 'workspace and global members survive sequential changes',
       'stale TUI write after a real web write is refused', 'refresh/retry preserves web members', 'exact prewrite backup'],
     boundary: { lateWebOverwriteObserved: lateOverwriteObserved, fullSimultaneousWebTuiProtection: false,
-      reason: 'web 2.3.7 groups.js does not honor groups.json.panel.lock or compare snapshots' },
+      reason: 'web saveGroups accepts a stale snapshot after the TUI commit' },
     isolation: 'all writes and backups under temporary home; no installed package or real ~/.dsh data changed',
   }, null, 2))
 } finally { await rm(root, { recursive: true, force: true }) }
