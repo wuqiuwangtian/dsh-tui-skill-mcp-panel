@@ -23,7 +23,7 @@ const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding:
 const dirty = execFileSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' }).trim() !== ''
 const documents = await Promise.all([
   ['docs/release-readiness.md', '## 4. ', '完整验收步骤与预期'],
-  ['docs/release-readiness.md', '## 24. ', '本轮升级核对、影响与限制'],
+  ['docs/release-readiness.md', '## 40. ', '本轮升级核对、影响与限制'],
   ['docs/release-readiness.md', '### 11.5 ', '遇到已知问题时快速定位'],
   ['docs/需求文档.md', '### 14.1 ', '剩余 P0 与推进顺序（参考）'],
 ].map(async ([file, prefix, purpose]) => {

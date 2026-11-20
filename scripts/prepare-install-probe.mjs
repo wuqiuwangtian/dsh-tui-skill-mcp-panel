@@ -9,16 +9,16 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { expectedFiles, parsePackReport, validatePackList } from './release/tarball.mjs'
 
 const hostDir = process.argv[2]
-assert.ok(hostDir, 'usage: node scripts/prepare-install-probe.mjs <CLI-installed dsh-tui directory>')
+assert.ok(hostDir, 'usage: node scripts/prepare-install-probe.mjs <CLI-installed dsh-tui directory> [--mode=fullscreen|--mode=inline]')
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const fixture = JSON.parse(execFileSync(process.execPath, [join(repo, 'scripts/prepare-tui-probe.mjs'), resolve(hostDir)], { encoding: 'utf8' }))
+const fixture = JSON.parse(execFileSync(process.execPath, [join(repo, 'scripts/prepare-tui-probe.mjs'), resolve(hostDir), ...process.argv.slice(3)], { encoding: 'utf8' }))
 const { root, profile } = fixture
 const cli = await realpath(execFileSync('which', ['dsh'], { encoding: 'utf8' }).trim())
 const cliRequire = createRequire(cli)
 const baseDir = dirname(cliRequire.resolve('@deepseek-ai/dsh-base/package.json'))
 const cordisDir = dirname(cliRequire.resolve('@deepseek-ai/cordis/package.json'))
 const host = JSON.parse(await readFile(join(hostDir, 'package.json'), 'utf8'))
-assert.ok(['0.19.0', '0.20.0', '0.20.1'].includes(host.version), 'review observer internals before using a new host')
+assert.ok(['0.19.0', '0.20.0', '0.20.1', '0.20.2'].includes(host.version), 'review observer internals before using a new host')
 // Keep the already-installed host and kernel read-only. Only the panel and its
 // package dependencies are installed by the real CLI into this temporary profile.
 await rm(join(profile, 'node_modules/dsh-tui-skill-mcp-panel'))

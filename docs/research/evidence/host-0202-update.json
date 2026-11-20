@@ -1,0 +1,131 @@
+{
+  "host": "0.20.2",
+  "kernel": "0.2.2-rc.5",
+  "node": "26.3.0",
+  "packageVersion": "0.1.0-dev.0",
+  "transport": "loopback Messages SSE, fixed text response",
+  "archiveSha256": "c93e609bc11c492a6722565c0dcd92077a946a8a645c6f336c9a408fd49686c5",
+  "inline": {
+    "turns": [
+      {
+        "turn": "skill-before",
+        "skillInLatestCatalog": true,
+        "requestSha256": "8e02d1c0180f06dc6b9089a69474f4b1bca7b00f06fa0d7cbda9a5cbe1711f47"
+      },
+      {
+        "turn": "skill-disabled",
+        "skillInLatestCatalog": false,
+        "requestSha256": "dec16302e10f8e39fb4369dc4c70be2b490a701116dc8437df339eea6b23fafd"
+      },
+      {
+        "turn": "skill-enabled",
+        "skillInLatestCatalog": true,
+        "requestSha256": "bfcd5a9a2862e5b5609798e55eebb8cdb0f5c2c1e485fcb520f26cc87f071598"
+      }
+    ],
+    "singleSession": true,
+    "exit": 0
+  },
+  "fullscreen": {
+    "turns": [
+      {
+        "turn": "fr38-before",
+        "toolNames": [],
+        "total": 28,
+        "requestSha256": "5ffcc03553886ea736b7d140c5d7c1eac72baeed4be6e0623e909026b4d15ad1"
+      },
+      {
+        "turn": "fr38-added",
+        "toolNames": [
+          "mcp__ac38form__ping"
+        ],
+        "total": 32,
+        "requestSha256": "4609d19962325d144cd2d1a9a3fbc2f8c9b79208766c165dd1b6f313bdc739f1"
+      },
+      {
+        "turn": "fr38-disabled",
+        "toolNames": [],
+        "total": 28,
+        "requestSha256": "e3320d1b3efc69ca5ea645565df4d029b1ab4a92c91455a2e64530cb2695628b"
+      },
+      {
+        "turn": "fr38-reenabled",
+        "toolNames": [
+          "mcp__ac38form__ping"
+        ],
+        "total": 32,
+        "requestSha256": "2456f1fd270f90ba15573406b06801e4b4467c7af8c4fcaf986d29952095ad38"
+      },
+      {
+        "turn": "fr38-deleted",
+        "toolNames": [],
+        "total": 28,
+        "requestSha256": "7bdd7105b13021c9c15a181edad4871ba9cf826280f9a55b85c66c80a8fbba27"
+      }
+    ],
+    "singleSession": true,
+    "exit": 0
+  },
+  "afterCliUninstall": {
+    "exit": 0,
+    "commandAbsent": true,
+    "loaderRows": 0,
+    "preservedFiles": 5
+  },
+  "sourceLinkedLayout": [
+    {
+      "mode": "fullscreen",
+      "terminalColumns": 60,
+      "scene": "56x30",
+      "layout": "single",
+      "exit": 0,
+      "chatAlternate": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "mode": "fullscreen",
+      "terminalColumns": 82,
+      "scene": "78x30",
+      "layout": "dual",
+      "exit": 0,
+      "chatAlternate": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "mode": "fullscreen",
+      "terminalColumns": 116,
+      "scene": "112x30",
+      "layout": "tree",
+      "exit": 0,
+      "chatAlternate": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "mode": "inline",
+      "terminalColumns": 60,
+      "scene": "56x30",
+      "layout": "single",
+      "exit": 0,
+      "chatAlternate": false,
+      "fixtureUnchanged": true
+    },
+    {
+      "mode": "inline",
+      "terminalColumns": 82,
+      "scene": "78x30",
+      "layout": "dual",
+      "exit": 0,
+      "chatAlternate": false,
+      "fixtureUnchanged": true
+    },
+    {
+      "mode": "inline",
+      "terminalColumns": 116,
+      "scene": "112x30",
+      "layout": "tree",
+      "exit": 0,
+      "chatAlternate": false,
+      "fixtureUnchanged": true
+    }
+  ]
+}
