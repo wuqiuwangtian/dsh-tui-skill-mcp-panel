@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { chmod, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { addManagedMcp, deleteManagedMcp, findManagedMcp } from '../../lib/types/domain/mcp/managed.js'
@@ -135,6 +135,31 @@ test('journal identity/removal offsets must agree with the original backup', asy
     await assert.rejects(fx.prepare(), /损坏|不一致/u)
     assert.equal(await readFile(fx.patchPath, 'utf8'), FOREIGN)
   }
+})
+
+test('undo requires its recorded backup path even when another copy has identical bytes', async t => {
+  const fx = await fixture(t)
+  const plan = await fx.prepare()
+  const journal = await readFile(fx.manifest)
+  const stored = fx.deleted.backupPath
+  const moved = join(fx.backupRoot, 'identical-copy.yml')
+  await rename(stored, moved)
+  const request = await fx.request()
+  for (const attempt of [
+    () => restoreMcpEntry(request),
+    () => fx.prepare(),
+    () => fx.commit(plan),
+  ]) {
+    await assert.rejects(attempt, { code: 'ENOENT', path: stored })
+    assert.equal(await readFile(fx.patchPath, 'utf8'), FOREIGN)
+    assert.deepEqual(await readFile(fx.manifest), journal)
+  }
+  await rename(moved, stored)
+  const restored = await restoreMcpEntry(request)
+  assert.equal(await readFile(fx.patchPath, 'utf8'), fx.source)
+  assert.equal(await readFile(stored, 'utf8'), fx.source)
+  assert.equal(await readFile(restored.backupPath, 'utf8'), FOREIGN)
+  await assert.rejects(stat(fx.manifest), { code: 'ENOENT' })
 })
 
 test('merge backup failure keeps both current file and deletion source intact', async t => {

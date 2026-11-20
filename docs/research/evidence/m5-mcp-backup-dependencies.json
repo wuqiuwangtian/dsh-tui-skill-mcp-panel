@@ -1,0 +1,26 @@
+{
+  "host": "0.20.2",
+  "kernel": "0.2.2-rc.5",
+  "node": "26.3.0",
+  "archiveSha256": "c93e609bc11c492a6722565c0dcd92077a946a8a645c6f336c9a408fd49686c5",
+  "method": "Installed tgz in temporary profiles with matching YAML and a shared panel home",
+  "observations": {
+    "bootsExited": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "profiles": 2,
+    "equalContentDistinctSourcePaths": true,
+    "missingExactPathRejectedDespiteIdenticalOtherBackup": true,
+    "changedContentRejected": true,
+    "rejectionsPreservedBothProfilesAndJournals": true,
+    "restoringActualSourceAllowedRetry": true,
+    "restoredProfilesByteExact": true,
+    "afterRestoringBoth": {
+      "manifests": 0,
+      "backups": 4
+    }
+  }
+}
