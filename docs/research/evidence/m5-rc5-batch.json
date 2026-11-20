@@ -1,0 +1,270 @@
+{
+  "date": "2026-11-20",
+  "host": "0.20.2",
+  "kernel": "0.2.2-rc.5",
+  "archiveSha256": "c93e609bc11c492a6722565c0dcd92077a946a8a645c6f336c9a408fd49686c5",
+  "skills": {
+    "steps": [
+      {
+        "turn": "p42-initial",
+        "catalogWinner": "Isolated real-TUI verification skill",
+        "added": false,
+        "requestSha256": "0eb105b57e304d2601120bbb653980cc8379129c0c7c519265e56a803fcabda0"
+      },
+      {
+        "turn": "p42-added",
+        "catalogWinner": "Isolated real-TUI verification skill",
+        "added": true,
+        "requestSha256": "5cfd2077ed0983e8dde9aab69423fb9bdcbd15897dc6b4ac7f85a8383f5d7cc3"
+      },
+      {
+        "turn": "p42-fallback",
+        "catalogWinner": "P42GlobalWinner",
+        "added": true,
+        "requestSha256": "60aee451f411e70791fc3c5f50fb9cfec78c32522cf072822acbf69da09b28a4"
+      },
+      {
+        "turn": "p42-restored",
+        "catalogWinner": "Isolated real-TUI verification skill",
+        "added": true,
+        "requestSha256": "d487f64f57367de85297b7bd89c6b57867da7f084f775a58b08992aafb70cda3"
+      },
+      {
+        "turn": "p42-removed",
+        "catalogWinner": "Isolated real-TUI verification skill",
+        "added": false,
+        "requestSha256": "877d42834f975d5bc73421e2792e35f3ca485cb8806b7e792144530174001dc1"
+      }
+    ],
+    "nativeMenuMatchedEachStep": true,
+    "singleSession": true,
+    "exit": 0,
+    "requestHashMethod": "SHA256 of parsed request serialized by Python json.dumps(sort_keys=True)"
+  },
+  "pluginLifecycle": [
+    {
+      "stage": "disabled",
+      "command": false,
+      "installed": true,
+      "protectedFiles": 7
+    },
+    {
+      "stage": "enable-cancel",
+      "command": false,
+      "installed": true,
+      "protectedFiles": 7
+    },
+    {
+      "stage": "enabled",
+      "command": true,
+      "installed": true,
+      "protectedFiles": 7
+    },
+    {
+      "stage": "remove-cancel",
+      "command": true,
+      "installed": true,
+      "protectedFiles": 7
+    },
+    {
+      "stage": "removed",
+      "command": false,
+      "installed": false,
+      "protectedFiles": 7
+    },
+    {
+      "stage": "install-cancel",
+      "command": false,
+      "installed": false,
+      "protectedFiles": 7
+    },
+    {
+      "stage": "installed-again",
+      "command": true,
+      "installed": true,
+      "protectedFiles": 7
+    },
+    {
+      "exit": 0,
+      "undoAfterReinstall": true
+    }
+  ],
+  "scope": {
+    "ttyExit": 0,
+    "wideNotice": true,
+    "helpScope": true,
+    "homeActionsChecked": [
+      "toggle",
+      "edit",
+      "delete"
+    ],
+    "profileAndHomeIdentical": true,
+    "diagnosticsVersion": true
+  },
+  "stdio": {
+    "enableCycles": 2,
+    "childStarts": 4,
+    "matchedDigest": true,
+    "nonTargetBytesExact": true,
+    "checked": [
+      "dump.json",
+      "render.txt",
+      "user/.dsh-tui/restart.log"
+    ],
+    "rawBytes": 22820,
+    "exit": 0
+  },
+  "webGroups": {
+    "check": "skill-groups-web-interop",
+    "ok": true,
+    "version": "2.3.7",
+    "webGroupsSha256": "5983d85b298ea841b7e3348ef10e61457b70604e0a66ab71a7a8201d6d56dced",
+    "verified": [
+      "v1 format read by both implementations",
+      "workspace and global members survive sequential changes",
+      "stale TUI write after a real web write is refused",
+      "refresh/retry preserves web members",
+      "exact prewrite backup"
+    ],
+    "boundary": {
+      "lateWebOverwriteObserved": true,
+      "fullSimultaneousWebTuiProtection": false,
+      "reason": "web 2.3.7 groups.js does not honor groups.json.panel.lock or compare snapshots"
+    },
+    "isolation": "all writes and backups under temporary home; no installed package or real ~/.dsh data changed"
+  },
+  "tty": {
+    "results": [
+      {
+        "scenario": "cold-inherit",
+        "initial": {
+          "canonical": true,
+          "echo": true,
+          "cachedRaw": false
+        },
+        "beforeClose": {
+          "canonical": false,
+          "echo": false,
+          "cachedRaw": true
+        },
+        "afterClose": {
+          "canonical": true,
+          "echo": true,
+          "cachedRaw": true
+        },
+        "tools": [
+          "ping"
+        ],
+        "drainedBytes": 0,
+        "node": "v26.3.0",
+        "libuv": "1.52.1"
+      },
+      {
+        "scenario": "warm-inherit",
+        "initial": {
+          "canonical": true,
+          "echo": true,
+          "cachedRaw": false
+        },
+        "beforeClose": {
+          "canonical": false,
+          "echo": false,
+          "cachedRaw": true
+        },
+        "afterClose": {
+          "canonical": false,
+          "echo": false,
+          "cachedRaw": true
+        },
+        "tools": [
+          "ping"
+        ],
+        "drainedBytes": 0,
+        "node": "v26.3.0",
+        "libuv": "1.52.1"
+      },
+      {
+        "scenario": "cold-pipe",
+        "initial": {
+          "canonical": true,
+          "echo": true,
+          "cachedRaw": false
+        },
+        "beforeClose": {
+          "canonical": false,
+          "echo": false,
+          "cachedRaw": true
+        },
+        "afterClose": {
+          "canonical": false,
+          "echo": false,
+          "cachedRaw": true
+        },
+        "tools": [
+          "ping"
+        ],
+        "drainedBytes": 0,
+        "node": "v26.3.0",
+        "libuv": "1.52.1"
+      }
+    ],
+    "scope": "real MCP protocol, three owned PTYs; pipe stderr is drained in this experiment, production logging policy is not implemented"
+  },
+  "performance": {
+    "fixture": {
+      "skills": 1000,
+      "bytes": 9027890,
+      "bodyBytes": 8960,
+      "directory": 500,
+      "flat": 500,
+      "workspace": 600,
+      "global": 400,
+      "enabled": 800,
+      "disabled": 200,
+      "groups": 20,
+      "all1000SkillFilesAndGroupBytesPreserved": true
+    },
+    "environment": {
+      "node": "26.3.0",
+      "host": "0.20.2",
+      "platform": "linux",
+      "release": "6.18.58.1-microsoft-standard-WSL2",
+      "cpu": "Intel(R) Core(TM) Ultra X7 358H",
+      "logicalCpus": 14,
+      "totalMemoryBytes": 25201803264,
+      "filesystem": "/ /dev/sdd ext4",
+      "physicalSSD": "unverified; virtual block device does not establish physical medium"
+    },
+    "coldOpenObserved": {
+      "samples": 6,
+      "minMs": 383.4722419999998,
+      "medianMs": 395.3923199999999,
+      "p95Ms": 540.4414149999999,
+      "maxMs": 540.4414149999999
+    },
+    "warmOpenObserved": {
+      "samples": 6,
+      "minMs": 16.671491999999944,
+      "medianMs": 19.46844400000009,
+      "p95Ms": 22.38082300000042,
+      "maxMs": 22.38082300000042
+    },
+    "searchObserved": {
+      "samples": 168,
+      "minMs": 2.4174889999994775,
+      "medianMs": 13.547389000000294,
+      "p95Ms": 24.776739999999336,
+      "maxMs": 26.164560000000165
+    },
+    "localThresholds": {
+      "coldOpenUnder1s": true,
+      "warmOpenUnder1s": true,
+      "everySearchKeyUnder100ms": true
+    },
+    "limits": [
+      "Local observation only; not physical SSD or disk-cold certification",
+      "No full user manual acceptance or model requests",
+      "Input pacing waits for each completed key; burst backlog and physical terminal transport not measured"
+    ]
+  }
+}
