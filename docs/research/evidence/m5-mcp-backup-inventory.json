@@ -1,0 +1,54 @@
+{
+  "host": "0.20.2",
+  "kernel": "0.2.2-rc.5",
+  "archiveSha256": "c93e609bc11c492a6722565c0dcd92077a946a8a645c6f336c9a408fd49686c5",
+  "stages": [
+    {
+      "stage": "before",
+      "exit": 0,
+      "profiles": 0,
+      "matching": 0,
+      "yamlBackups": 4,
+      "logicalBytes": 4412,
+      "withoutKnownReference": 4,
+      "issues": [],
+      "allSampleFileBytesPreserved": true
+    },
+    {
+      "stage": "both-referenced",
+      "exit": 0,
+      "profiles": 2,
+      "matching": 2,
+      "yamlBackups": 6,
+      "logicalBytes": 6868,
+      "withoutKnownReference": 4,
+      "issues": [],
+      "allSampleFileBytesPreserved": true
+    },
+    {
+      "stage": "one-source-missing",
+      "exit": 2,
+      "profiles": 2,
+      "matching": 1,
+      "yamlBackups": 5,
+      "logicalBytes": 5640,
+      "withoutKnownReference": 4,
+      "issues": [
+        "unreadable-backup",
+        "missing-source"
+      ],
+      "allSampleFileBytesPreserved": true
+    },
+    {
+      "stage": "source-returned",
+      "exit": 0,
+      "profiles": 2,
+      "matching": 2,
+      "yamlBackups": 6,
+      "logicalBytes": 6868,
+      "withoutKnownReference": 4,
+      "issues": [],
+      "allSampleFileBytesPreserved": true
+    }
+  ]
+}
